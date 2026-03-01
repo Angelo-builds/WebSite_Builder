@@ -911,51 +911,52 @@ export default function App() {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="p-4 space-y-6">
-            {/* Projects Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3 px-1">
-                <h3 className={`text-xs uppercase tracking-widest ${themeClasses.textFaint} font-bold`}>Projects</h3>
-                <button 
-                  onClick={() => setIsModalOpen(true)} 
-                  className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-md transition-all hover:scale-105 active:scale-95"
-                  title="Create New Project"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="space-y-1">
-                {projects.length === 0 && (
-                  <div className={`text-center py-8 ${themeClasses.textFaint} text-sm italic`}>
-                    No projects yet. Create one!
-                  </div>
-                )}
-                {projects.map(p => (
-                  <div
-                    key={p}
-                    onClick={() => loadProject(p)}
-                    className={`group w-full px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between cursor-pointer border border-transparent ${
-                      currentProject === p 
-                        ? `${themeClasses.activeBg} text-emerald-600 border-emerald-500/20 shadow-sm` 
-                        : `${themeClasses.hoverBg} ${themeClasses.textMuted} hover:border-black/5`
-                    }`}
+            {/* Projects Section - Only show when NO project is selected */}
+            {!currentProject && (
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className={`text-xs uppercase tracking-widest ${themeClasses.textFaint} font-bold`}>Projects</h3>
+                  <button 
+                    onClick={() => setIsModalOpen(true)} 
+                    className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-md transition-all hover:scale-105 active:scale-95"
+                    title="Create New Project"
                   >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? 'text-emerald-500' : themeClasses.textFaint}`} />
-                      <span className="truncate font-medium">{p}</span>
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {projects.length === 0 && (
+                    <div className={`text-center py-8 ${themeClasses.textFaint} text-sm italic`}>
+                      No projects yet. Create one!
                     </div>
-                    <button 
-                      onClick={(e) => deleteProject(p, e)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 text-red-400/60 hover:text-red-500 rounded transition-all"
-                      title="Delete Project"
+                  )}
+                  {projects.map(p => (
+                    <div
+                      key={p}
+                      onClick={() => loadProject(p)}
+                      className={`group w-full px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between cursor-pointer border border-transparent ${
+                        currentProject === p 
+                          ? `${themeClasses.activeBg} text-emerald-600 border-emerald-500/20 shadow-sm` 
+                          : `${themeClasses.hoverBg} ${themeClasses.textMuted} hover:border-black/5`
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? 'text-emerald-500' : themeClasses.textFaint}`} />
+                        <span className="truncate font-medium">{p}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => deleteProject(p, e)}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 text-red-400/60 hover:text-red-500 rounded transition-all"
+                        title="Delete Project"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className={`h-px ${isDarkMode ? 'bg-white/5' : 'bg-gray-200'} w-full mt-6`}></div>
               </div>
-            </div>
-
-            <div className={`h-px ${isDarkMode ? 'bg-white/5' : 'bg-gray-200'} w-full`}></div>
+            )}
 
             {/* Blocks Section */}
             <div>
