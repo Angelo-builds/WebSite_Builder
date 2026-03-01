@@ -1,0 +1,5 @@
+{
+  "name": "blockra",
+  "description": "A drag-and-drop website builder designed to be deployed as a Proxmox LXC container.",
+  "requestFramePermissions": []
+}
