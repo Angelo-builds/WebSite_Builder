@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { html as htmlBeautify, css as cssBeautify, js as jsBeautify } from 'js-beautify';
 
 interface CodeModalProps {
   isOpen: boolean;
@@ -14,13 +15,21 @@ interface CodeModalProps {
 export default function CodeModal({ isOpen, onClose, html, css, js, isDarkMode }: CodeModalProps) {
   const [activeTab, setActiveTab] = useState<'html' | 'css' | 'js'>('html');
   const [copied, setCopied] = useState(false);
+  const [formattedCode, setFormattedCode] = useState({ html: '', css: '', js: '' });
 
   useEffect(() => {
-    if (isOpen) setCopied(false);
-  }, [isOpen, activeTab]);
+    if (isOpen) {
+      setCopied(false);
+      setFormattedCode({
+        html: htmlBeautify(html, { indent_size: 2, preserve_newlines: false }),
+        css: cssBeautify(css, { indent_size: 2 }),
+        js: jsBeautify(js, { indent_size: 2 })
+      });
+    }
+  }, [isOpen, html, css, js]);
 
   const handleCopy = () => {
-    const content = activeTab === 'html' ? html : activeTab === 'css' ? css : js;
+    const content = activeTab === 'html' ? formattedCode.html : activeTab === 'css' ? formattedCode.css : formattedCode.js;
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -31,7 +40,7 @@ export default function CodeModal({ isOpen, onClose, html, css, js, isDarkMode }
     text: isDarkMode ? 'text-gray-100' : 'text-gray-900',
     border: isDarkMode ? 'border-white/10' : 'border-gray-200',
     codeBg: isDarkMode ? 'bg-[#0f0f11]' : 'bg-gray-50',
-    tabActive: isDarkMode ? 'bg-[#0f0f11] text-emerald-400 border-b-2 border-emerald-400' : 'bg-gray-100 text-emerald-600 border-b-2 border-emerald-600',
+    tabActive: isDarkMode ? 'bg-[#0f0f11] text-blue-400 border-b-2 border-blue-400' : 'bg-gray-100 text-blue-600 border-b-2 border-blue-600',
     tabInactive: isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700',
   };
 
@@ -83,9 +92,9 @@ export default function CodeModal({ isOpen, onClose, html, css, js, isDarkMode }
 
             <div className={`flex-1 overflow-auto p-4 ${themeClasses.codeBg}`}>
               <pre className={`font-mono text-sm ${themeClasses.text} whitespace-pre-wrap break-all`}>
-                {activeTab === 'html' && html}
-                {activeTab === 'css' && css}
-                {activeTab === 'js' && js}
+                {activeTab === 'html' && formattedCode.html}
+                {activeTab === 'css' && formattedCode.css}
+                {activeTab === 'js' && formattedCode.js}
               </pre>
             </div>
           </motion.div>

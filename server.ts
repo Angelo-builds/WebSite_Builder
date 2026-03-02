@@ -131,6 +131,29 @@ app.post('/api/auth/proxmox', async (req, res) => {
   }
 });
 
+import multer from 'multer';
+
+// ... (previous imports)
+
+// Configure Multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'dist', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// ... (existing code)
+
 // --- Project Routes ---
 
 // Get all projects
@@ -148,6 +171,29 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
+// Get project by ID
+app.get('/api/projects/:id', async (req, res) => {
+  const { id } = req.params;
+  if (!db) {
+    // Mock project data
+    return res.json({
+      assets: [],
+      styles: [],
+      pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
+    });
+  }
+  try {
+    const [rows] = await db.execute('SELECT data FROM projects WHERE name = ?', [id]);
+    const projects = rows as any[];
+    if (projects.length === 0) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    res.json(JSON.parse(projects[0].data || '{}'));
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch project' });
+  }
+});
+
 // Create project
 app.post('/api/projects', async (req, res) => {
   const { name } = req.body;
@@ -159,6 +205,21 @@ app.post('/api/projects', async (req, res) => {
     res.status(201).json({ message: 'Project created', name });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create project' });
+  }
+});
+
+// Update project
+app.post('/api/projects/:id', async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+  if (!db) {
+    return res.json({ message: 'Project saved (Mock)', id });
+  }
+  try {
+    await db.execute('UPDATE projects SET data = ? WHERE name = ?', [JSON.stringify(data), id]);
+    res.json({ message: 'Project saved', id });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to save project' });
   }
 });
 
@@ -178,11 +239,28 @@ app.delete('/api/projects/:id', async (req, res) => {
 
 // --- Asset Routes ---
 app.get('/api/assets', (req, res) => {
-  res.json([]);
+  const uploadDir = path.join(__dirname, 'dist', 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    return res.json([]);
+  }
+  
+  const files = fs.readdirSync(uploadDir);
+  const assets = files.map(file => ({
+    type: 'image',
+    src: `/uploads/${file}`,
+    name: file
+  }));
+  res.json(assets);
 });
 
-app.post('/api/assets/upload', (req, res) => {
-  res.json({ data: [] });
+app.post('/api/assets/upload', upload.array('files'), (req, res) => {
+  const files = req.files as Express.Multer.File[];
+  const assets = files.map(file => ({
+    type: 'image',
+    src: `/uploads/${file.filename}`,
+    name: file.originalname
+  }));
+  res.json({ data: assets });
 });
 
 // Vite middleware for development

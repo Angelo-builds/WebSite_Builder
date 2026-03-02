@@ -55,6 +55,7 @@ fi
 
 # 5. Application Setup
 echo -e "${GREEN}[5/6] Building Application...${NC}"
+npm install -g npm@latest
 npm install
 npm run build
 

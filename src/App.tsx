@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import grapesjs, { Editor } from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
+import 'grapesjs/dist/css/grapes.min.css';
+import gjsBlocksBasic from 'grapesjs-blocks-basic';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import ProjectModal from './components/ProjectModal';
@@ -195,8 +197,25 @@ export default function App() {
       container: editorRef.current,
       height: '100vh',
       width: 'auto',
-      storageManager: false,
+      storageManager: {
+        type: 'remote',
+        autosave: false, // We handle autosave manually
+        autoload: false, // We handle loading manually
+        stepsBeforeSave: 1,
+        contentTypeJson: true,
+        storeComponents: true,
+        storeStyles: true,
+        storeHtml: true,
+        storeCss: true,
+      },
       panels: { defaults: [] }, // We use custom UI
+      plugins: [gjsBlocksBasic],
+      pluginsOpts: {
+        [gjsBlocksBasic as any]: {
+          flexGrid: true,
+          stylePrefix: 'gjs-',
+        }
+      },
       selectorManager: {
         appendTo: '#selector-container',
       },
@@ -204,24 +223,29 @@ export default function App() {
         appendTo: '#styles-container',
         sectors: [
           {
-            name: 'Typography',
+            name: 'Layout',
             open: true,
+            buildProps: ['display', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'align-content', 'gap'],
+          },
+          {
+            name: 'Dimensions',
+            open: false,
+            buildProps: ['width', 'height', 'max-width', 'min-height', 'margin', 'padding'],
+          },
+          {
+            name: 'Typography',
+            open: false,
             buildProps: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align', 'text-decoration', 'text-shadow'],
           },
           {
             name: 'Decorations',
             open: false,
-            buildProps: ['background-color', 'border', 'border-radius', 'box-shadow', 'opacity'],
+            buildProps: ['background-color', 'border-radius', 'border', 'box-shadow', 'background'],
           },
           {
-            name: 'Dimensions',
+            name: 'Extra',
             open: false,
-            buildProps: ['width', 'height', 'min-width', 'min-height', 'padding', 'margin'],
-          },
-          {
-            name: 'Layout',
-            open: false,
-            buildProps: ['display', 'flex-direction', 'justify-content', 'align-items', 'position', 'top', 'left', 'right', 'bottom'],
+            buildProps: ['opacity', 'cursor', 'overflow', 'position', 'top', 'left', 'right', 'bottom'],
           },
         ],
       },
@@ -230,6 +254,14 @@ export default function App() {
       },
       layerManager: {
         appendTo: '#layers-container',
+      },
+      assetManager: {
+        upload: '/api/assets/upload',
+        uploadName: 'files',
+        multiUpload: true,
+        autoAdd: true,
+        embedAsBase64: false,
+        assets: [], // Will be populated by fetch
       },
       deviceManager: {
         devices: [
