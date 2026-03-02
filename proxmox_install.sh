@@ -1,29 +1,25 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# Proxmox SiteBuilder - Community Script Style Installer
+# Proxmox SiteBuilder - Installer
 # ==============================================================================
-# This script automates the creation of an LXC container and installation of the SiteBuilder.
-#
 # Usage:
 #   bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/blockra/main/proxmox_install.sh)"
 # ==============================================================================
 
 set -e
 
-# --- CONFIGURATION (Change these before pushing to GitHub) ---
+# --- CONFIGURATION ---
 GITHUB_USER="Angelo-builds"
 GITHUB_REPO="blockra"
 GITHUB_BRANCH="main"
-# -------------------------------------------------------------
+# ---------------------
 
 # Colors
 YW=$(echo "\033[33m")
 BL=$(echo "\033[36m")
 RD=$(echo "\033[01;31m")
-BGN=$(echo "\033[4;64m")
 GN=$(echo "\033[1;92m")
-DGN=$(echo "\033[32m")
 CL=$(echo "\033[m")
 CM="${GN}✓${CL}"
 CROSS="${RD}✗${CL}"
@@ -32,7 +28,7 @@ HOLD="-"
 
 function msg_info() {
     local msg="$1"
-    echo -ne " ${RC} ${YW}${HOLD}${CL} ${msg}..."
+    echo -ne " ${YW}${HOLD}${CL} ${msg}..."
 }
 
 function msg_ok() {
@@ -57,89 +53,128 @@ if ! command -v pveversion >/dev/null 2>&1; then
     exit 1
 fi
 
+# Check for whiptail
+if ! command -v whiptail >/dev/null 2>&1; then
+    apt-get update && apt-get install -y whiptail
+fi
+
 clear
-echo -e "${BL}Proxmox SiteBuilder Installer${CL}"
-echo -e "${YW}This script will create a new LXC container and install the SiteBuilder application.${CL}"
-echo ""
 
-# --- User Input ---
+# --- DEFAULTS ---
+CT_ID=$(pvesh get /cluster/nextid)
+CT_NAME="sitebuilder"
+CT_PASSWORD="proxmox"
+STORAGE="local-lvm"
+CORES=2
+MEMORY=2048
+SWAP=512
+NET_MODE="dhcp"
+IP_ADDRESS=""
+GATEWAY=""
 
-# Container ID
-while true; do
-    NEXTID=$(pvesh get /cluster/nextid)
-    read -p "Container ID [${NEXTID}]: " CT_ID
-    CT_ID=${CT_ID:-$NEXTID}
-    if pct status $CT_ID &>/dev/null; then
-        echo -e "${RD}Container ID $CT_ID already exists.${CL}"
-    else
-        break
-    fi
-done
+# --- MENU ---
+CHOICE=$(whiptail --title "Proxmox SiteBuilder Installer" --menu "Choose Installation Type" 12 60 2 \
+"1" "Default (DHCP, 2GB RAM, ID: $CT_ID)" \
+"2" "Advanced (Static IP, Custom Resources)" 3>&1 1>&2 2>&3)
 
-# Password
-read -s -p "Container Root Password [proxmox]: " CT_PASSWORD
-CT_PASSWORD=${CT_PASSWORD:-"proxmox"}
-echo ""
-
-# Storage
-STORAGE_LIST=$(pvesm status -content rootdir | awk 'NR>1 {print $1}')
-DEFAULT_STORAGE=$(echo "$STORAGE_LIST" | head -n 1)
-read -p "Storage Pool [${DEFAULT_STORAGE}]: " STORAGE
-STORAGE=${STORAGE:-$DEFAULT_STORAGE}
-
-# Resources
-read -p "Cores [2]: " CORES
-CORES=${CORES:-2}
-
-read -p "Memory (MB) [2048]: " MEMORY
-MEMORY=${MEMORY:-2048}
-
-read -p "Swap (MB) [512]: " SWAP
-SWAP=${SWAP:-512}
-
-echo ""
-echo -e "${GN}Configuration:${CL}"
-echo -e "  ID:       ${CT_ID}"
-echo -e "  Password: (hidden)"
-echo -e "  Storage:  ${STORAGE}"
-echo -e "  Cores:    ${CORES}"
-echo -e "  Memory:   ${MEMORY}MB"
-echo -e "  Swap:     ${SWAP}MB"
-echo ""
-read -p "Proceed with installation? [y/N]: " CONFIRM
-if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
+exitstatus=$?
+if [ $exitstatus != 0 ]; then
     msg_error "Installation aborted."
     exit 0
 fi
 
-# --- Execution ---
+if [ "$CHOICE" == "2" ]; then
+    # Advanced Mode
+    
+    # 1. Container ID
+    CT_ID=$(whiptail --inputbox "Container ID" 8 40 "$CT_ID" --title "Container Configuration" 3>&1 1>&2 2>&3)
+    
+    # 2. Hostname
+    CT_NAME=$(whiptail --inputbox "Hostname" 8 40 "$CT_NAME" --title "Container Configuration" 3>&1 1>&2 2>&3)
+    
+    # 3. Password
+    CT_PASSWORD=$(whiptail --passwordbox "Root Password" 8 40 "$CT_PASSWORD" --title "Container Configuration" 3>&1 1>&2 2>&3)
+    
+    # 4. Resources
+    CORES=$(whiptail --inputbox "Cores" 8 40 "$CORES" --title "System Resources" 3>&1 1>&2 2>&3)
+    MEMORY=$(whiptail --inputbox "Memory (MB)" 8 40 "$MEMORY" --title "System Resources" 3>&1 1>&2 2>&3)
+    
+    # 5. Network
+    NET_CHOICE=$(whiptail --menu "Network Configuration" 10 40 2 \
+    "dhcp" "DHCP (Auto)" \
+    "static" "Static IP" 3>&1 1>&2 2>&3)
+    
+    if [ "$NET_CHOICE" == "static" ]; then
+        NET_MODE="static"
+        IP_ADDRESS=$(whiptail --inputbox "IP Address (CIDR, e.g. 192.168.1.100/24)" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        GATEWAY=$(whiptail --inputbox "Gateway (e.g. 192.168.1.1)" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+    fi
+fi
+
+# --- CONFIRMATION ---
+clear
+echo -e "${BL}--------------------------------------${CL}"
+echo -e "${GN}Summary:${CL}"
+echo -e "  ID:       ${CT_ID}"
+echo -e "  Hostname: ${CT_NAME}"
+echo -e "  Cores:    ${CORES}"
+echo -e "  Memory:   ${MEMORY}MB"
+if [ "$NET_MODE" == "static" ]; then
+    echo -e "  IP:       ${IP_ADDRESS}"
+    echo -e "  Gateway:  ${GATEWAY}"
+else
+    echo -e "  Network:  DHCP"
+fi
+echo -e "${BL}--------------------------------------${CL}"
+
+read -p "Proceed? [y/N]: " CONFIRM
+if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
+    exit 0
+fi
+
+# --- EXECUTION ---
 
 msg_info "Checking for Debian 12 Template"
 TEMPLATE="debian-12-standard_12.2-1_amd64.tar.zst"
-TEMPLATE_STORAGE="local" # Usually templates are in local
-if ! pveam list $TEMPLATE_STORAGE | grep -q "$TEMPLATE"; then
+# Find valid storage for templates
+TEMPLATE_STORAGE=$(pvesm status -content vztmpl | awk 'NR>1 {print $1}' | head -n 1)
+if [ -z "$TEMPLATE_STORAGE" ]; then TEMPLATE_STORAGE="local"; fi
+
+if ! pveam list $TEMPLATE_STORAGE | grep -q "debian-12-standard"; then
     msg_info "Downloading Debian 12 Template"
     pveam update >/dev/null
-    pveam download $TEMPLATE_STORAGE $TEMPLATE >/dev/null || {
-        # Fallback to finding available template
-        AVAIL_TEMPLATE=$(pveam available --section system | grep "debian-12-standard" | head -n 1 | awk '{print $2}')
-        if [ -z "$AVAIL_TEMPLATE" ]; then
-            msg_error "Could not find Debian 12 template."
-            exit 1
-        fi
-        pveam download $TEMPLATE_STORAGE $AVAIL_TEMPLATE >/dev/null
-        TEMPLATE=$AVAIL_TEMPLATE
-    }
+    # Try to find the exact name available
+    AVAIL_TEMPLATE=$(pveam available --section system | grep "debian-12-standard" | head -n 1 | awk '{print $2}')
+    if [ -z "$AVAIL_TEMPLATE" ]; then
+        msg_error "Could not find Debian 12 template."
+        exit 1
+    fi
+    pveam download $TEMPLATE_STORAGE $AVAIL_TEMPLATE >/dev/null
+    TEMPLATE=$AVAIL_TEMPLATE
+else
+    # Use existing
+    TEMPLATE=$(pveam list $TEMPLATE_STORAGE | grep "debian-12-standard" | head -n 1 | awk '{print $2}')
 fi
-msg_ok "Template Ready"
+msg_ok "Template Ready: $TEMPLATE"
 
 msg_info "Creating LXC Container"
+# Construct Network String
+if [ "$NET_MODE" == "static" ]; then
+    NET_STRING="name=eth0,bridge=vmbr0,ip=${IP_ADDRESS},gw=${GATEWAY}"
+else
+    NET_STRING="name=eth0,bridge=vmbr0,ip=dhcp"
+fi
+
+# Find valid storage for rootfs
+ROOTFS_STORAGE=$(pvesm status -content rootdir | awk 'NR>1 {print $1}' | head -n 1)
+if [ -z "$ROOTFS_STORAGE" ]; then ROOTFS_STORAGE="local-lvm"; fi
+
 pct create $CT_ID "${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE}" \
-    --hostname "sitebuilder-${CT_ID}" \
+    --hostname "$CT_NAME" \
     --password "$CT_PASSWORD" \
-    --storage $STORAGE \
+    --storage $ROOTFS_STORAGE \
     --rootfs 8 \
-    --net0 name=eth0,bridge=vmbr0,ip=dhcp \
+    --net0 "$NET_STRING" \
     --cores $CORES \
     --memory $MEMORY \
     --swap $SWAP \
@@ -149,7 +184,7 @@ pct create $CT_ID "${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE}" \
 msg_ok "Container Created & Started"
 
 msg_info "Waiting for Network"
-sleep 5
+sleep 10
 msg_ok "Network Ready"
 
 msg_info "Installing Dependencies inside Container"
@@ -159,16 +194,33 @@ msg_ok "Dependencies Installed"
 
 msg_info "Cloning Repository"
 REPO_URL="https://github.com/${GITHUB_USER}/${GITHUB_REPO}.git"
-pct exec $CT_ID -- git clone -b "${GITHUB_BRANCH}" "${REPO_URL}" /opt/sitebuilder >/dev/null
+# Ensure directory is empty/clean
+pct exec $CT_ID -- rm -rf /opt/sitebuilder
+# Verbose clone to see errors
+if ! pct exec $CT_ID -- git clone -b "${GITHUB_BRANCH}" "${REPO_URL}" /opt/sitebuilder; then
+    msg_error "Failed to clone repository. Check internet connection or repo URL."
+    exit 1
+fi
 msg_ok "Repository Cloned"
 
 msg_info "Running Installation Script"
-# We need to make sure install.sh is executable and run it
+# Check if install.sh exists
+if ! pct exec $CT_ID -- test -f /opt/sitebuilder/install.sh; then
+    msg_error "install.sh not found in /opt/sitebuilder!"
+    echo "Listing directory contents:"
+    pct exec $CT_ID -- ls -la /opt/sitebuilder
+    exit 1
+fi
+
 pct exec $CT_ID -- chmod +x /opt/sitebuilder/install.sh
-# Run install.sh inside the directory so it finds package.json
 pct exec $CT_ID -- bash -c "cd /opt/sitebuilder && ./install.sh" >/dev/null
 msg_ok "Installation Script Completed"
 
-IP=$(pct exec $CT_ID -- hostname -I | awk '{print $1}')
+if [ "$NET_MODE" == "dhcp" ]; then
+    IP=$(pct exec $CT_ID -- hostname -I | awk '{print $1}')
+else
+    IP=${IP_ADDRESS%/*} # Remove CIDR
+fi
+
 echo -e "${GN}Success!${CL}"
 echo -e "Access your SiteBuilder at: http://${IP}:3000"
