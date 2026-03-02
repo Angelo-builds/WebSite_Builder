@@ -9,7 +9,7 @@ A powerful, self-hosted website builder designed to run on Proxmox LXC container
 To install Proxmox SiteBuilder on your Proxmox VE node, simply run the following command in your Proxmox shell:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/blockra/main/proxmox_install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
 ```
 
 This script will:
@@ -27,8 +27,8 @@ If you prefer to install manually inside an existing Debian/Ubuntu LXC container
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/Angelo-builds/blockra.git
-    cd blockra
+    git clone https://github.com/Angelo-builds/WebSite_Builder.git
+    cd WebSite_Builder
     ```
 
 2.  **Run the installer:**

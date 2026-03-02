@@ -11,7 +11,7 @@ set -e
 
 # --- CONFIGURATION ---
 GITHUB_USER="Angelo-builds"
-GITHUB_REPO="blockra"
+GITHUB_REPO="WebSite_Builder"
 GITHUB_BRANCH="main"
 # ---------------------
 
