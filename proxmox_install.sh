@@ -63,7 +63,7 @@ clear
 # --- DEFAULTS ---
 CT_ID=$(pvesh get /cluster/nextid)
 CT_NAME="sitebuilder"
-CT_PASSWORD="proxmox"
+CT_PASSWORD=""
 STORAGE="local-lvm"
 CORES=2
 MEMORY=2048
@@ -81,6 +81,13 @@ exitstatus=$?
 if [ $exitstatus != 0 ]; then
     msg_error "Installation aborted."
     exit 0
+fi
+
+if [ "$CHOICE" == "1" ]; then
+    # Default Mode - Ask for password if empty
+    if [ -z "$CT_PASSWORD" ]; then
+        CT_PASSWORD=$(whiptail --passwordbox "Set Root Password" 8 40 --title "Container Password" 3>&1 1>&2 2>&3)
+    fi
 fi
 
 if [ "$CHOICE" == "2" ]; then
@@ -111,6 +118,12 @@ if [ "$CHOICE" == "2" ]; then
     fi
 fi
 
+# Ensure Password is not empty
+if [ -z "$CT_PASSWORD" ]; then
+    msg_error "Password cannot be empty."
+    exit 1
+fi
+
 # --- CONFIRMATION ---
 clear
 echo -e "${BL}--------------------------------------${CL}"
@@ -135,27 +148,30 @@ fi
 # --- EXECUTION ---
 
 msg_info "Checking for Debian 12 Template"
-TEMPLATE="debian-12-standard_12.2-1_amd64.tar.zst"
 # Find valid storage for templates
 TEMPLATE_STORAGE=$(pvesm status -content vztmpl | awk 'NR>1 {print $1}' | head -n 1)
 if [ -z "$TEMPLATE_STORAGE" ]; then TEMPLATE_STORAGE="local"; fi
 
-if ! pveam list $TEMPLATE_STORAGE | grep -q "debian-12-standard"; then
+# Check if template exists (partial match)
+if pveam list $TEMPLATE_STORAGE | grep -q "debian-12-standard"; then
+    # Template exists, get the full VolID
+    TEMPLATE_VOLID=$(pveam list $TEMPLATE_STORAGE | grep "debian-12-standard" | head -n 1 | awk '{print $1}')
+    msg_ok "Using existing template: $TEMPLATE_VOLID"
+else
+    # Template does not exist, download it
     msg_info "Downloading Debian 12 Template"
     pveam update >/dev/null
-    # Try to find the exact name available
+    # Find available template name
     AVAIL_TEMPLATE=$(pveam available --section system | grep "debian-12-standard" | head -n 1 | awk '{print $2}')
     if [ -z "$AVAIL_TEMPLATE" ]; then
         msg_error "Could not find Debian 12 template."
         exit 1
     fi
     pveam download $TEMPLATE_STORAGE $AVAIL_TEMPLATE >/dev/null
-    TEMPLATE=$AVAIL_TEMPLATE
-else
-    # Use existing
-    TEMPLATE=$(pveam list $TEMPLATE_STORAGE | grep "debian-12-standard" | head -n 1 | awk '{print $2}')
+    # Re-fetch VolID after download
+    TEMPLATE_VOLID=$(pveam list $TEMPLATE_STORAGE | grep "debian-12-standard" | head -n 1 | awk '{print $1}')
+    msg_ok "Template Downloaded: $TEMPLATE_VOLID"
 fi
-msg_ok "Template Ready: $TEMPLATE"
 
 msg_info "Creating LXC Container"
 # Construct Network String
@@ -169,7 +185,7 @@ fi
 ROOTFS_STORAGE=$(pvesm status -content rootdir | awk 'NR>1 {print $1}' | head -n 1)
 if [ -z "$ROOTFS_STORAGE" ]; then ROOTFS_STORAGE="local-lvm"; fi
 
-pct create $CT_ID "${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE}" \
+pct create $CT_ID "$TEMPLATE_VOLID" \
     --hostname "$CT_NAME" \
     --password "$CT_PASSWORD" \
     --storage $ROOTFS_STORAGE \
@@ -189,8 +205,12 @@ msg_ok "Network Ready"
 
 msg_info "Installing Dependencies inside Container"
 pct exec $CT_ID -- apt-get update >/dev/null
-pct exec $CT_ID -- apt-get install -y git curl build-essential gnupg >/dev/null
-msg_ok "Dependencies Installed"
+pct exec $CT_ID -- apt-get install -y git curl build-essential gnupg openssh-server >/dev/null
+# Enable Root Login for SSH
+pct exec $CT_ID -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+pct exec $CT_ID -- systemctl enable ssh >/dev/null
+pct exec $CT_ID -- systemctl restart ssh >/dev/null
+msg_ok "Dependencies Installed & SSH Configured"
 
 msg_info "Cloning Repository"
 REPO_URL="https://github.com/${GITHUB_USER}/${GITHUB_REPO}.git"
