@@ -1,20 +1,56 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Proxmox SiteBuilder
 
-# Run and deploy your AI Studio app
+A powerful, self-hosted website builder designed to run on Proxmox LXC containers. Built with React, GrapesJS, and Node.js.
 
-This contains everything you need to run your app locally.
+![SiteBuilder Preview](https://via.placeholder.com/800x400?text=Proxmox+SiteBuilder)
 
-View your app in AI Studio: https://ai.studio/apps/c19dd9cb-8bb9-47cc-b7f7-397b675ad86c
+## 🚀 Quick Installation (Proxmox VE)
 
-## Run Locally
+To install Proxmox SiteBuilder on your Proxmox VE node, simply run the following command in your Proxmox shell:
 
-**Prerequisites:**  Node.js
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/blockra/main/proxmox_install.sh)"
+```
 
+This script will:
+1.  Ask for basic configuration (Container ID, Password, Resources).
+2.  Download the Debian 12 LXC template.
+3.  Create a new LXC container.
+4.  Install all dependencies (Node.js, MariaDB).
+5.  Build and start the application.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Once installed, access the builder at: `http://<YOUR-CONTAINER-IP>:3000`
+
+## 🛠 Manual Installation
+
+If you prefer to install manually inside an existing Debian/Ubuntu LXC container:
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/Angelo-builds/blockra.git
+    cd blockra
+    ```
+
+2.  **Run the installer:**
+    ```bash
+    chmod +x install.sh
+    ./install.sh
+    ```
+
+## ✨ Features
+
+*   **Drag & Drop Builder**: Powered by GrapesJS.
+*   **Project Management**: Create and manage multiple websites.
+*   **Responsive Design**: Mobile-first editing experience.
+*   **Self-Hosted**: Full control over your data.
+*   **Proxmox Integration**: Easy deployment on your home lab.
+
+## 📦 Tech Stack
+
+*   **Frontend**: React, Tailwind CSS, GrapesJS
+*   **Backend**: Node.js, Express, MySQL (MariaDB)
+*   **Deployment**: LXC (Linux Containers)
+
+## 📝 License
+
+MIT License.
