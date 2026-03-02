@@ -62,7 +62,7 @@ clear
 
 # --- DEFAULTS ---
 CT_ID=$(pvesh get /cluster/nextid)
-CT_NAME="sitebuilder"
+CT_NAME="blockra"
 CT_PASSWORD=""
 STORAGE="local-lvm"
 CORES=2
@@ -204,8 +204,8 @@ sleep 10
 msg_ok "Network Ready"
 
 msg_info "Installing Dependencies inside Container"
-pct exec $CT_ID -- apt-get update >/dev/null
-pct exec $CT_ID -- apt-get install -y git curl build-essential gnupg openssh-server >/dev/null
+pct exec $CT_ID -- bash -c "export LC_ALL=C; export DEBIAN_FRONTEND=noninteractive; apt-get update" >/dev/null
+pct exec $CT_ID -- bash -c "export LC_ALL=C; export DEBIAN_FRONTEND=noninteractive; apt-get install -y git curl build-essential gnupg openssh-server" >/dev/null
 # Enable Root Login for SSH
 pct exec $CT_ID -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 pct exec $CT_ID -- systemctl enable ssh >/dev/null
@@ -229,11 +229,12 @@ if ! pct exec $CT_ID -- test -f /opt/sitebuilder/install.sh; then
     msg_error "install.sh not found in /opt/sitebuilder!"
     echo "Listing directory contents:"
     pct exec $CT_ID -- ls -la /opt/sitebuilder
+    echo -e "${YW}NOTE: Ensure you have pushed the latest files (including install.sh) to your GitHub repository.${CL}"
     exit 1
 fi
 
 pct exec $CT_ID -- chmod +x /opt/sitebuilder/install.sh
-pct exec $CT_ID -- bash -c "cd /opt/sitebuilder && ./install.sh" >/dev/null
+pct exec $CT_ID -- bash -c "export LC_ALL=C; cd /opt/sitebuilder && ./install.sh" >/dev/null
 msg_ok "Installation Script Completed"
 
 if [ "$NET_MODE" == "dhcp" ]; then
