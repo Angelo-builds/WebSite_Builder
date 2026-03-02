@@ -4,7 +4,7 @@
 # Proxmox SiteBuilder - Installer
 # ==============================================================================
 # Usage:
-#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/blockra/main/proxmox_install.sh)"
+#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
 # ==============================================================================
 
 set -e

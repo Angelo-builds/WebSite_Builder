@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import grapesjs, { Editor } from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
-import 'grapesjs/dist/css/grapes.min.css';
 import gjsBlocksBasic from 'grapesjs-blocks-basic';
+import gjsNavbar from 'grapesjs-navbar';
+import gjsForms from 'grapesjs-plugin-forms';
+import gjsCountdown from 'grapesjs-component-countdown';
+import gjsStyleBg from 'grapesjs-style-bg';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import ProjectModal from './components/ProjectModal';
@@ -202,19 +205,33 @@ export default function App() {
         autosave: false, // We handle autosave manually
         autoload: false, // We handle loading manually
         stepsBeforeSave: 1,
-        contentTypeJson: true,
         storeComponents: true,
         storeStyles: true,
         storeHtml: true,
         storeCss: true,
-      },
+      } as any,
       panels: { defaults: [] }, // We use custom UI
-      plugins: [gjsBlocksBasic],
+      plugins: [
+        gjsBlocksBasic,
+        gjsNavbar,
+        gjsForms,
+        gjsCountdown,
+        gjsStyleBg
+      ],
       pluginsOpts: {
         [gjsBlocksBasic as any]: {
           flexGrid: true,
           stylePrefix: 'gjs-',
-        }
+        },
+        [gjsNavbar as any]: {
+          defaultStyle: true, 
+          labelNavbar: 'Navbar',
+          labelBurger: 'Burger',
+          labelMenuLink: 'Menu Link',
+        },
+        [gjsForms as any]: {},
+        [gjsCountdown as any]: {},
+        [gjsStyleBg as any]: {},
       },
       selectorManager: {
         appendTo: '#selector-container',
@@ -270,22 +287,15 @@ export default function App() {
           { name: 'Mobile', width: '320px', widthMedia: '480px' },
         ],
       },
-      assetManager: {
-        upload: '/api/assets/upload',
-        uploadName: 'files',
-        autoAdd: true,
-        embedAsBase64: false,
-        assets: [], // Will be fetched
-      },
       blockManager: {
         appendTo: '#blocks',
         blocks: [
-          // --- LAYOUT ---
+          // --- 1. FUNDAMENTALS (Layout & Structure) ---
           {
             id: 'section',
             label: 'Section',
-            category: 'Layout',
-            content: `<section style="padding: 50px 20px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center;" data-gjs-droppable="true" data-gjs-name="Section" data-gjs-resizable="true">
+            category: '1. Fundamentals',
+            content: `<section class="gjs-section" style="padding: 50px 20px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center;" data-gjs-droppable="true" data-gjs-name="Section">
               <h2 data-gjs-draggable="true">New Section</h2>
             </section>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
@@ -293,65 +303,113 @@ export default function App() {
           {
             id: 'container',
             label: 'Container',
-            category: 'Layout',
-            content: `<div style="max-width: 1200px; margin: 0 auto; padding: 20px; width: 100%; min-height: 50px;" data-gjs-droppable="true" data-gjs-name="Container" data-gjs-resizable="true"></div>`,
+            category: '1. Fundamentals',
+            content: `<div class="gjs-container" style="max-width: 1200px; margin: 0 auto; padding: 20px; width: 100%; min-height: 50px;" data-gjs-droppable="true" data-gjs-name="Container"></div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>'
           },
           {
-            id: 'column2',
-            label: '2 Columns',
-            category: 'Layout',
-            content: `<div style="display:flex; gap: 20px; padding: 10px; flex-wrap: wrap;" data-gjs-droppable="true" data-gjs-name="Row">
-              <div style="flex:1; min-width: 250px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.05); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column" data-gjs-resizable="true"></div>
-              <div style="flex:1; min-width: 250px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.05); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column" data-gjs-resizable="true"></div>
+            id: 'grid-2',
+            label: 'Grid 1/2',
+            category: '1. Fundamentals',
+            content: `<div class="gjs-grid-row" style="display:flex; gap: 20px; padding: 10px; flex-wrap: wrap;" data-gjs-droppable="true" data-gjs-name="Row">
+              <div class="gjs-grid-col" style="flex:1; min-width: 250px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
+              <div class="gjs-grid-col" style="flex:1; min-width: 250px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
             </div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>'
           },
           {
-            id: 'column3',
-            label: '3 Columns',
-            category: 'Layout',
-            content: `<div style="display:flex; gap: 20px; padding: 10px; flex-wrap: wrap;" data-gjs-droppable="true" data-gjs-name="Row">
-              <div style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.05); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column" data-gjs-resizable="true"></div>
-              <div style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.05); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column" data-gjs-resizable="true"></div>
-              <div style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.05); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column" data-gjs-resizable="true"></div>
+            id: 'grid-3',
+            label: 'Grid 1/3',
+            category: '1. Fundamentals',
+            content: `<div class="gjs-grid-row" style="display:flex; gap: 20px; padding: 10px; flex-wrap: wrap;" data-gjs-droppable="true" data-gjs-name="Row">
+              <div class="gjs-grid-col" style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
+              <div class="gjs-grid-col" style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
+              <div class="gjs-grid-col" style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
             </div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M9 3v18"/><path d="M15 3v18"/></svg>'
           },
           {
-            id: 'card',
-            label: 'Card',
-            category: 'Layout',
-            content: `<div style="border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; overflow: hidden; max-width: 100%; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);" data-gjs-droppable="true" data-gjs-name="Card" data-gjs-resizable="true">
-              <div style="height: 200px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #9ca3af;" data-gjs-droppable="true" data-gjs-name="Card Image">Image</div>
-              <div style="padding: 24px;" data-gjs-droppable="true" data-gjs-name="Card Body">
-                <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 1.5rem; font-weight: 600;">Card Title</h3>
-                <p style="color: #6b7280; margin-bottom: 24px; line-height: 1.5;">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                <a href="#" style="display: inline-block; padding: 10px 20px; background: #10b981; color: white; text-decoration: none; border-radius: 9999px; font-weight: 500; transition: all 0.2s;">Go somewhere</a>
-              </div>
-            </div>`,
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="14" x2="21" y2="14"></line></svg>'
+            id: 'divider',
+            label: 'Divider',
+            category: '1. Fundamentals',
+            content: '<hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;" />',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="3" y1="12" x2="21" y2="12"></line></svg>'
+          },
+          {
+            id: 'spacer',
+            label: 'Spacer',
+            category: '1. Fundamentals',
+            content: '<div style="height: 50px; width: 100%;" data-gjs-name="Spacer"></div>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M8 3v18"/><path d="M16 3v18"/><path d="M3 8h18"/><path d="M3 16h18"/></svg>'
           },
 
-          // --- TYPOGRAPHY ---
+          // --- 2. NAVIGATION ---
+          {
+            id: 'navbar-simple',
+            label: 'Navbar Simple',
+            category: '2. Navigation',
+            content: `<div class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+              <div class="brand" style="font-weight: bold; font-size: 1.2rem;">Brand</div>
+              <nav class="nav-links" style="display: flex; gap: 20px;">
+                <a href="#" style="text-decoration: none; color: #333;">Home</a>
+                <a href="#" style="text-decoration: none; color: #333;">About</a>
+                <a href="#" style="text-decoration: none; color: #333;">Contact</a>
+              </nav>
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
+          },
+          {
+            id: 'footer-multi',
+            label: 'Footer Multi',
+            category: '2. Navigation',
+            content: `<footer style="background: #1f2937; color: #f3f4f6; padding: 40px 20px;">
+              <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
+                <div>
+                  <h4 style="color: #fff; margin-bottom: 15px;">Company</h4>
+                  <p style="font-size: 0.9rem; color: #9ca3af;">Making the world better, one pixel at a time.</p>
+                </div>
+                <div>
+                  <h4 style="color: #fff; margin-bottom: 15px;">Links</h4>
+                  <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Home</a></li>
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">About</a></li>
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Contact</a></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 style="color: #fff; margin-bottom: 15px;">Legal</h4>
+                  <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Privacy</a></li>
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Terms</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #374151; font-size: 0.8rem; color: #9ca3af;">
+                © 2024 Brand Name. All rights reserved.
+              </div>
+            </footer>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>'
+          },
+
+          // --- 3. TYPOGRAPHY ---
           {
             id: 'heading',
             label: 'Heading',
-            category: 'Typography',
+            category: '3. Typography',
             content: '<h2>Insert Heading</h2>',
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M6 4v16"></path><path d="M18 4v16"></path><path d="M6 12h12"></path></svg>'
           },
           {
             id: 'text',
             label: 'Text',
-            category: 'Typography',
+            category: '3. Typography',
             content: '<p style="line-height: 1.6;">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>',
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M17 6.1H3"></path><path d="M21 12.1H3"></path><path d="M15.1 18H3"></path></svg>'
           },
           {
             id: 'quote',
             label: 'Quote',
-            category: 'Typography',
+            category: '3. Typography',
             content: `<blockquote class="quote-block" style="border-left: 4px solid #10b981; padding-left: 20px; margin: 20px 0; font-style: italic; color: #555;">
               "The only way to do great work is to love what you do."
             </blockquote>`,
@@ -360,7 +418,7 @@ export default function App() {
           {
             id: 'list',
             label: 'List',
-            category: 'Typography',
+            category: '3. Typography',
             content: `<ul>
               <li>List item one</li>
               <li>List item two</li>
@@ -369,61 +427,22 @@ export default function App() {
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>'
           },
           {
-            id: 'link',
-            label: 'Link',
-            category: 'Typography',
-            content: '<a href="#" style="color: #10b981; text-decoration: underline;">Link Text</a>',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>'
+            id: 'icon-box',
+            label: 'Icon Box',
+            category: '3. Typography',
+            content: `<div style="text-align: center; padding: 20px;">
+              <div style="font-size: 2rem; margin-bottom: 10px;">★</div>
+              <h3 style="margin-bottom: 10px;">Feature Title</h3>
+              <p style="color: #666;">Short description of the feature goes here.</p>
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>'
           },
 
-          // --- FORMS ---
-          {
-            id: 'form',
-            label: 'Form',
-            category: 'Forms',
-            content: `<form style="padding: 20px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px;">
-              <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Email</label>
-                <input type="email" placeholder="Enter your email" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"/>
-              </div>
-              <button type="submit" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
-            </form>`,
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>'
-          },
-          {
-            id: 'input',
-            label: 'Input',
-            category: 'Forms',
-            content: '<input type="text" placeholder="Input text" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;" />',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
-          },
-          {
-            id: 'textarea',
-            label: 'Textarea',
-            category: 'Forms',
-            content: '<textarea placeholder="Type here..." style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; min-height: 80px;"></textarea>',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'
-          },
-          {
-            id: 'button',
-            label: 'Button',
-            category: 'Forms',
-            content: '<button style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Click Me</button>',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="16" r="1"></circle></svg>'
-          },
-          {
-            id: 'checkbox',
-            label: 'Checkbox',
-            category: 'Forms',
-            content: '<div style="display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="check1" /><label for="check1">Checkbox</label></div>',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>'
-          },
-
-          // --- MEDIA & FILES ---
+          // --- 4. MEDIA & VISUAL ---
           {
             id: 'image',
             label: 'Image',
-            category: 'Media',
+            category: '4. Media',
             select: true,
             content: { type: 'image' },
             activate: true,
@@ -432,7 +451,7 @@ export default function App() {
           {
             id: 'video',
             label: 'Video',
-            category: 'Media',
+            category: '4. Media',
             content: {
               type: 'video',
               src: 'img/video2.webm',
@@ -446,7 +465,7 @@ export default function App() {
           {
             id: 'map',
             label: 'Map',
-            category: 'Media',
+            category: '4. Media',
             content: {
               type: 'map',
               style: { height: '350px' }
@@ -454,9 +473,28 @@ export default function App() {
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>'
           },
           {
+            id: 'gallery',
+            label: 'Gallery',
+            category: '4. Media',
+            content: `<div class="gjs-gallery" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; padding: 10px;">
+              <img src="https://via.placeholder.com/150" style="width: 100%; height: auto; border-radius: 4px;" />
+              <img src="https://via.placeholder.com/150" style="width: 100%; height: auto; border-radius: 4px;" />
+              <img src="https://via.placeholder.com/150" style="width: 100%; height: auto; border-radius: 4px;" />
+              <img src="https://via.placeholder.com/150" style="width: 100%; height: auto; border-radius: 4px;" />
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>'
+          },
+          {
+            id: 'pdf-viewer',
+            label: 'PDF Viewer',
+            category: '4. Media',
+            content: '<iframe src="" style="width: 100%; height: 500px; border: 1px solid #ccc;" title="PDF Viewer"></iframe>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>'
+          },
+          {
             id: 'file-link',
             label: 'File Link',
-            category: 'Media',
+            category: '4. Media',
             content: `<a href="#" class="file-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 6px; text-decoration: none; color: #374151; font-weight: 500;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
               <span>Download File</span>
@@ -464,32 +502,141 @@ export default function App() {
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>'
           },
 
-          // --- MODULES ---
+          // --- 5. CTA & BUTTONS ---
           {
-            id: 'hero',
-            label: 'Hero',
-            category: 'Modules',
-            content: `<header style="background-color: #f3f4f6; padding: 100px 20px; text-align: center;">
-              <h1 style="font-size: 3rem; margin-bottom: 20px; color: #111827;">Welcome to My Site</h1>
-              <p style="font-size: 1.25rem; color: #4b5563; margin-bottom: 30px;">This is a hero section description.</p>
-              <a href="#" style="display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Get Started</a>
-            </header>`,
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
+            id: 'button',
+            label: 'Button',
+            category: '5. CTA & Buttons',
+            content: '<button style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Click Me</button>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="16" r="1"></circle></svg>'
           },
           {
-            id: 'navbar',
-            label: 'Navbar',
-            category: 'Modules',
-            content: `<nav style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-              <div style="font-weight: bold; font-size: 1.2rem;">Brand</div>
-              <div style="display: flex; gap: 20px;">
-                <a href="#" style="text-decoration: none; color: #333;">Home</a>
-                <a href="#" style="text-decoration: none; color: #333;">About</a>
-                <a href="#" style="text-decoration: none; color: #333;">Contact</a>
+            id: 'button-outline',
+            label: 'Ghost Button',
+            category: '5. CTA & Buttons',
+            content: '<button style="padding: 10px 20px; background: transparent; color: #10b981; border: 2px solid #10b981; border-radius: 4px; cursor: pointer;">Click Me</button>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect></svg>'
+          },
+          {
+            id: 'button-group',
+            label: 'Dual Buttons',
+            category: '5. CTA & Buttons',
+            content: `<div style="display: flex; gap: 10px;">
+              <button style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Primary</button>
+              <button style="padding: 10px 20px; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer;">Secondary</button>
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><rect x="3" y="11" width="18" height="10" rx="2" ry="2" transform="translate(5, -5)"></rect></svg>'
+          },
+
+          // --- 6. FORMS ---
+          {
+            id: 'form',
+            label: 'Form',
+            category: '6. Forms',
+            content: `<form style="padding: 20px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px;">
+              <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Email</label>
+                <input type="email" placeholder="Enter your email" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"/>
               </div>
-            </nav>`,
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
+              <button type="submit" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
+            </form>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>'
           },
+          {
+            id: 'input',
+            label: 'Input',
+            category: '6. Forms',
+            content: '<input type="text" placeholder="Input text" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%;" />',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="12" x2="16" y2="12"></line></svg>'
+          },
+          {
+            id: 'textarea',
+            label: 'Textarea',
+            category: '6. Forms',
+            content: '<textarea placeholder="Type here..." style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; min-height: 80px;"></textarea>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'
+          },
+          {
+            id: 'checkbox',
+            label: 'Checkbox',
+            category: '6. Forms',
+            content: '<div style="display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="check1" /><label for="check1">Checkbox</label></div>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>'
+          },
+
+          // --- 7. MARKETING ---
+          {
+            id: 'pricing',
+            label: 'Pricing Table',
+            category: '7. Marketing',
+            content: `<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 250px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 30px; text-align: center;">
+                <h3 style="margin-bottom: 10px;">Basic</h3>
+                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;">$19</div>
+                <ul style="list-style: none; padding: 0; margin-bottom: 30px; color: #6b7280;">
+                  <li style="margin-bottom: 10px;">Feature One</li>
+                  <li style="margin-bottom: 10px;">Feature Two</li>
+                </ul>
+                <button style="width: 100%; padding: 12px; background: #f3f4f6; color: #374151; border: none; border-radius: 4px; font-weight: 600;">Choose</button>
+              </div>
+              <div style="flex: 1; min-width: 250px; border: 2px solid #10b981; border-radius: 8px; padding: 30px; text-align: center; position: relative;">
+                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 4px 12px; border-radius: 99px; font-size: 0.8rem; font-weight: 600;">POPULAR</div>
+                <h3 style="margin-bottom: 10px;">Pro</h3>
+                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;">$49</div>
+                <ul style="list-style: none; padding: 0; margin-bottom: 30px; color: #6b7280;">
+                  <li style="margin-bottom: 10px;">Feature One</li>
+                  <li style="margin-bottom: 10px;">Feature Two</li>
+                  <li style="margin-bottom: 10px;">Feature Three</li>
+                </ul>
+                <button style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-weight: 600;">Choose</button>
+              </div>
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line></svg>'
+          },
+          {
+            id: 'testimonial',
+            label: 'Testimonial',
+            category: '7. Marketing',
+            content: `<div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
+              <img src="https://via.placeholder.com/60" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 15px;" />
+              <p style="font-size: 1.1rem; font-style: italic; color: #374151; margin-bottom: 20px;">"This product completely changed how we work. Highly recommended!"</p>
+              <div style="font-weight: bold;">Jane Doe</div>
+              <div style="font-size: 0.9rem; color: #6b7280;">CEO, TechCorp</div>
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'
+          },
+
+          // --- 8. E-COMMERCE ---
+          {
+            id: 'product-card',
+            label: 'Product Card',
+            category: '8. E-commerce',
+            content: `<div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 300px;">
+              <div style="height: 200px; background: #f3f4f6; display: flex; align-items: center; justify-content: center;">Product Image</div>
+              <div style="padding: 15px;">
+                <h4 style="margin: 0 0 5px;">Product Name</h4>
+                <div style="color: #10b981; font-weight: bold; margin-bottom: 10px;">$99.00</div>
+                <button style="width: 100%; padding: 8px; background: #1f2937; color: white; border: none; border-radius: 4px;">Add to Cart</button>
+              </div>
+            </div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>'
+          },
+
+          // --- 9. UTILITY ---
+          {
+            id: 'custom-code',
+            label: 'Custom Code',
+            category: '9. Utility',
+            content: '<div data-gjs-type="text">Custom HTML/JS</div>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>'
+          },
+          {
+            id: 'iframe',
+            label: 'Iframe',
+            category: '9. Utility',
+            content: '<iframe src="https://example.com" style="width: 100%; height: 400px; border: none;"></iframe>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="12" cy="12" r="2"></circle></svg>'
+          }
         ],
       },
     });
@@ -931,7 +1078,7 @@ export default function App() {
       >
         <div className={`p-4 border-b ${themeClasses.sidebarBorder} flex items-center justify-between overflow-hidden whitespace-nowrap`}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-900/20">
+            <div className={`w-8 h-8 bg-${themeColor}-600 rounded-lg flex items-center justify-center shadow-lg shadow-${themeColor}-900/20`}>
               <Layout className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold tracking-tight text-lg">SiteBuilder</span>
@@ -950,7 +1097,7 @@ export default function App() {
                   <h3 className={`text-xs uppercase tracking-widest ${themeClasses.textFaint} font-bold`}>Projects</h3>
                   <button 
                     onClick={() => setIsModalOpen(true)} 
-                    className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-md transition-all hover:scale-105 active:scale-95"
+                    className={`p-1.5 bg-${themeColor}-500/10 hover:bg-${themeColor}-500/20 text-${themeColor}-500 rounded-md transition-all hover:scale-105 active:scale-95`}
                     title="Create New Project"
                   >
                     <Plus className="w-4 h-4" />
@@ -968,12 +1115,12 @@ export default function App() {
                       onClick={() => loadProject(p)}
                       className={`group w-full px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between cursor-pointer border border-transparent ${
                         currentProject === p 
-                          ? `${themeClasses.activeBg} text-emerald-600 border-emerald-500/20 shadow-sm` 
+                          ? `${themeClasses.activeBg} text-${themeColor}-600 border-${themeColor}-500/20 shadow-sm` 
                           : `${themeClasses.hoverBg} ${themeClasses.textMuted} hover:border-black/5`
                       }`}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
-                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? 'text-emerald-500' : themeClasses.textFaint}`} />
+                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? `text-${themeColor}-500` : themeClasses.textFaint}`} />
                         <span className="truncate font-medium">{p}</span>
                       </div>
                       <button 
@@ -989,6 +1136,23 @@ export default function App() {
                 <div className={`h-px ${isDarkMode ? 'bg-white/5' : 'bg-gray-200'} w-full mt-6`}></div>
               </div>
             )}
+
+            {/* Assets Section - Always visible */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className={`text-xs uppercase tracking-widest ${themeClasses.textFaint} font-bold`}>Assets</h3>
+                <button 
+                  onClick={() => editor?.runCommand('open-assets')} 
+                  className={`p-1.5 bg-${themeColor}-500/10 hover:bg-${themeColor}-500/20 text-${themeColor}-500 rounded-md transition-all hover:scale-105 active:scale-95`}
+                  title="Manage Assets"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+              </div>
+              <div className={`text-xs ${themeClasses.textFaint} px-1 italic`}>
+                Upload images, PDFs, and other files here.
+              </div>
+            </div>
 
             {/* Blocks Section */}
             <div>
@@ -1234,13 +1398,13 @@ export default function App() {
           <div className={`flex items-center border-b ${themeClasses.sidebarBorder} bg-white/5`}>
             <button 
               onClick={() => setActiveRightTab('styles')}
-              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'styles' ? 'text-emerald-500 bg-emerald-500/5 border-b-2 border-emerald-500' : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'styles' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
             >
               Styles
             </button>
             <button 
               onClick={() => setActiveRightTab('traits')}
-              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'traits' ? 'text-emerald-500 bg-emerald-500/5 border-b-2 border-emerald-500' : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'traits' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
             >
               Settings
             </button>
@@ -1296,7 +1460,7 @@ export default function App() {
                   <div 
                     key={template.id}
                     onClick={() => applyTemplate(template)}
-                    className={`group cursor-pointer rounded-xl border ${themeClasses.sidebarBorder} overflow-hidden transition-all duration-300 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-1 bg-white/5`}
+                    className={`group cursor-pointer rounded-xl border ${themeClasses.sidebarBorder} overflow-hidden transition-all duration-300 hover:border-${themeColor}-500/50 hover:shadow-lg hover:shadow-${themeColor}-500/10 hover:-translate-y-1 bg-white/5`}
                   >
                     <div className={`h-20 w-full ${template.preview} relative overflow-hidden`}>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
