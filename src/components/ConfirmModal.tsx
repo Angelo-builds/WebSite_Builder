@@ -27,37 +27,37 @@ export default function ConfirmModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white dark:bg-[#18181b] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-white/10"
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="glass-panel w-full max-w-md rounded-3xl overflow-hidden border border-white/10"
         >
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDestructive ? 'bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-500' : 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-500'}`}>
-                  <AlertTriangle className="w-5 h-5" />
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ring-1 ring-white/10 ${isDestructive ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                  <AlertTriangle className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+                <h3 className="text-xl font-bold text-white tracking-tight">{title}</h3>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                className="text-white/40 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
+            <p className="text-white/70 mb-8 leading-relaxed text-base">
               {message}
             </p>
 
             <div className="flex justify-end gap-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors"
+                className="px-5 py-2.5 text-sm font-medium text-white/60 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/5"
               >
                 {cancelText}
               </button>
@@ -66,10 +66,10 @@ export default function ConfirmModal({
                   onConfirm();
                   onClose();
                 }}
-                className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors shadow-lg ${
+                className={`px-6 py-2.5 text-sm font-bold text-white rounded-xl transition-all shadow-lg hover:scale-105 active:scale-95 ${
                   isDestructive 
-                    ? 'bg-red-600 hover:bg-red-500 shadow-red-900/20' 
-                    : 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'
+                    ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 shadow-red-900/20' 
+                    : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-blue-900/20'
                 }`}
               >
                 {confirmText}

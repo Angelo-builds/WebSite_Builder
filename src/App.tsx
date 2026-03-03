@@ -7,7 +7,8 @@ import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { getThemeClass } from './theme';
 import ProjectModal from './components/ProjectModal';
 import Dashboard from './components/Dashboard';
 import ConfirmModal from './components/ConfirmModal';
@@ -1015,100 +1016,114 @@ export default function App() {
 
   // Theme-based classes
   const themeClasses = {
-    bg: isDarkMode ? 'bg-[#0f0f11]' : 'bg-gray-50',
-    sidebarBg: isDarkMode ? 'bg-[#18181b]/80 backdrop-blur-xl border-r border-white/5' : 'bg-white/80 backdrop-blur-xl border-r border-gray-200',
-    sidebarBorder: isDarkMode ? 'border-white/5' : 'border-gray-200',
-    text: isDarkMode ? 'text-gray-100' : 'text-gray-900',
-    textMuted: isDarkMode ? 'text-gray-400' : 'text-gray-500',
-    textFaint: isDarkMode ? 'text-gray-600' : 'text-gray-400',
-    hoverBg: isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100',
-    activeBg: isDarkMode ? `bg-${themeColor}-500/20 text-${themeColor}-400` : `bg-${themeColor}-50 text-${themeColor}-600`,
-    headerBg: isDarkMode ? 'bg-[#18181b]/80 backdrop-blur-xl border-b border-white/5' : 'bg-white/80 backdrop-blur-xl border-b border-gray-200',
-    blockBg: isDarkMode ? '#27272a' : '#ffffff',
-    blockHoverBg: isDarkMode ? '#3f3f46' : '#f9fafb',
-    blockText: isDarkMode ? 'rgba(255,255,255,0.9)' : '#1f2937',
-    blockBorder: isDarkMode ? 'rgba(255,255,255,0.08)' : '#e5e7eb',
-    codeBg: isDarkMode ? 'bg-[#1e1e1e]' : 'bg-white',
-    codeText: isDarkMode ? 'text-gray-300' : 'text-gray-800',
-    button: isDarkMode 
-      ? 'bg-white/5 hover:bg-white/10 text-white border border-white/5' 
-      : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm',
-    primaryButton: `bg-gradient-to-r from-${themeColor}-500 to-${themeColor === 'blue' ? 'indigo' : themeColor}-500 hover:from-${themeColor}-400 hover:to-${themeColor === 'blue' ? 'indigo' : themeColor}-400 text-white shadow-lg shadow-${themeColor}-500/20 border-0`,
+    bg: 'bg-transparent', // Handled by body background
+    sidebarBg: 'glass-panel',
+    sidebarBorder: 'border-white/10',
+    text: 'text-white',
+    textMuted: 'text-white/60',
+    textFaint: 'text-white/40',
+    hoverBg: 'hover:bg-white/10',
+    activeBg: getThemeClass(themeColor, 'activeBg'),
+    headerBg: 'glass-panel',
+    blockBg: 'bg-white/5',
+    blockHoverBg: 'bg-white/10',
+    blockText: 'text-white/90',
+    blockBorder: 'border-white/10',
+    codeBg: 'bg-black/50 backdrop-blur-md',
+    codeText: 'text-gray-300',
+    button: 'glass-button text-white',
+    primaryButton: getThemeClass(themeColor, 'primaryButton'),
   };
 
   if (viewMode === 'dashboard') {
     return (
-      <>
-        <ProjectModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          onCreate={handleCreateProject} 
-        />
-        <Dashboard 
-          projects={projects}
-          onSelectProject={loadProject}
-          onCreateProject={() => setIsModalOpen(true)}
-          onDeleteProject={deleteProject}
-          isDarkMode={isDarkMode}
-          isLoggedIn={isLoggedIn}
-          onLogin={handleLogin}
-          userProfile={userProfile}
-          themeColor={themeColor}
-          onOpenSettings={(tab) => {
-            setActiveSettingsTab(tab);
-            setIsSettingsModalOpen(true);
-          }}
-        />
+      <div className="relative h-screen w-full overflow-hidden bg-black text-white font-sans selection:bg-blue-500/30">
+        {/* Animated Background Elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
         
-        <ConfirmModal
-          isOpen={confirmModal.isOpen}
-          onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-          onConfirm={confirmModal.onConfirm}
-          title={confirmModal.title}
-          message={confirmModal.message}
-          isDestructive={confirmModal.isDestructive}
-          confirmText={confirmModal.confirmText}
-        />
-        
-        <Toast
-          isVisible={toast.isVisible}
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
-        />
+        <div className="relative z-10 h-full overflow-y-auto custom-scrollbar">
+          <ProjectModal 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            onCreate={handleCreateProject}
+            themeColor={themeColor}
+          />
+          <Dashboard 
+            projects={projects}
+            onSelectProject={loadProject}
+            onCreateProject={() => setIsModalOpen(true)}
+            onDeleteProject={deleteProject}
+            isDarkMode={isDarkMode}
+            isLoggedIn={isLoggedIn}
+            onLogin={handleLogin}
+            userProfile={userProfile}
+            themeColor={themeColor}
+            onOpenSettings={(tab) => {
+              setActiveSettingsTab(tab);
+              setIsSettingsModalOpen(true);
+            }}
+          />
+          
+          <ConfirmModal
+            isOpen={confirmModal.isOpen}
+            onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+            onConfirm={confirmModal.onConfirm}
+            title={confirmModal.title}
+            message={confirmModal.message}
+            isDestructive={confirmModal.isDestructive}
+            confirmText={confirmModal.confirmText}
+          />
+          
+          <Toast
+            isVisible={toast.isVisible}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+          />
 
-        <SettingsModal
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          activeTab={activeSettingsTab}
-          userProfile={userProfile}
-          onUpdateProfile={setUserProfile}
-          themeColor={themeColor}
-          onUpdateThemeColor={setThemeColor}
-          isDarkMode={isDarkMode}
-          isGuest={isGuest}
-        />
-      </>
+          <SettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            activeTab={activeSettingsTab}
+            userProfile={userProfile}
+            onUpdateProfile={setUserProfile}
+            themeColor={themeColor}
+            onUpdateThemeColor={setThemeColor}
+            isDarkMode={isDarkMode}
+            isGuest={isGuest}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className={`flex h-screen ${themeClasses.bg} ${themeClasses.text} overflow-hidden font-sans transition-colors duration-200`}>
+    <div className="relative h-screen w-full overflow-hidden bg-black text-white font-sans selection:bg-blue-500/30">
+      {/* Animated Background Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
+      
       <ProjectModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onCreate={handleCreateProject} 
+        onCreate={handleCreateProject}
+        themeColor={themeColor}
       />
       
-      {/* Sidebar */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarOpen ? 300 : 0 }}
-        className={`${themeClasses.sidebarBg} border-r ${themeClasses.sidebarBorder} flex flex-col fixed md:relative z-40 h-full shadow-xl overflow-hidden`}
-      >
+      {/* Floating Layout Container */}
+      <div className="absolute inset-0 p-4 flex gap-4 z-10">
+        
+        {/* Floating Sidebar */}
+        <motion.aside 
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1, width: isSidebarOpen ? 280 : 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50`}
+        >
         <div className={`p-4 border-b ${themeClasses.sidebarBorder} flex items-center justify-between overflow-hidden whitespace-nowrap`}>
           <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 bg-${themeColor}-600 rounded-lg flex items-center justify-center shadow-lg shadow-${themeColor}-900/20`}>
+            <div className={`w-8 h-8 ${getThemeClass(themeColor, 'bg')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadowLg')}`}>
               <Layout className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold tracking-tight text-lg">SiteBuilder</span>
@@ -1127,7 +1142,7 @@ export default function App() {
                   <h3 className={`text-xs uppercase tracking-widest ${themeClasses.textFaint} font-bold`}>Projects</h3>
                   <button 
                     onClick={() => setIsModalOpen(true)} 
-                    className={`p-1.5 bg-${themeColor}-500/10 hover:bg-${themeColor}-500/20 text-${themeColor}-500 rounded-md transition-all hover:scale-105 active:scale-95`}
+                    className={`p-1.5 ${getThemeClass(themeColor, 'badgeBg')} hover:bg-opacity-20 ${getThemeClass(themeColor, 'text')} rounded-md transition-all hover:scale-105 active:scale-95`}
                     title="Create New Project"
                   >
                     <Plus className="w-4 h-4" />
@@ -1145,12 +1160,12 @@ export default function App() {
                       onClick={() => loadProject(p)}
                       className={`group w-full px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between cursor-pointer border border-transparent ${
                         currentProject === p 
-                          ? `${themeClasses.activeBg} text-${themeColor}-600 border-${themeColor}-500/20 shadow-sm` 
+                          ? `${themeClasses.activeBg} ${getThemeClass(themeColor, 'text')} ${getThemeClass(themeColor, 'badgeBorder')} shadow-sm` 
                           : `${themeClasses.hoverBg} ${themeClasses.textMuted} hover:border-black/5`
                       }`}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
-                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? `text-${themeColor}-500` : themeClasses.textFaint}`} />
+                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? getThemeClass(themeColor, 'text') : themeClasses.textFaint}`} />
                         <span className="truncate font-medium">{p}</span>
                       </div>
                       <button 
@@ -1210,144 +1225,137 @@ export default function App() {
       {/* Toggle Sidebar Button (when closed) - MOVED TO HEADER */}
       
       {/* Main Editor Area */}
-      <main className={`flex-1 relative flex flex-col ${themeClasses.bg}`}>
-        <header className={`h-14 ${themeClasses.headerBg} border-b ${themeClasses.sidebarBorder} flex items-center justify-between px-6 shadow-sm z-50`}>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setViewMode('dashboard')}
-              className={`p-1.5 ${themeClasses.hoverBg} rounded-md transition-colors ${themeClasses.textMuted} hover:${themeClasses.text}`}
-              title="Back to Dashboard"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            {!isSidebarOpen && (
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className={`p-1.5 ${themeClasses.hoverBg} rounded-md transition-colors ${themeClasses.textMuted} hover:${themeClasses.text}`}
-                title="Open Sidebar"
-              >
-                <Layout className="w-5 h-5" />
-              </button>
-            )}
-            <div className="flex flex-col">
-              <span className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider`}>Current Project</span>
-              <span className={`text-sm font-medium ${themeClasses.text}`}>
-                {currentProject || 'No project selected'}
-              </span>
-            </div>
+      <div className="flex-1 flex flex-col gap-4 h-full relative z-10 min-w-0">
+      {/* Header - Floating Glass Bar */}
+      <motion.header 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className={`h-16 mx-4 mt-4 rounded-2xl border ${themeClasses.border} ${themeClasses.sidebarBg} flex items-center justify-between px-6 shadow-lg z-50 relative`}
+      >
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+             <div className={`w-8 h-8 ${getThemeClass(themeColor, 'gradientIcon')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadow')}`}>
+               <Layout className="w-5 h-5 text-white" />
+             </div>
+             <div className="flex flex-col">
+               <h1 className={`text-sm font-bold tracking-tight ${themeClasses.text}`}>Proxmox SiteBuilder</h1>
+               <span className={`text-[10px] font-medium ${themeClasses.textMuted} uppercase tracking-wider`}>v2.4.0</span>
+             </div>
           </div>
 
-          {/* Device Controls */}
-          <div className={`flex items-center ${themeClasses.bg} rounded-lg p-1 border ${themeClasses.sidebarBorder}`}>
-            <button onClick={() => setDevice('Desktop')} className={`p-2 ${themeClasses.hoverBg} rounded ${themeClasses.textMuted} hover:${themeClasses.text} transition-colors`} title="Desktop">
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button onClick={() => setDevice('Tablet')} className={`p-2 ${themeClasses.hoverBg} rounded ${themeClasses.textMuted} hover:${themeClasses.text} transition-colors`} title="Tablet">
-              <Tablet className="w-4 h-4" />
-            </button>
-            <button onClick={() => setDevice('Mobile')} className={`p-2 ${themeClasses.hoverBg} rounded ${themeClasses.textMuted} hover:${themeClasses.text} transition-colors`} title="Mobile">
-              <Smartphone className="w-4 h-4" />
-            </button>
-          </div>
+          <div className={`h-8 w-px ${themeClasses.sidebarBorder}`}></div>
 
           <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${themeClasses.sidebarBorder} ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'}`}>
-              <span className={`text-xs font-medium ${themeClasses.textMuted}`}>Auto-save</span>
-              <button
-                onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${autoSaveEnabled ? `bg-${themeColor}-500` : 'bg-gray-400'}`}
-                title={autoSaveEnabled ? 'Disable Auto-save' : 'Enable Auto-save'}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${autoSaveEnabled ? 'translate-x-4.5' : 'translate-x-1'}`}
-                />
-              </button>
-              {isSaving && <span className={`text-xs text-${themeColor}-500 animate-pulse ml-1`}>Saving...</span>}
-            </div>
-            
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleSave();
-              }}
-              disabled={!currentProject || isSaving}
-              className={`p-2 rounded-lg ${themeClasses.hoverBg} ${themeClasses.textMuted} hover:${themeClasses.text} transition-colors border border-transparent hover:${themeClasses.sidebarBorder}`}
-              title="Save Manually"
-            >
-              <Save className="w-4 h-4" />
-            </button>
-
-            <div className={`w-px h-4 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} mx-1`}></div>
-
-            <button 
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`p-2 ${themeClasses.hoverBg} rounded-lg ${themeClasses.textMuted} hover:${themeClasses.text} transition-colors border border-transparent hover:${themeClasses.sidebarBorder}`}
-              title="Toggle Theme"
-            >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-            <div className={`w-px h-4 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} mx-1`}></div>
-            
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleViewMode();
-              }}
-              className={`p-2 ${themeClasses.hoverBg} rounded-lg ${viewMode === 'code' ? `text-${themeColor}-500 bg-${themeColor}-500/10` : themeClasses.textMuted} hover:${themeClasses.text} transition-colors border border-transparent hover:${themeClasses.sidebarBorder}`}
-              title="View Code"
-            >
-              {viewMode === 'code' ? <Eye className="w-4 h-4" /> : <Code className="w-4 h-4" />}
-            </button>
-            
-            <div className={`w-px h-4 ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} mx-1`}></div>
-
-            <button 
-              onClick={() => toggleRightSidebar('styles')}
-              className={`p-2 ${themeClasses.hoverBg} rounded-lg ${isRightSidebarOpen && (activeRightTab === 'styles' || activeRightTab === 'traits') ? `text-${themeColor}-500 bg-${themeColor}-500/10` : themeClasses.textMuted} hover:${themeClasses.text} transition-colors border border-transparent hover:${themeClasses.sidebarBorder}`}
-              title="Styles & Settings"
-            >
-              <Sliders className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => toggleRightSidebar('layers')}
-              className={`p-2 ${themeClasses.hoverBg} rounded-lg ${isRightSidebarOpen && activeRightTab === 'layers' ? `text-${themeColor}-500 bg-${themeColor}-500/10` : themeClasses.textMuted} hover:${themeClasses.text} transition-colors border border-transparent hover:${themeClasses.sidebarBorder}`}
-              title="Layers"
-            >
-              <Layers className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => toggleRightSidebar('templates')}
-              className={`p-2 ${themeClasses.hoverBg} rounded-lg ${isRightSidebarOpen && activeRightTab === 'templates' ? `text-${themeColor}-500 bg-${themeColor}-500/10` : themeClasses.textMuted} hover:${themeClasses.text} transition-colors border border-transparent hover:${themeClasses.sidebarBorder}`}
-              title="Themes"
-            >
-              <Palette className="w-4 h-4" />
-            </button>
+             <span className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider`}>Project:</span>
+             <span className={`text-sm font-medium ${themeClasses.text} bg-white/5 px-3 py-1 rounded-lg border border-white/5`}>
+               {currentProject || 'Untitled'}
+             </span>
           </div>
-        </header>
+        </div>
+
+        {/* Center - Device Controls */}
+        <div className={`hidden md:flex items-center bg-black/20 rounded-xl p-1 border ${themeClasses.sidebarBorder} shadow-inner`}>
+          <button 
+            onClick={() => setDevice('Desktop')} 
+            className={`p-2 rounded-lg transition-all duration-200 ${device === 'Desktop' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
+            title="Desktop"
+          >
+            <Monitor className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => setDevice('Tablet')} 
+            className={`p-2 rounded-lg transition-all duration-200 ${device === 'Tablet' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
+            title="Tablet"
+          >
+            <Tablet className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => setDevice('Mobile')} 
+            className={`p-2 rounded-lg transition-all duration-200 ${device === 'Mobile' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
+            title="Mobile"
+          >
+            <Smartphone className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+           {/* Publish Button - Prominent */}
+           <button
+             onClick={handlePublish}
+             disabled={!currentProject || isPublishing}
+             className={`hidden sm:flex items-center gap-2 px-4 py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-bold text-xs uppercase tracking-wide shadow-lg ${getThemeClass(themeColor, 'shadow')} transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+           >
+             {isPublishing ? (
+               <>
+                 <RefreshCw className="w-3 h-3 animate-spin" /> Publishing...
+               </>
+             ) : (
+               <>
+                 <Globe className="w-3 h-3" /> Publish
+               </>
+             )}
+           </button>
+
+           <div className={`w-px h-6 ${themeClasses.sidebarBorder} mx-1 hidden sm:block`}></div>
+
+           <div className="flex items-center gap-1 bg-black/20 rounded-xl p-1 border border-white/5">
+              <button 
+                onClick={(e) => { e.preventDefault(); handleSave(); }}
+                disabled={!currentProject || isSaving}
+                className={`p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
+                title="Save"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => toggleViewMode()}
+                className={`p-2 rounded-lg hover:bg-white/10 ${viewMode === 'code' ? 'text-blue-400 bg-blue-500/10' : 'text-white/60 hover:text-white'} transition-colors`}
+                title="Code"
+              >
+                <Code className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
+                title="Theme"
+              >
+                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+           </div>
+           
+           <button 
+             onClick={() => toggleRightSidebar('styles')}
+             className={`ml-2 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all hover:scale-105 active:scale-95 ${isRightSidebarOpen ? 'bg-white/10 ring-1 ring-white/20' : ''}`}
+           >
+             <Sliders className="w-5 h-5" />
+           </button>
+        </div>
+      </motion.header>
         
-        <div className={`flex-1 relative overflow-hidden ${isDarkMode ? 'bg-[#09090b]' : 'bg-gray-100'}`}>
+        <main className="flex-1 rounded-3xl bg-[#000000]/20 backdrop-blur-sm border border-white/5 shadow-inner overflow-hidden relative group mx-1">
           {/* Editor View - Always rendered but hidden when not active */}
-          <div className="h-full relative" style={{ display: viewMode === 'editor' ? 'block' : 'none' }}>
+          <div className="h-full w-full rounded-2xl overflow-hidden relative" style={{ display: viewMode === 'editor' ? 'block' : 'none' }}>
             {!currentProject && (
-              <div className={`absolute inset-0 flex items-center justify-center ${isDarkMode ? 'bg-[#09090b]/90' : 'bg-white/90'} backdrop-blur-sm z-10`}>
-                <div className="text-center p-10 max-w-md border border-white/5 rounded-2xl bg-white/5 shadow-2xl backdrop-blur-xl">
-                  <div className={`w-20 h-20 ${isDarkMode ? `bg-gradient-to-br from-${themeColor}-500/20 to-${themeColor}-900/20` : `bg-${themeColor}-50`} rounded-2xl flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10`}>
-                    <Layout className={`w-10 h-10 ${isDarkMode ? `text-${themeColor}-400` : `text-${themeColor}-600`}`} />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
+                <div className="text-center p-10 max-w-md border border-white/10 rounded-3xl glass-panel shadow-2xl">
+                  <div className={`w-20 h-20 ${getThemeClass(themeColor, 'gradientIcon')} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg ${getThemeClass(themeColor, 'shadow')}`}>
+                    <Layout className="w-10 h-10 text-white" />
                   </div>
-                  <h2 className={`text-2xl font-bold ${themeClasses.text} mb-3 tracking-tight`}>No Project Selected</h2>
-                  <p className={`${themeClasses.textMuted} mb-8 leading-relaxed`}>Select a project from the sidebar or create a new one to start building your next big idea.</p>
+                  <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">No Project Selected</h2>
+                  <p className="text-white/60 mb-8 leading-relaxed">Select a project from the sidebar or create a new one to start building your next big idea.</p>
                   <button 
                     onClick={() => setIsModalOpen(true)}
-                    className={`px-8 py-3 bg-gradient-to-r from-${themeColor}-600 to-${themeColor}-500 hover:from-${themeColor}-500 hover:to-${themeColor}-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-${themeColor}-900/20 hover:scale-[1.02] active:scale-[0.98]`}
+                    className={`px-8 py-3 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-semibold transition-all shadow-lg ${getThemeClass(themeColor, 'shadowLg')} hover:scale-[1.02] active:scale-[0.98]`}
                   >
                     Create New Project
                   </button>
                 </div>
               </div>
             )}
-            <div ref={editorRef} className="h-full"></div>
+            {/* Canvas Container with Device Frame Effect */}
+            <div className={`h-full transition-all duration-300 ${device === 'Mobile' ? 'max-w-[375px] mx-auto my-4 rounded-[3rem] border-8 border-[#1a1a1a] shadow-2xl overflow-hidden bg-white' : device === 'Tablet' ? 'max-w-[768px] mx-auto my-4 rounded-[2rem] border-8 border-[#1a1a1a] shadow-2xl overflow-hidden bg-white' : 'w-full h-full bg-[#1e1e1e]'}`}>
+               <div ref={editorRef} className="h-full w-full bg-[#1e1e1e]"></div>
+            </div>
           </div>
 
           {/* Code View - Rendered only when active */}
@@ -1414,18 +1422,24 @@ export default function App() {
               </div>
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
 
-      {/* RIGHT SIDEBAR: Styles, Traits, Layers */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isRightSidebarOpen ? 320 : 0 }}
-        className={`${themeClasses.sidebarBg} border-l ${themeClasses.sidebarBorder} flex flex-col fixed md:relative right-0 z-40 h-full shadow-2xl overflow-hidden backdrop-blur-xl`}
+      {/* Floating Right Panel - Always mounted for GrapesJS, hidden via transform */}
+      <motion.aside
+        initial={{ x: '100%', opacity: 0 }}
+        animate={{ 
+          x: isRightSidebarOpen ? 0 : '100%', 
+          opacity: isRightSidebarOpen ? 1 : 0,
+          pointerEvents: isRightSidebarOpen ? 'auto' : 'none'
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50 w-80 shrink-0 border-l border-white/5`}
+        style={{ position: 'absolute', right: '1rem', top: '1rem', bottom: '1rem', height: 'auto' }}
       >
         {/* Internal Tabs for Styles/Settings only */}
         {(activeRightTab === 'styles' || activeRightTab === 'traits') && (
-          <div className={`flex items-center border-b ${themeClasses.sidebarBorder} bg-white/5`}>
+          <div className={`flex items-center border-b ${themeClasses.sidebarBorder} bg-white/5 shrink-0`}>
             <button 
               onClick={() => setActiveRightTab('styles')}
               className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'styles' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
@@ -1443,20 +1457,20 @@ export default function App() {
         
         {/* Header for Layers/Themes */}
         {activeRightTab === 'layers' && (
-          <div className={`p-4 border-b ${themeClasses.sidebarBorder} font-bold text-sm uppercase tracking-wider ${themeClasses.text}`}>
+          <div className={`p-4 border-b ${themeClasses.sidebarBorder} font-bold text-sm uppercase tracking-wider ${themeClasses.text} shrink-0`}>
             Layers
           </div>
         )}
         {activeRightTab === 'templates' && (
-          <div className={`p-4 border-b ${themeClasses.sidebarBorder} font-bold text-sm uppercase tracking-wider ${themeClasses.text}`}>
+          <div className={`p-4 border-b ${themeClasses.sidebarBorder} font-bold text-sm uppercase tracking-wider ${themeClasses.text} shrink-0`}>
             Themes
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 relative">
           {/* Empty State for Styles/Traits */}
           {(!selectedComponent && (activeRightTab === 'styles' || activeRightTab === 'traits')) && (
-            <div className={`flex flex-col items-center justify-center h-full text-center ${themeClasses.textMuted} py-12`}>
+            <div className={`flex flex-col items-center justify-center h-full text-center ${themeClasses.textMuted} py-12 absolute inset-0 pointer-events-none`}>
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 ring-1 ring-white/10">
                 <MousePointerClick className="w-8 h-8 opacity-40" />
               </div>
@@ -1466,18 +1480,18 @@ export default function App() {
           )}
 
           {/* Selector Manager (Classes) */}
-          <div className={`${activeRightTab === 'styles' && selectedComponent ? 'block' : 'hidden'} mb-6`}>
+          <div className={`${activeRightTab === 'styles' && selectedComponent ? 'block' : 'absolute opacity-0 pointer-events-none'} mb-6`}>
              <div id="selector-container"></div>
           </div>
 
           {/* Style Manager */}
-          <div id="styles-container" className={activeRightTab === 'styles' && selectedComponent ? 'block' : 'hidden'}></div>
+          <div id="styles-container" className={activeRightTab === 'styles' && selectedComponent ? 'block' : 'absolute opacity-0 pointer-events-none'}></div>
 
           {/* Trait Manager */}
-          <div id="traits-container" className={activeRightTab === 'traits' && selectedComponent ? 'block' : 'hidden'}></div>
+          <div id="traits-container" className={activeRightTab === 'traits' && selectedComponent ? 'block' : 'absolute opacity-0 pointer-events-none'}></div>
 
           {/* Layer Manager */}
-          <div id="layers-container" className={activeRightTab === 'layers' ? 'block' : 'hidden'}></div>
+          <div id="layers-container" className={activeRightTab === 'layers' ? 'block' : 'absolute opacity-0 pointer-events-none'}></div>
 
           {/* Templates Manager */}
           <div className={activeRightTab === 'templates' ? 'block' : 'hidden'}>
@@ -1506,6 +1520,8 @@ export default function App() {
           </div>
         </div>
       </motion.aside>
+      
+      </div> {/* Close Floating Layout Container */}
 
       <SettingsModal
         isOpen={isSettingsModalOpen}

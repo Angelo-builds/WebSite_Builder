@@ -1,5 +1,5 @@
 {
-  "name": "blockra",
+  "name": "WebSiteBuilder_drag&drop_old",
   "description": "A drag-and-drop website builder designed to be deployed as a Proxmox LXC container.",
   "requestFramePermissions": []
 }

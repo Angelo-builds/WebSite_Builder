@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, User, Palette, Settings as SettingsIcon, Check, Save } from 'lucide-react';
+import { getThemeClass } from '../theme';
 
 interface UserProfile {
   name: string;
@@ -60,58 +61,51 @@ export default function SettingsModal({
 
   if (!isOpen) return null;
 
+  // Liquid Glass Theme
   const theme = {
-    bg: isDarkMode ? 'bg-[#18181b]' : 'bg-white',
-    text: isDarkMode ? 'text-white' : 'text-gray-900',
-    textMuted: isDarkMode ? 'text-gray-400' : 'text-gray-500',
-    border: isDarkMode ? 'border-white/10' : 'border-gray-200',
-    inputBg: isDarkMode ? 'bg-[#27272a]' : 'bg-gray-50',
-    hoverBg: isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-100',
+    bg: 'glass-panel',
+    text: 'text-white',
+    textMuted: 'text-white/60',
+    border: 'border-white/10',
+    inputBg: 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20',
+    hoverBg: 'hover:bg-white/5',
   };
 
   // Dynamic color classes based on selection (for the save button)
   const getButtonColor = (color: string) => {
-    const map: Record<string, string> = {
-      blue: 'bg-blue-600 hover:bg-blue-500',
-      emerald: 'bg-emerald-600 hover:bg-emerald-500',
-      violet: 'bg-violet-600 hover:bg-violet-500',
-      rose: 'bg-rose-600 hover:bg-rose-500',
-      amber: 'bg-amber-600 hover:bg-amber-500',
-      cyan: 'bg-cyan-600 hover:bg-cyan-500',
-    };
-    return map[color] || map.blue;
+    return `${getThemeClass(color, 'bg')} ${getThemeClass(color, 'bgHover')}`;
   };
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row ${theme.bg} ${theme.text} border ${theme.border}`}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className={`w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row ${theme.bg}`}
         >
           {/* Sidebar */}
-          <div className={`w-full md:w-64 p-4 border-b md:border-b-0 md:border-r ${theme.border} ${isDarkMode ? 'bg-white/5' : 'bg-gray-50/50'}`}>
-            <h2 className="text-lg font-bold mb-6 px-2">Settings</h2>
+          <div className={`w-full md:w-64 p-6 border-b md:border-b-0 md:border-r ${theme.border} bg-white/5`}>
+            <h2 className="text-lg font-bold mb-6 px-2 text-white tracking-tight">Settings</h2>
             <nav className="space-y-1">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'profile' ? `${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} ${theme.text}` : `${theme.textMuted} ${theme.hoverBg}`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'profile' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
               >
                 <User className="w-4 h-4" />
                 Account
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'settings' ? `${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} ${theme.text}` : `${theme.textMuted} ${theme.hoverBg}`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'settings' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
               >
                 <SettingsIcon className="w-4 h-4" />
                 Settings
               </button>
               <button
                 onClick={() => setActiveTab('appearance')}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? `${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} ${theme.text}` : `${theme.textMuted} ${theme.hoverBg}`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'appearance' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
               >
                 <Palette className="w-4 h-4" />
                 Customization
@@ -120,14 +114,14 @@ export default function SettingsModal({
           </div>
 
           {/* Content */}
-          <div className="flex-1 p-6 md:p-8 overflow-y-auto max-h-[80vh]">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold">
+          <div className="flex-1 p-6 md:p-8 overflow-y-auto max-h-[80vh] custom-scrollbar">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-bold text-white tracking-tight">
                 {activeTab === 'profile' && 'Edit Profile'}
                 {activeTab === 'appearance' && 'Customization'}
                 {activeTab === 'settings' && 'Settings'}
               </h3>
-              <button onClick={onClose} className={`p-2 rounded-lg ${theme.hoverBg} transition-colors`}>
+              <button onClick={onClose} className={`p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors`}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -217,7 +211,7 @@ export default function SettingsModal({
                           key={color.id}
                           onClick={() => isAllowed && onUpdateThemeColor(color.id)}
                           disabled={!isAllowed}
-                          className={`group relative flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all ${themeColor === color.id ? `border-${color.id}-500 bg-${color.id}-500/10` : `border-transparent ${isAllowed ? theme.hoverBg : 'opacity-40 cursor-not-allowed'}`}`}
+                          className={`group relative flex flex-col items-center gap-2 p-2 rounded-xl border-2 transition-all ${themeColor === color.id ? `${getThemeClass(color.id, 'border')} ${getThemeClass(color.id, 'badgeBg')}` : `border-transparent ${isAllowed ? theme.hoverBg : 'opacity-40 cursor-not-allowed'}`}`}
                           title={!isAllowed ? "Sign in to unlock more colors" : ""}
                         >
                           <div className={`w-10 h-10 rounded-full ${color.class} shadow-lg ${isAllowed ? 'group-hover:scale-110' : ''} transition-transform flex items-center justify-center`}>

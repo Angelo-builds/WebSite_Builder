@@ -1,1 +1,116 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* iOS-style Glass Variables */
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-surface: rgba(22, 22, 24, 0.75); /* Darker for readability */
+  --glass-surface-hover: rgba(40, 40, 45, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  
+  --shadow-glass: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+@layer base {
+  body {
+    @apply bg-[#000000] text-white antialiased overflow-hidden;
+    /* Deep, rich, animated mesh gradient */
+    background: 
+      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.4), transparent 50%),
+      radial-gradient(circle at 85% 30%, rgba(29, 78, 216, 0.4), transparent 50%),
+      radial-gradient(circle at 50% 80%, rgba(190, 24, 93, 0.2), transparent 50%);
+    background-size: 150% 150%;
+    animation: gradient-move 20s ease infinite alternate;
+  }
+}
+
+@layer utilities {
+  /* High-Readability Glass Panel */
+  .glass-panel {
+    @apply bg-[#0a0a0c]/90 backdrop-blur-3xl border border-white/10 shadow-2xl relative;
+    /* Inner light border for depth */
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 10px 40px -10px rgba(0,0,0,0.8);
+  }
+
+  /* Noise Texture Overlay */
+  .glass-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
+  
+  /* Ensure content sits above noise */
+  .glass-panel > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .glass-button {
+    @apply bg-white/5 hover:bg-white/10 border border-white/10 backdrop-blur-md transition-all duration-200 active:scale-95 text-white font-medium relative overflow-hidden;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  
+  .glass-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  .glass-button:hover::after {
+    opacity: 1;
+  }
+
+  .glass-input {
+    @apply bg-[#000000]/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 focus:bg-black/60 transition-all duration-200 shadow-inner;
+  }
+
+  .text-readability {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+}
+
+/* Custom Scrollbar - Thin & Elegant */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animation Keyframes */
+@keyframes gradient-move {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
