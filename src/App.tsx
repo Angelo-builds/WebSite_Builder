@@ -243,26 +243,55 @@ export default function App() {
             name: 'Layout',
             open: true,
             buildProps: ['display', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'align-content', 'gap'],
+            properties: [
+              { name: 'Display', property: 'display', type: 'select', defaults: 'block', list: [{ value: 'block', id: 'block' }, { value: 'inline-block', id: 'inline-block' }, { value: 'flex', id: 'flex' }, { value: 'grid', id: 'grid' }, { value: 'none', id: 'none' }] },
+              { name: 'Direction', property: 'flex-direction', type: 'select', defaults: 'row', list: [{ value: 'row', id: 'row' }, { value: 'row-reverse', id: 'row-reverse' }, { value: 'column', id: 'column' }, { value: 'column-reverse', id: 'column-reverse' }] },
+              { name: 'Wrap', property: 'flex-wrap', type: 'select', defaults: 'nowrap', list: [{ value: 'nowrap', id: 'nowrap' }, { value: 'wrap', id: 'wrap' }, { value: 'wrap-reverse', id: 'wrap-reverse' }] },
+              { name: 'Justify', property: 'justify-content', type: 'select', defaults: 'flex-start', list: [{ value: 'flex-start', id: 'flex-start' }, { value: 'flex-end', id: 'flex-end' }, { value: 'center', id: 'center' }, { value: 'space-between', id: 'space-between' }, { value: 'space-around', id: 'space-around' }, { value: 'space-evenly', id: 'space-evenly' }] },
+              { name: 'Align Items', property: 'align-items', type: 'select', defaults: 'stretch', list: [{ value: 'stretch', id: 'stretch' }, { value: 'flex-start', id: 'flex-start' }, { value: 'flex-end', id: 'flex-end' }, { value: 'center', id: 'center' }, { value: 'baseline', id: 'baseline' }] },
+              { name: 'Gap', property: 'gap', type: 'integer', units: ['px', 'rem', '%'], defaults: '0', min: 0 },
+            ]
           },
           {
             name: 'Dimensions',
             open: false,
             buildProps: ['width', 'height', 'max-width', 'min-height', 'margin', 'padding'],
+            properties: [
+              { name: 'Width', property: 'width', type: 'integer', units: ['px', '%', 'vw', 'rem', 'auto'], defaults: 'auto', min: 0 },
+              { name: 'Height', property: 'height', type: 'integer', units: ['px', '%', 'vh', 'rem', 'auto'], defaults: 'auto', min: 0 },
+              { name: 'Max Width', property: 'max-width', type: 'integer', units: ['px', '%', 'rem', 'none'], defaults: 'none', min: 0 },
+              { name: 'Min Height', property: 'min-height', type: 'integer', units: ['px', '%', 'vh', 'rem'], defaults: '0', min: 0 },
+              { name: 'Margin', property: 'margin', type: 'composite', properties: [{ name: 'Top', property: 'margin-top' }, { name: 'Right', property: 'margin-right' }, { name: 'Bottom', property: 'margin-bottom' }, { name: 'Left', property: 'margin-left' }] },
+              { name: 'Padding', property: 'padding', type: 'composite', properties: [{ name: 'Top', property: 'padding-top' }, { name: 'Right', property: 'padding-right' }, { name: 'Bottom', property: 'padding-bottom' }, { name: 'Left', property: 'padding-left' }] },
+            ]
           },
           {
             name: 'Typography',
             open: false,
-            buildProps: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align', 'text-decoration', 'text-shadow'],
+            buildProps: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align', 'text-decoration', 'text-transform'],
+            properties: [
+              { name: 'Font', property: 'font-family', type: 'font', defaults: 'Arial, Helvetica, sans-serif' },
+              { name: 'Size', property: 'font-size', type: 'integer', units: ['px', 'rem', 'em'], defaults: '16px', min: 0 },
+              { name: 'Weight', property: 'font-weight', type: 'select', defaults: '400', list: [{ value: '100', name: 'Thin', id: '100' }, { value: '300', name: 'Light', id: '300' }, { value: '400', name: 'Normal', id: '400' }, { value: '500', name: 'Medium', id: '500' }, { value: '700', name: 'Bold', id: '700' }, { value: '900', name: 'Black', id: '900' }] },
+              { name: 'Color', property: 'color', type: 'color', defaults: 'black' },
+              { name: 'Align', property: 'text-align', type: 'radio', defaults: 'left', list: [{ value: 'left', name: 'Left', id: 'left' }, { value: 'center', name: 'Center', id: 'center' }, { value: 'right', name: 'Right', id: 'right' }, { value: 'justify', name: 'Justify', id: 'justify' }] },
+              { name: 'Decoration', property: 'text-decoration', type: 'radio', defaults: 'none', list: [{ value: 'none', name: 'None', id: 'none' }, { value: 'underline', name: 'Underline', id: 'underline' }, { value: 'line-through', name: 'Strike', id: 'line-through' }] },
+              { name: 'Transform', property: 'text-transform', type: 'radio', defaults: 'none', list: [{ value: 'none', name: 'None', id: 'none' }, { value: 'uppercase', name: 'UPPER', id: 'uppercase' }, { value: 'lowercase', name: 'lower', id: 'lowercase' }, { value: 'capitalize', name: 'Cap', id: 'capitalize' }] },
+            ]
           },
           {
             name: 'Decorations',
             open: false,
-            buildProps: ['background-color', 'border-radius', 'border', 'box-shadow', 'background'],
-          },
-          {
-            name: 'Extra',
-            open: false,
-            buildProps: ['opacity', 'cursor', 'overflow', 'position', 'top', 'left', 'right', 'bottom'],
+            buildProps: ['background-color', 'background-image', 'border-radius', 'border', 'box-shadow', 'opacity', 'cursor'],
+            properties: [
+              { name: 'Background', property: 'background-color', type: 'color' },
+              { name: 'Image', property: 'background-image', type: 'file' },
+              { name: 'Radius', property: 'border-radius', type: 'composite', properties: [{ name: 'Top-L', property: 'border-top-left-radius' }, { name: 'Top-R', property: 'border-top-right-radius' }, { name: 'Btm-L', property: 'border-bottom-left-radius' }, { name: 'Btm-R', property: 'border-bottom-right-radius' }] },
+              { name: 'Border', property: 'border', type: 'composite', properties: [{ name: 'Width', property: 'border-width', type: 'integer', units: ['px', 'em'] }, { name: 'Style', property: 'border-style', type: 'select', list: [{ value: 'none', id: 'none' }, { value: 'solid', id: 'solid' }, { value: 'dashed', id: 'dashed' }, { value: 'dotted', id: 'dotted' }] }, { name: 'Color', property: 'border-color', type: 'color' }] },
+              { name: 'Shadow', property: 'box-shadow', type: 'stack', preview: true },
+              { name: 'Opacity', property: 'opacity', type: 'slider', min: 0, max: 1, step: 0.01, defaults: '1' },
+              { name: 'Cursor', property: 'cursor', type: 'select', defaults: 'auto', list: [{ value: 'auto', id: 'auto' }, { value: 'pointer', id: 'pointer' }, { value: 'text', id: 'text' }, { value: 'move', id: 'move' }, { value: 'not-allowed', id: 'not-allowed' }] },
+            ]
           },
         ],
       },
@@ -345,46 +374,47 @@ export default function App() {
 
           // --- 2. NAVIGATION ---
           {
-            id: 'navbar-simple',
-            label: 'Navbar Simple',
+            id: 'navbar-custom',
+            label: 'Navbar Custom',
             category: '2. Navigation',
-            content: `<div class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-              <div class="brand" style="font-weight: bold; font-size: 1.2rem;">Brand</div>
-              <nav class="nav-links" style="display: flex; gap: 20px;">
-                <a href="#" style="text-decoration: none; color: #333;">Home</a>
-                <a href="#" style="text-decoration: none; color: #333;">About</a>
-                <a href="#" style="text-decoration: none; color: #333;">Contact</a>
-              </nav>
-            </div>`,
+            content: `<nav class="navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #ffffff; min-height: 60px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" data-gjs-name="Navbar">
+              <div class="navbar-brand" style="font-size: 1.5rem; font-weight: bold; color: #333;" data-gjs-name="Brand">Brand</div>
+              <div class="navbar-menu" style="display: flex; gap: 20px; align-items: center;" data-gjs-name="Menu">
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">Home</a>
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">About</a>
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">Services</a>
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">Contact</a>
+              </div>
+            </nav>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
           },
           {
             id: 'footer-multi',
             label: 'Footer Multi',
             category: '2. Navigation',
-            content: `<footer style="background: #1f2937; color: #f3f4f6; padding: 40px 20px;">
-              <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
-                <div>
-                  <h4 style="color: #fff; margin-bottom: 15px;">Company</h4>
-                  <p style="font-size: 0.9rem; color: #9ca3af;">Making the world better, one pixel at a time.</p>
+            content: `<footer style="background: #1f2937; color: #f3f4f6; padding: 40px 20px;" data-gjs-name="Footer">
+              <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;" data-gjs-name="Grid">
+                <div data-gjs-name="Column">
+                  <h4 style="color: #fff; margin-bottom: 15px;" data-gjs-name="Title">Company</h4>
+                  <p style="font-size: 0.9rem; color: #9ca3af;" data-gjs-name="Text">Making the world better, one pixel at a time.</p>
                 </div>
-                <div>
-                  <h4 style="color: #fff; margin-bottom: 15px;">Links</h4>
-                  <ul style="list-style: none; padding: 0; margin: 0;">
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Home</a></li>
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">About</a></li>
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Contact</a></li>
+                <div data-gjs-name="Column">
+                  <h4 style="color: #fff; margin-bottom: 15px;" data-gjs-name="Title">Links</h4>
+                  <ul style="list-style: none; padding: 0; margin: 0;" data-gjs-name="List">
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Home</a></li>
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">About</a></li>
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Contact</a></li>
                   </ul>
                 </div>
-                <div>
-                  <h4 style="color: #fff; margin-bottom: 15px;">Legal</h4>
-                  <ul style="list-style: none; padding: 0; margin: 0;">
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Privacy</a></li>
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;">Terms</a></li>
+                <div data-gjs-name="Column">
+                  <h4 style="color: #fff; margin-bottom: 15px;" data-gjs-name="Title">Legal</h4>
+                  <ul style="list-style: none; padding: 0; margin: 0;" data-gjs-name="List">
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Privacy</a></li>
+                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Terms</a></li>
                   </ul>
                 </div>
               </div>
-              <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #374151; font-size: 0.8rem; color: #9ca3af;">
+              <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #374151; font-size: 0.8rem; color: #9ca3af;" data-gjs-name="Copyright">
                 © 2024 Brand Name. All rights reserved.
               </div>
             </footer>`,
@@ -410,7 +440,7 @@ export default function App() {
             id: 'quote',
             label: 'Quote',
             category: '3. Typography',
-            content: `<blockquote class="quote-block" style="border-left: 4px solid #10b981; padding-left: 20px; margin: 20px 0; font-style: italic; color: #555;">
+            content: `<blockquote class="quote-block" style="border-left: 4px solid #10b981; padding-left: 20px; margin: 20px 0; font-style: italic; color: #555;" data-gjs-name="Quote">
               "The only way to do great work is to love what you do."
             </blockquote>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path></svg>'
@@ -430,10 +460,10 @@ export default function App() {
             id: 'icon-box',
             label: 'Icon Box',
             category: '3. Typography',
-            content: `<div style="text-align: center; padding: 20px;">
-              <div style="font-size: 2rem; margin-bottom: 10px;">★</div>
-              <h3 style="margin-bottom: 10px;">Feature Title</h3>
-              <p style="color: #666;">Short description of the feature goes here.</p>
+            content: `<div style="text-align: center; padding: 20px;" data-gjs-name="Icon Box">
+              <div style="font-size: 2rem; margin-bottom: 10px;" data-gjs-name="Icon">★</div>
+              <h3 style="margin-bottom: 10px;" data-gjs-name="Title">Feature Title</h3>
+              <p style="color: #666;" data-gjs-name="Text">Short description of the feature goes here.</p>
             </div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>'
           },
@@ -507,15 +537,15 @@ export default function App() {
             id: 'button',
             label: 'Button',
             category: '5. CTA & Buttons',
-            content: '<button style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Click Me</button>',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect><circle cx="12" cy="16" r="1"></circle></svg>'
+            content: '<a href="#" class="btn-primary" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; transition: background-color 0.2s;">Click Me</a>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="8" width="18" height="8" rx="2" ry="2"></rect><line x1="12" y1="12" x2="12" y2="12"></line></svg>'
           },
           {
             id: 'button-outline',
-            label: 'Ghost Button',
+            label: 'Button Outline',
             category: '5. CTA & Buttons',
-            content: '<button style="padding: 10px 20px; background: transparent; color: #10b981; border: 2px solid #10b981; border-radius: 4px; cursor: pointer;">Click Me</button>',
-            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect></svg>'
+            content: '<a href="#" class="btn-outline" style="display: inline-block; padding: 12px 24px; background-color: transparent; color: #3b82f6; border: 2px solid #3b82f6; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; transition: all 0.2s;">Click Me</a>',
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="8" width="18" height="8" rx="2" ry="2"></rect></svg>'
           },
           {
             id: 'button-group',
@@ -533,12 +563,12 @@ export default function App() {
             id: 'form',
             label: 'Form',
             category: '6. Forms',
-            content: `<form style="padding: 20px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px;">
-              <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 500;">Email</label>
-                <input type="email" placeholder="Enter your email" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"/>
+            content: `<form style="padding: 20px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px;" data-gjs-name="Form">
+              <div style="margin-bottom: 15px;" data-gjs-name="Group">
+                <label style="display: block; margin-bottom: 5px; font-weight: 500;" data-gjs-name="Label">Email</label>
+                <input type="email" placeholder="Enter your email" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" data-gjs-name="Input"/>
               </div>
-              <button type="submit" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
+              <button type="submit" class="btn-primary" style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;" data-gjs-name="Button">Submit</button>
             </form>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>'
           },
@@ -569,26 +599,26 @@ export default function App() {
             id: 'pricing',
             label: 'Pricing Table',
             category: '7. Marketing',
-            content: `<div style="display: flex; gap: 20px; flex-wrap: wrap;">
-              <div style="flex: 1; min-width: 250px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 30px; text-align: center;">
-                <h3 style="margin-bottom: 10px;">Basic</h3>
-                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;">$19</div>
-                <ul style="list-style: none; padding: 0; margin-bottom: 30px; color: #6b7280;">
-                  <li style="margin-bottom: 10px;">Feature One</li>
-                  <li style="margin-bottom: 10px;">Feature Two</li>
+            content: `<div style="display: flex; gap: 20px; flex-wrap: wrap;" data-gjs-name="Pricing Wrapper">
+              <div style="flex: 1; min-width: 250px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 30px; text-align: center;" data-gjs-name="Pricing Card">
+                <h3 style="margin-bottom: 10px;" data-gjs-name="Plan Name">Basic</h3>
+                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;" data-gjs-name="Price">$19</div>
+                <ul style="list-style: none; padding: 0; margin-bottom: 30px; color: #6b7280;" data-gjs-name="Features List">
+                  <li style="margin-bottom: 10px;" data-gjs-name="Feature">Feature One</li>
+                  <li style="margin-bottom: 10px;" data-gjs-name="Feature">Feature Two</li>
                 </ul>
-                <button style="width: 100%; padding: 12px; background: #f3f4f6; color: #374151; border: none; border-radius: 4px; font-weight: 600;">Choose</button>
+                <a href="#" class="btn-outline" style="display: block; width: 100%; padding: 12px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 4px; font-weight: 600;" data-gjs-name="Button">Choose</a>
               </div>
-              <div style="flex: 1; min-width: 250px; border: 2px solid #10b981; border-radius: 8px; padding: 30px; text-align: center; position: relative;">
-                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 4px 12px; border-radius: 99px; font-size: 0.8rem; font-weight: 600;">POPULAR</div>
-                <h3 style="margin-bottom: 10px;">Pro</h3>
-                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;">$49</div>
-                <ul style="list-style: none; padding: 0; margin-bottom: 30px; color: #6b7280;">
-                  <li style="margin-bottom: 10px;">Feature One</li>
-                  <li style="margin-bottom: 10px;">Feature Two</li>
-                  <li style="margin-bottom: 10px;">Feature Three</li>
+              <div style="flex: 1; min-width: 250px; border: 2px solid #10b981; border-radius: 8px; padding: 30px; text-align: center; position: relative;" data-gjs-name="Pricing Card Pro">
+                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 4px 12px; border-radius: 99px; font-size: 0.8rem; font-weight: 600;" data-gjs-name="Badge">POPULAR</div>
+                <h3 style="margin-bottom: 10px;" data-gjs-name="Plan Name">Pro</h3>
+                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 20px;" data-gjs-name="Price">$49</div>
+                <ul style="list-style: none; padding: 0; margin-bottom: 30px; color: #6b7280;" data-gjs-name="Features List">
+                  <li style="margin-bottom: 10px;" data-gjs-name="Feature">Feature One</li>
+                  <li style="margin-bottom: 10px;" data-gjs-name="Feature">Feature Two</li>
+                  <li style="margin-bottom: 10px;" data-gjs-name="Feature">Feature Three</li>
                 </ul>
-                <button style="width: 100%; padding: 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-weight: 600;">Choose</button>
+                <a href="#" class="btn-primary" style="display: block; width: 100%; padding: 12px; background: #10b981; color: white; text-decoration: none; border-radius: 4px; font-weight: 600;" data-gjs-name="Button">Choose</a>
               </div>
             </div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line></svg>'
@@ -597,11 +627,11 @@ export default function App() {
             id: 'testimonial',
             label: 'Testimonial',
             category: '7. Marketing',
-            content: `<div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;">
-              <img src="https://via.placeholder.com/60" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 15px;" />
-              <p style="font-size: 1.1rem; font-style: italic; color: #374151; margin-bottom: 20px;">"This product completely changed how we work. Highly recommended!"</p>
-              <div style="font-weight: bold;">Jane Doe</div>
-              <div style="font-size: 0.9rem; color: #6b7280;">CEO, TechCorp</div>
+            content: `<div style="text-align: center; padding: 40px; background: #f9fafb; border-radius: 8px;" data-gjs-name="Testimonial Card">
+              <img src="https://via.placeholder.com/60" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 15px;" data-gjs-name="Avatar" />
+              <p style="font-size: 1.1rem; font-style: italic; color: #374151; margin-bottom: 20px;" data-gjs-name="Quote">"This product completely changed how we work. Highly recommended!"</p>
+              <div style="font-weight: bold;" data-gjs-name="Author">Jane Doe</div>
+              <div style="font-size: 0.9rem; color: #6b7280;" data-gjs-name="Role">CEO, TechCorp</div>
             </div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'
           },
@@ -611,12 +641,12 @@ export default function App() {
             id: 'product-card',
             label: 'Product Card',
             category: '8. E-commerce',
-            content: `<div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 300px;">
-              <div style="height: 200px; background: #f3f4f6; display: flex; align-items: center; justify-content: center;">Product Image</div>
-              <div style="padding: 15px;">
-                <h4 style="margin: 0 0 5px;">Product Name</h4>
-                <div style="color: #10b981; font-weight: bold; margin-bottom: 10px;">$99.00</div>
-                <button style="width: 100%; padding: 8px; background: #1f2937; color: white; border: none; border-radius: 4px;">Add to Cart</button>
+            content: `<div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 300px;" data-gjs-name="Product Card">
+              <div style="height: 200px; background: #f3f4f6; display: flex; align-items: center; justify-content: center;" data-gjs-name="Image Placeholder">Product Image</div>
+              <div style="padding: 15px;" data-gjs-name="Content">
+                <h4 style="margin: 0 0 5px;" data-gjs-name="Product Name">Product Name</h4>
+                <div style="color: #10b981; font-weight: bold; margin-bottom: 10px;" data-gjs-name="Price">$99.00</div>
+                <a href="#" class="btn-primary" style="display: block; width: 100%; padding: 8px; background: #1f2937; color: white; text-decoration: none; text-align: center; border-radius: 4px;" data-gjs-name="Button">Add to Cart</a>
               </div>
             </div>`,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>'
@@ -1670,6 +1700,30 @@ export default function App() {
           margin-bottom: 4px !important;
         }
         
+        /* Selector Manager */
+        .gjs-clm-tags {
+          font-size: 12px;
+          color: ${isDarkMode ? '#e4e4e7' : '#111827'} !important;
+        }
+        .gjs-clm-tag {
+          color: #fff !important;
+          background-color: #3b82f6 !important;
+          border: none !important;
+          border-radius: 4px !important;
+          padding: 2px 6px !important;
+        }
+        .gjs-clm-sel {
+          margin-bottom: 8px !important;
+        }
+        .gjs-clm-label {
+          color: ${isDarkMode ? '#a1a1aa' : '#4b5563'} !important;
+          font-size: 11px !important;
+          margin-bottom: 4px !important;
+        }
+        .gjs-clm-new {
+           color: ${isDarkMode ? '#fff' : '#000'} !important;
+        }
+
         /* Layer Manager */
         .gjs-layer-name {
           color: ${isDarkMode ? '#e4e4e7' : '#111827'} !important;
