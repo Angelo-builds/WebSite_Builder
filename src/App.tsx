@@ -70,6 +70,7 @@ export default function App() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [projects, setProjects] = useState<string[]>([]);
   const [currentProject, setCurrentProject] = useState<string | null>(null);
+  const [device, setDevice] = useState('Desktop');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'styles' | 'traits' | 'layers' | 'templates'>('templates');
@@ -84,6 +85,7 @@ export default function App() {
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Settings State
@@ -812,15 +814,18 @@ export default function App() {
 
   const handlePublish = async () => {
     console.log('handlePublish: Starting...');
+    setIsPublishing(true);
     const editorInstance = editorInstanceRef.current || editor;
     if (!editorInstance) {
       console.error('handlePublish: Editor instance missing');
       showToast('Editor not initialized. Please try reloading.', 'error');
+      setIsPublishing(false);
       return;
     }
     if (!currentProject) {
       console.error('handlePublish: No current project');
       showToast('No project selected.', 'warning');
+      setIsPublishing(false);
       return;
     }
 
@@ -857,6 +862,8 @@ export default function App() {
     } catch (err) {
       console.error('handlePublish: Error:', err);
       showToast(`Failed to publish project: ${err}`, 'error');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -961,9 +968,10 @@ export default function App() {
     }
   };
 
-  const setDevice = (device: string) => {
+  const handleDeviceChange = (newDevice: string) => {
+    setDevice(newDevice);
     if (editor) {
-      editor.setDevice(device);
+      editor.setDevice(newDevice);
     }
   };
 
@@ -1123,6 +1131,13 @@ export default function App() {
         >
         <div className={`p-4 border-b ${themeClasses.sidebarBorder} flex items-center justify-between overflow-hidden whitespace-nowrap`}>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setCurrentProject(null)}
+              className={`p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
             <div className={`w-8 h-8 ${getThemeClass(themeColor, 'bg')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadowLg')}`}>
               <Layout className="w-5 h-5 text-white" />
             </div>
@@ -1206,20 +1221,6 @@ export default function App() {
             </div>
           </div>
         </div>
-
-        <div className={`p-4 border-t ${themeClasses.sidebarBorder} space-y-2`}>
-          <button 
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('Publish button clicked');
-              handlePublish();
-            }}
-            className={`w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] ${!currentProject ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <Globe className="w-4 h-4" /> Publish Site
-          </button>
-        </div>
       </motion.aside>
 
       {/* Toggle Sidebar Button (when closed) - MOVED TO HEADER */}
@@ -1250,27 +1251,32 @@ export default function App() {
              <span className={`text-sm font-medium ${themeClasses.text} bg-white/5 px-3 py-1 rounded-lg border border-white/5`}>
                {currentProject || 'Untitled'}
              </span>
+             {isSaving && (
+                <span className={`ml-2 text-xs font-medium ${getThemeClass(themeColor, 'text')} animate-pulse`}>
+                  Saving...
+                </span>
+             )}
           </div>
         </div>
 
         {/* Center - Device Controls */}
         <div className={`hidden md:flex items-center bg-black/20 rounded-xl p-1 border ${themeClasses.sidebarBorder} shadow-inner`}>
           <button 
-            onClick={() => setDevice('Desktop')} 
+            onClick={() => handleDeviceChange('Desktop')} 
             className={`p-2 rounded-lg transition-all duration-200 ${device === 'Desktop' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
             title="Desktop"
           >
             <Monitor className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => setDevice('Tablet')} 
+            onClick={() => handleDeviceChange('Tablet')} 
             className={`p-2 rounded-lg transition-all duration-200 ${device === 'Tablet' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
             title="Tablet"
           >
             <Tablet className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => setDevice('Mobile')} 
+            onClick={() => handleDeviceChange('Mobile')} 
             className={`p-2 rounded-lg transition-all duration-200 ${device === 'Mobile' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
             title="Mobile"
           >
@@ -1427,30 +1433,44 @@ export default function App() {
 
       {/* Floating Right Panel - Always mounted for GrapesJS, hidden via transform */}
       <motion.aside
-        initial={{ x: '100%', opacity: 0 }}
+        initial={{ width: 0, opacity: 0 }}
         animate={{ 
-          x: isRightSidebarOpen ? 0 : '100%', 
+          width: isRightSidebarOpen ? 320 : 0, 
           opacity: isRightSidebarOpen ? 1 : 0,
-          pointerEvents: isRightSidebarOpen ? 'auto' : 'none'
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50 w-80 shrink-0 border-l border-white/5`}
-        style={{ position: 'absolute', right: '1rem', top: '1rem', bottom: '1rem', height: 'auto' }}
+        className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50 shrink-0 border-l border-white/5`}
       >
-        {/* Internal Tabs for Styles/Settings only */}
-        {(activeRightTab === 'styles' || activeRightTab === 'traits') && (
+        {/* Right Sidebar Header */}
+        {isRightSidebarOpen && (
           <div className={`flex items-center border-b ${themeClasses.sidebarBorder} bg-white/5 shrink-0`}>
             <button 
               onClick={() => setActiveRightTab('styles')}
               className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'styles' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              title="Styles"
             >
-              Styles
+              <Paintbrush className="w-4 h-4 mx-auto mb-1" />
             </button>
             <button 
               onClick={() => setActiveRightTab('traits')}
               className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'traits' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              title="Settings"
             >
-              Settings
+              <Sliders className="w-4 h-4 mx-auto mb-1" />
+            </button>
+            <button 
+              onClick={() => setActiveRightTab('layers')}
+              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'layers' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              title="Layers"
+            >
+              <Layers className="w-4 h-4 mx-auto mb-1" />
+            </button>
+            <button 
+              onClick={() => setActiveRightTab('templates')}
+              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'templates' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              title="Themes"
+            >
+              <Palette className="w-4 h-4 mx-auto mb-1" />
             </button>
           </div>
         )}
