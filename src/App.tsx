@@ -327,44 +327,113 @@ export default function App() {
             id: 'section',
             label: 'Section',
             category: '1. Fundamentals',
-            content: `<section class="gjs-section" style="padding: 50px 20px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center;" data-gjs-droppable="true" data-gjs-name="Section">
-              <h2 data-gjs-draggable="true">New Section</h2>
-            </section>`,
+            content: `
+              <style>
+                .gjs-section {
+                  padding: 50px 20px;
+                  min-height: 100px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                }
+              </style>
+              <section class="gjs-section" data-gjs-droppable="true" data-gjs-name="Section">
+                <h2 data-gjs-draggable="true">New Section</h2>
+              </section>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
           },
           {
             id: 'container',
             label: 'Container',
             category: '1. Fundamentals',
-            content: `<div class="gjs-container" style="max-width: 1200px; margin: 0 auto; padding: 20px; width: 100%; min-height: 50px;" data-gjs-droppable="true" data-gjs-name="Container"></div>`,
+            content: `
+              <style>
+                .gjs-container {
+                  max-width: 1200px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  width: 100%;
+                  min-height: 50px;
+                }
+              </style>
+              <div class="gjs-container" data-gjs-droppable="true" data-gjs-name="Container"></div>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>'
           },
           {
             id: 'container-full',
             label: 'Full Width Box',
             category: '1. Fundamentals',
-            content: `<div class="gjs-container-full" style="width: 100%; height: 100%; min-height: 50px; padding: 20px;" data-gjs-droppable="true" data-gjs-name="Full Box"></div>`,
+            content: `
+              <style>
+                .gjs-container-full {
+                  width: 100%;
+                  height: 100%;
+                  min-height: 50px;
+                  padding: 20px;
+                }
+              </style>
+              <div class="gjs-container-full" data-gjs-droppable="true" data-gjs-name="Full Box"></div>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><path d="M12 2v20"></path><path d="M2 12h20"></path></svg>'
           },
           {
             id: 'grid-2',
             label: 'Grid 1/2',
             category: '1. Fundamentals',
-            content: `<div class="gjs-grid-row" style="display:flex; gap: 20px; padding: 10px; flex-wrap: wrap;" data-gjs-droppable="true" data-gjs-name="Row">
-              <div class="gjs-grid-col" style="flex:1; min-width: 250px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
-              <div class="gjs-grid-col" style="flex:1; min-width: 250px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
-            </div>`,
+            content: `
+              <style>
+                .gjs-grid-row {
+                  display: flex;
+                  gap: 20px;
+                  padding: 10px;
+                  flex-wrap: wrap;
+                }
+                .gjs-grid-col {
+                  flex: 1;
+                  min-width: 250px;
+                  padding: 20px;
+                  min-height: 100px;
+                  background: rgba(0,0,0,0.03);
+                  border-radius: 4px;
+                }
+              </style>
+              <div class="gjs-grid-row" data-gjs-droppable="true" data-gjs-name="Row">
+                <div class="gjs-grid-col" data-gjs-droppable="true" data-gjs-name="Column"></div>
+                <div class="gjs-grid-col" data-gjs-droppable="true" data-gjs-name="Column"></div>
+              </div>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>'
           },
           {
             id: 'grid-3',
             label: 'Grid 1/3',
             category: '1. Fundamentals',
-            content: `<div class="gjs-grid-row" style="display:flex; gap: 20px; padding: 10px; flex-wrap: wrap;" data-gjs-droppable="true" data-gjs-name="Row">
-              <div class="gjs-grid-col" style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
-              <div class="gjs-grid-col" style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
-              <div class="gjs-grid-col" style="flex:1; min-width: 200px; padding: 20px; min-height: 100px; background: rgba(0,0,0,0.03); border-radius: 4px;" data-gjs-droppable="true" data-gjs-name="Column"></div>
-            </div>`,
+            content: `
+              <style>
+                .gjs-grid-row {
+                  display: flex;
+                  gap: 20px;
+                  padding: 10px;
+                  flex-wrap: wrap;
+                }
+                .gjs-grid-col {
+                  flex: 1;
+                  min-width: 200px;
+                  padding: 20px;
+                  min-height: 100px;
+                  background: rgba(0,0,0,0.03);
+                  border-radius: 4px;
+                }
+              </style>
+              <div class="gjs-grid-row" data-gjs-droppable="true" data-gjs-name="Row">
+                <div class="gjs-grid-col" data-gjs-droppable="true" data-gjs-name="Column"></div>
+                <div class="gjs-grid-col" data-gjs-droppable="true" data-gjs-name="Column"></div>
+                <div class="gjs-grid-col" data-gjs-droppable="true" data-gjs-name="Column"></div>
+              </div>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M9 3v18"/><path d="M15 3v18"/></svg>'
           },
           {
@@ -387,61 +456,179 @@ export default function App() {
             id: 'navbar-pill',
             label: 'Pill Navbar',
             category: '2. Navigation',
-            content: `<nav class="navbar-pill" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background-color: #ffffff; min-height: 60px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 50px; margin: 20px;" data-gjs-name="Pill Navbar">
-              <div class="navbar-brand" style="font-size: 1.2rem; font-weight: bold; color: #333;" data-gjs-name="Brand">Brand</div>
-              <div class="navbar-menu" style="display: flex; gap: 15px; align-items: center;" data-gjs-name="Menu">
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 16px; border-radius: 20px; transition: all 0.2s;" data-gjs-name="Link">Home</a>
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 16px; border-radius: 20px; transition: all 0.2s;" data-gjs-name="Link">About</a>
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 16px; border-radius: 20px; transition: all 0.2s;" data-gjs-name="Link">Contact</a>
-              </div>
-            </nav>`,
+            content: `
+              <style>
+                .navbar-pill {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 10px 30px;
+                  background-color: #ffffff;
+                  min-height: 60px;
+                  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                  border-radius: 50px;
+                  margin: 20px;
+                }
+                .navbar-brand {
+                  font-size: 1.2rem;
+                  font-weight: bold;
+                  color: #333;
+                }
+                .navbar-menu {
+                  display: flex;
+                  gap: 15px;
+                  align-items: center;
+                }
+                .navbar-link {
+                  text-decoration: none;
+                  color: #555;
+                  font-weight: 500;
+                  padding: 8px 16px;
+                  border-radius: 20px;
+                  transition: all 0.2s;
+                }
+                .navbar-link:hover {
+                  background-color: rgba(0,0,0,0.05);
+                  color: #000;
+                }
+              </style>
+              <nav class="navbar-pill" data-gjs-name="Pill Navbar">
+                <div class="navbar-brand" data-gjs-name="Brand">Brand</div>
+                <div class="navbar-menu" data-gjs-name="Menu">
+                  <a href="#" class="navbar-link" data-gjs-name="Link">Home</a>
+                  <a href="#" class="navbar-link" data-gjs-name="Link">About</a>
+                  <a href="#" class="navbar-link" data-gjs-name="Link">Contact</a>
+                </div>
+              </nav>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="6" ry="6"></rect><circle cx="6" cy="12" r="2"></circle><line x1="10" y1="12" x2="20" y2="12"></line></svg>'
           },
           {
             id: 'navbar-custom',
             label: 'Standard Navbar',
             category: '2. Navigation',
-            content: `<nav class="navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #ffffff; min-height: 60px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" data-gjs-name="Navbar">
-              <div class="navbar-brand" style="font-size: 1.5rem; font-weight: bold; color: #333;" data-gjs-name="Brand">Brand</div>
-              <div class="navbar-menu" style="display: flex; gap: 20px; align-items: center;" data-gjs-name="Menu">
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">Home</a>
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">About</a>
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">Services</a>
-                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">Contact</a>
-              </div>
-            </nav>`,
+            content: `
+              <style>
+                .navbar-container {
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 20px;
+                  background-color: #ffffff;
+                  min-height: 60px;
+                  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }
+                .navbar-brand {
+                  font-size: 1.5rem;
+                  font-weight: bold;
+                  color: #333;
+                }
+                .navbar-menu {
+                  display: flex;
+                  gap: 20px;
+                  align-items: center;
+                }
+                .navbar-link {
+                  text-decoration: none;
+                  color: #555;
+                  font-weight: 500;
+                  padding: 8px 12px;
+                  border-radius: 4px;
+                  transition: color 0.2s;
+                }
+                .navbar-link:hover {
+                  color: #000;
+                }
+              </style>
+              <nav class="navbar-container" data-gjs-name="Navbar">
+                <div class="navbar-brand" data-gjs-name="Brand">Brand</div>
+                <div class="navbar-menu" data-gjs-name="Menu">
+                  <a href="#" class="navbar-link" data-gjs-name="Link">Home</a>
+                  <a href="#" class="navbar-link" data-gjs-name="Link">About</a>
+                  <a href="#" class="navbar-link" data-gjs-name="Link">Services</a>
+                  <a href="#" class="navbar-link" data-gjs-name="Link">Contact</a>
+                </div>
+              </nav>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
           },
           {
             id: 'footer-multi',
             label: 'Footer Multi',
             category: '2. Navigation',
-            content: `<footer style="background: #1f2937; color: #f3f4f6; padding: 40px 20px;" data-gjs-name="Footer">
-              <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;" data-gjs-name="Grid">
-                <div data-gjs-name="Column">
-                  <h4 style="color: #fff; margin-bottom: 15px;" data-gjs-name="Title">Company</h4>
-                  <p style="font-size: 0.9rem; color: #9ca3af;" data-gjs-name="Text">Making the world better, one pixel at a time.</p>
+            content: `
+              <style>
+                .footer-multi {
+                  background: #1f2937;
+                  color: #f3f4f6;
+                  padding: 40px 20px;
+                }
+                .footer-grid {
+                  max-width: 1200px;
+                  margin: 0 auto;
+                  display: grid;
+                  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                  gap: 40px;
+                }
+                .footer-title {
+                  color: #fff;
+                  margin-bottom: 15px;
+                }
+                .footer-text {
+                  font-size: 0.9rem;
+                  color: #9ca3af;
+                }
+                .footer-list {
+                  list-style: none;
+                  padding: 0;
+                  margin: 0;
+                }
+                .footer-item {
+                  margin-bottom: 8px;
+                }
+                .footer-link {
+                  color: #d1d5db;
+                  text-decoration: none;
+                }
+                .footer-link:hover {
+                  color: #fff;
+                }
+                .footer-copyright {
+                  text-align: center;
+                  margin-top: 40px;
+                  padding-top: 20px;
+                  border-top: 1px solid #374151;
+                  font-size: 0.8rem;
+                  color: #9ca3af;
+                }
+              </style>
+              <footer class="footer-multi" data-gjs-name="Footer">
+                <div class="footer-grid" data-gjs-name="Grid">
+                  <div data-gjs-name="Column">
+                    <h4 class="footer-title" data-gjs-name="Title">Company</h4>
+                    <p class="footer-text" data-gjs-name="Text">Making the world better, one pixel at a time.</p>
+                  </div>
+                  <div data-gjs-name="Column">
+                    <h4 class="footer-title" data-gjs-name="Title">Links</h4>
+                    <ul class="footer-list" data-gjs-name="List">
+                      <li class="footer-item"><a href="#" class="footer-link" data-gjs-name="Link">Home</a></li>
+                      <li class="footer-item"><a href="#" class="footer-link" data-gjs-name="Link">About</a></li>
+                      <li class="footer-item"><a href="#" class="footer-link" data-gjs-name="Link">Contact</a></li>
+                    </ul>
+                  </div>
+                  <div data-gjs-name="Column">
+                    <h4 class="footer-title" data-gjs-name="Title">Legal</h4>
+                    <ul class="footer-list" data-gjs-name="List">
+                      <li class="footer-item"><a href="#" class="footer-link" data-gjs-name="Link">Privacy</a></li>
+                      <li class="footer-item"><a href="#" class="footer-link" data-gjs-name="Link">Terms</a></li>
+                    </ul>
+                  </div>
                 </div>
-                <div data-gjs-name="Column">
-                  <h4 style="color: #fff; margin-bottom: 15px;" data-gjs-name="Title">Links</h4>
-                  <ul style="list-style: none; padding: 0; margin: 0;" data-gjs-name="List">
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Home</a></li>
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">About</a></li>
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Contact</a></li>
-                  </ul>
+                <div class="footer-copyright" data-gjs-name="Copyright">
+                  © 2024 Brand Name. All rights reserved.
                 </div>
-                <div data-gjs-name="Column">
-                  <h4 style="color: #fff; margin-bottom: 15px;" data-gjs-name="Title">Legal</h4>
-                  <ul style="list-style: none; padding: 0; margin: 0;" data-gjs-name="List">
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Privacy</a></li>
-                    <li style="margin-bottom: 8px;"><a href="#" style="color: #d1d5db; text-decoration: none;" data-gjs-name="Link">Terms</a></li>
-                  </ul>
-                </div>
-              </div>
-              <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #374151; font-size: 0.8rem; color: #9ca3af;" data-gjs-name="Copyright">
-                © 2024 Brand Name. All rights reserved.
-              </div>
-            </footer>`,
+              </footer>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="15" x2="21" y2="15"></line></svg>'
           },
 
@@ -561,14 +748,52 @@ export default function App() {
             id: 'button',
             label: 'Button',
             category: '5. CTA & Buttons',
-            content: '<a href="#" class="btn-primary" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; transition: background-color 0.2s;">Click Me</a>',
+            content: `
+              <style>
+                .btn-primary {
+                  display: inline-block;
+                  padding: 12px 24px;
+                  background-color: #3b82f6;
+                  color: white;
+                  text-decoration: none;
+                  border-radius: 6px;
+                  font-weight: 600;
+                  text-align: center;
+                  transition: background-color 0.2s;
+                }
+                .btn-primary:hover {
+                  background-color: #2563eb;
+                }
+              </style>
+              <a href="#" class="btn-primary">Click Me</a>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="8" width="18" height="8" rx="2" ry="2"></rect><line x1="12" y1="12" x2="12" y2="12"></line></svg>'
           },
           {
             id: 'button-outline',
             label: 'Button Outline',
             category: '5. CTA & Buttons',
-            content: '<a href="#" class="btn-outline" style="display: inline-block; padding: 12px 24px; background-color: transparent; color: #3b82f6; border: 2px solid #3b82f6; text-decoration: none; border-radius: 6px; font-weight: 600; text-align: center; transition: all 0.2s;">Click Me</a>',
+            content: `
+              <style>
+                .btn-outline {
+                  display: inline-block;
+                  padding: 12px 24px;
+                  background-color: transparent;
+                  color: #3b82f6;
+                  border: 2px solid #3b82f6;
+                  text-decoration: none;
+                  border-radius: 6px;
+                  font-weight: 600;
+                  text-align: center;
+                  transition: all 0.2s;
+                }
+                .btn-outline:hover {
+                  background-color: #3b82f6;
+                  color: white;
+                }
+              </style>
+              <a href="#" class="btn-outline">Click Me</a>
+            `,
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="8" width="18" height="8" rx="2" ry="2"></rect></svg>'
           },
           {
@@ -712,8 +937,36 @@ export default function App() {
 
     // Track selection
     gjsEditor.on('component:selected', () => {
-      setSelectedComponent(gjsEditor.getSelected());
+      const selected = gjsEditor.getSelected();
+      setSelectedComponent(selected);
+
+      if (selected) {
+        const toolbar = selected.get('toolbar');
+        // Filter out 'tlb-move' (4-way arrow) and 'tlb-up' (up arrow) as per user request
+        const newToolbar = toolbar.filter((t: any) => t.command !== 'tlb-move' && t.command !== 'tlb-up');
+
+        // Check if style button already exists to avoid duplicates
+        if (!newToolbar.some((t: any) => t.command === 'tlb-style')) {
+          newToolbar.unshift({
+            command: 'tlb-style',
+            label: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>',
+            attributes: { title: 'Open Styles' },
+          });
+        }
+        
+        selected.set('toolbar', newToolbar);
+      }
     });
+
+    // Add command for the style button
+    gjsEditor.Commands.add('tlb-style', {
+      run(editor) {
+        setActiveRightTab('styles');
+        // Ensure the right sidebar is open
+        setIsRightSidebarOpen(true);
+      }
+    });
+
     gjsEditor.on('component:deselected', () => {
       setSelectedComponent(null);
     });
@@ -1609,6 +1862,101 @@ export default function App() {
         }
 
         /* GrapesJS Overrides */
+        /* Toolbar Modernization */
+        .gjs-toolbar {
+          background-color: #1e293b !important;
+          border-radius: 8px !important;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          top: -40px !important; /* Move it up a bit */
+        }
+        .gjs-toolbar-item {
+          color: #cbd5e1 !important;
+          width: 32px !important;
+          height: 32px !important;
+          min-width: 32px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          border-radius: 6px !important;
+          margin: 0 2px !important;
+        }
+        .gjs-toolbar-item:hover {
+          background-color: rgba(255, 255, 255, 0.1) !important;
+          color: #fff !important;
+        }
+
+        /* Input Fields Modernization */
+        .gjs-field {
+          background-color: rgba(0, 0, 0, 0.2) !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 6px !important;
+          color: #e2e8f0 !important;
+          padding: 4px 8px !important;
+        }
+        .gjs-field:focus-within {
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+        }
+        .gjs-field input, .gjs-field select {
+          color: #e2e8f0 !important;
+          font-size: 12px !important;
+        }
+        
+        /* Select Arrows */
+        .gjs-field-select::after {
+          border-top-color: #94a3b8 !important;
+        }
+
+        /* Labels */
+        .gjs-label {
+          color: #94a3b8 !important;
+          font-size: 11px !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.05em !important;
+          font-weight: 600 !important;
+        }
+
+        /* Categories/Sectors */
+        .gjs-sm-sector .gjs-sm-title {
+          background-color: rgba(255, 255, 255, 0.03) !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          color: #e2e8f0 !important;
+          font-weight: 600 !important;
+          padding: 10px 12px !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+        .gjs-sm-sector .gjs-sm-icon {
+          margin-right: 8px !important;
+        }
+
+        /* Color Pickers */
+        .gjs-field-color-picker {
+          border-radius: 4px !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          overflow: hidden !important;
+        }
+        
+        /* Checkboxes */
+        .gjs-chk-icon {
+          border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+        .gjs-chk-icon.active {
+          background-color: #3b82f6 !important;
+          border-color: #3b82f6 !important;
+        }
+
+        /* Radio Buttons */
+        .gjs-radio-item input:checked + .gjs-radio-item-label {
+          background-color: #3b82f6 !important;
+          color: white !important;
+        }
+        .gjs-radio-item-label {
+          border-color: rgba(255, 255, 255, 0.1) !important;
+          color: #94a3b8 !important;
+        }
+
         /* Color Picker Fixes - Global */
         .gjs-one-bg, .gjs-color-picker, .sp-container {
           z-index: 99999 !important;
