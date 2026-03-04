@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, User, Palette, Settings as SettingsIcon, Check, Save } from 'lucide-react';
 import { getThemeClass } from '../theme';
+import FileUpload from './FileUpload';
 
 interface UserProfile {
   name: string;
   surname: string;
   email: string;
   role: string;
+  avatar?: string;
 }
 
 interface SettingsModalProps {
@@ -140,62 +142,83 @@ export default function SettingsModal({
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSaveProfile} className="space-y-6">
+                  <div className="flex flex-col items-center mb-6">
+                    <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4 overflow-hidden relative group">
+                      {formData.avatar ? (
+                        <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-10 h-10 text-white/40" />
+                      )}
+                    </div>
+                    <div className="w-full max-w-xs">
+                      <FileUpload 
+                        label="Upload Profile Picture" 
+                        accept="image/*"
+                        onFileSelect={(file) => {
+                          // Create a fake URL for preview
+                          const url = URL.createObjectURL(file);
+                          setFormData({ ...formData, avatar: url });
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>First Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                        placeholder="John"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Last Name</label>
+                      <input
+                        type="text"
+                        value={formData.surname}
+                        onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                        placeholder="Doe"
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="space-y-2">
-                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>First Name</label>
+                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Email Address</label>
                     <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
-                      placeholder="John"
+                      placeholder="john@example.com"
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Last Name</label>
+                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Role / Job Title</label>
                     <input
                       type="text"
-                      value={formData.surname}
-                      onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                       className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
-                      placeholder="Doe"
+                      placeholder="Administrator"
                     />
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Email Address</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
-                    placeholder="john@example.com"
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Role / Job Title</label>
-                  <input
-                    type="text"
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
-                    placeholder="Administrator"
-                  />
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button
-                    type="submit"
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium shadow-lg transition-all active:scale-95 ${getButtonColor(themeColor)}`}
-                  >
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </button>
-                </div>
-              </form>
+                  <div className="pt-4 flex justify-end">
+                    <button
+                      type="submit"
+                      className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium shadow-lg transition-all active:scale-95 ${getButtonColor(themeColor)}`}
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
               )
             )}
 

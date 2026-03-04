@@ -553,6 +553,13 @@ export default function App() {
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>'
           },
           {
+            id: 'navbar-link',
+            label: 'Navbar Link',
+            category: '2. Navigation',
+            content: `<a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 12px; border-radius: 4px; transition: color 0.2s;" data-gjs-name="Link">New Link</a>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>'
+          },
+          {
             id: 'footer-multi',
             label: 'Footer Multi',
             category: '2. Navigation',
@@ -1396,12 +1403,32 @@ export default function App() {
       {/* Floating Layout Container */}
       <div className="absolute inset-0 p-4 flex gap-4 z-10">
         
+        {/* Open Sidebar Button */}
+        <AnimatePresence>
+          {!isSidebarOpen && (
+            <motion.button
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onClick={() => setIsSidebarOpen(true)}
+              className={`absolute top-4 left-4 z-50 p-3 rounded-xl ${themeClasses.sidebarBg} border ${themeClasses.sidebarBorder} shadow-lg text-white hover:bg-white/10 transition-colors`}
+              title="Open Sidebar"
+            >
+              <Layout className="w-5 h-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {/* Floating Sidebar */}
         <motion.aside 
-          initial={{ x: -50, opacity: 0 }}
-          animate={{ x: 0, opacity: 1, width: isSidebarOpen ? 280 : 0 }}
+          initial={{ width: 280, opacity: 1 }}
+          animate={{ 
+            width: isSidebarOpen ? 280 : 0, 
+            opacity: isSidebarOpen ? 1 : 0,
+            x: isSidebarOpen ? 0 : -20
+          }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50`}
+          className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50 shrink-0`}
         >
         <div className={`p-4 border-b ${themeClasses.sidebarBorder} flex items-center justify-between overflow-hidden whitespace-nowrap`}>
           <div className="flex items-center gap-2">
@@ -1794,11 +1821,16 @@ export default function App() {
                 <Palette className="w-3 h-3" /> Select a Theme
               </div>
               <div className="grid grid-cols-1 gap-3">
-                {TEMPLATES.map((template) => (
-                  <div 
+                {TEMPLATES.map((template, index) => (
+                  <motion.div 
                     key={template.id}
                     onClick={() => applyTemplate(template)}
-                    className={`group cursor-pointer rounded-xl border ${themeClasses.sidebarBorder} overflow-hidden transition-all duration-300 hover:border-${themeColor}-500/50 hover:shadow-lg hover:shadow-${themeColor}-500/10 hover:-translate-y-1 bg-white/5`}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    className={`group cursor-pointer rounded-xl border ${themeClasses.sidebarBorder} overflow-hidden transition-colors duration-300 hover:border-${themeColor}-500/50 hover:shadow-lg hover:shadow-${themeColor}-500/10 bg-white/5`}
                   >
                     <div className={`h-20 w-full ${template.preview} relative overflow-hidden`}>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
@@ -1807,7 +1839,7 @@ export default function App() {
                     <div className={`p-3 ${isDarkMode ? 'bg-[#27272a]' : 'bg-white'}`}>
                       <p className={`text-xs ${themeClasses.textMuted} leading-relaxed`}>{template.description}</p>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>

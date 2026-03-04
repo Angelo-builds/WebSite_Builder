@@ -238,54 +238,62 @@ export default function Dashboard({
               <ChevronDown className={`w-3 h-3 text-white/40 transition-transform ${isSettingsOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {isSettingsOpen && (
-              <div className={`absolute top-full right-0 mt-3 w-64 rounded-2xl border ${theme.border} bg-[#1c1c1e] shadow-2xl overflow-hidden z-50 ring-1 ring-white/10`}>
-                <div className="p-4 border-b border-white/5">
-                   <p className="text-sm font-bold text-white">{userProfile.name} {userProfile.surname}</p>
-                   <p className="text-xs text-white/40">{userProfile.email}</p>
-                </div>
-                <div className="p-2 space-y-1">
-                  <button 
-                    onClick={() => {
-                      onOpenSettings('profile');
-                      setIsSettingsOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
-                  >
-                    <User className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
-                    Account
-                  </button>
-                  <button 
-                    onClick={() => {
-                      onOpenSettings('settings');
-                      setIsSettingsOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
-                  >
-                    <Settings className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
-                    Settings
-                  </button>
-                  <button 
-                    onClick={() => {
-                      onOpenSettings('appearance');
-                      setIsSettingsOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
-                  >
-                    <Layout className={`w-4 h-4 text-${themeColor}-500`} />
-                    Customization
-                  </button>
-                  <div className={`h-px ${theme.border} my-1 mx-2`}></div>
-                  <button 
-                    onClick={() => onLogin(false)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors`}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {isSettingsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className={`absolute top-full right-0 mt-3 w-64 rounded-2xl border ${theme.border} bg-[#1c1c1e] shadow-2xl overflow-hidden z-50 ring-1 ring-white/10`}
+                >
+                  <div className="p-4 border-b border-white/5">
+                     <p className="text-sm font-bold text-white">{userProfile.name} {userProfile.surname}</p>
+                     <p className="text-xs text-white/40">{userProfile.email}</p>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    <button 
+                      onClick={() => {
+                        onOpenSettings('profile');
+                        setIsSettingsOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
+                    >
+                      <User className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
+                      Account
+                    </button>
+                    <button 
+                      onClick={() => {
+                        onOpenSettings('settings');
+                        setIsSettingsOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
+                    >
+                      <Settings className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
+                      Settings
+                    </button>
+                    <button 
+                      onClick={() => {
+                        onOpenSettings('appearance');
+                        setIsSettingsOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
+                    >
+                      <Layout className={`w-4 h-4 text-${themeColor}-500`} />
+                      Customization
+                    </button>
+                    <div className={`h-px ${theme.border} my-1 mx-2`}></div>
+                    <button 
+                      onClick={() => onLogin(false)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors`}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>
