@@ -236,9 +236,9 @@ export default function App() {
         [gjsCountdown as any]: {},
         [gjsStyleBg as any]: {},
       },
-      selectorManager: {
-        appendTo: '#selector-container',
-      },
+      // selectorManager: {
+      //   appendTo: '#selector-container',
+      // },
       styleManager: {
         appendTo: '#styles-container',
         sectors: [
@@ -340,6 +340,13 @@ export default function App() {
             media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>'
           },
           {
+            id: 'container-full',
+            label: 'Full Width Box',
+            category: '1. Fundamentals',
+            content: `<div class="gjs-container-full" style="width: 100%; height: 100%; min-height: 50px; padding: 20px;" data-gjs-droppable="true" data-gjs-name="Full Box"></div>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><path d="M12 2v20"></path><path d="M2 12h20"></path></svg>'
+          },
+          {
             id: 'grid-2',
             label: 'Grid 1/2',
             category: '1. Fundamentals',
@@ -377,8 +384,22 @@ export default function App() {
 
           // --- 2. NAVIGATION ---
           {
+            id: 'navbar-pill',
+            label: 'Pill Navbar',
+            category: '2. Navigation',
+            content: `<nav class="navbar-pill" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background-color: #ffffff; min-height: 60px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 50px; margin: 20px;" data-gjs-name="Pill Navbar">
+              <div class="navbar-brand" style="font-size: 1.2rem; font-weight: bold; color: #333;" data-gjs-name="Brand">Brand</div>
+              <div class="navbar-menu" style="display: flex; gap: 15px; align-items: center;" data-gjs-name="Menu">
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 16px; border-radius: 20px; transition: all 0.2s;" data-gjs-name="Link">Home</a>
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 16px; border-radius: 20px; transition: all 0.2s;" data-gjs-name="Link">About</a>
+                <a href="#" class="navbar-link" style="text-decoration: none; color: #555; font-weight: 500; padding: 8px 16px; border-radius: 20px; transition: all 0.2s;" data-gjs-name="Link">Contact</a>
+              </div>
+            </nav>`,
+            media: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="6" ry="6"></rect><circle cx="6" cy="12" r="2"></circle><line x1="10" y1="12" x2="20" y2="12"></line></svg>'
+          },
+          {
             id: 'navbar-custom',
-            label: 'Navbar Custom',
+            label: 'Standard Navbar',
             category: '2. Navigation',
             content: `<nav class="navbar-container" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #ffffff; min-height: 60px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" data-gjs-name="Navbar">
               <div class="navbar-brand" style="font-size: 1.5rem; font-weight: bold; color: #333;" data-gjs-name="Brand">Brand</div>
@@ -1499,10 +1520,10 @@ export default function App() {
             </div>
           )}
 
-          {/* Selector Manager (Classes) */}
-          <div className={`${activeRightTab === 'styles' && selectedComponent ? 'block' : 'absolute opacity-0 pointer-events-none'} mb-6`}>
+          {/* Selector Manager (Classes) - Hidden as per user request */}
+          {/* <div className={`${activeRightTab === 'styles' && selectedComponent ? 'block' : 'absolute opacity-0 pointer-events-none'} mb-6`}>
              <div id="selector-container"></div>
-          </div>
+          </div> */}
 
           {/* Style Manager */}
           <div id="styles-container" className={activeRightTab === 'styles' && selectedComponent ? 'block' : 'absolute opacity-0 pointer-events-none'}></div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles } from 'lucide-react';
 import { getThemeClass } from '../theme';
@@ -59,14 +59,30 @@ export default function Dashboard({
     inputBg: 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20',
   };
 
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-black">
-        {/* Advanced Liquid Background */}
-        <div className="absolute inset-0 overflow-hidden">
-           <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-blue-600/20 rounded-full blur-[150px] animate-pulse"></div>
-           <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-purple-600/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-           <div className="absolute top-[40%] left-[40%] w-[40%] h-[40%] bg-pink-600/10 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '4s' }}></div>
+        {/* Mouse Following Light */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+           <motion.div 
+             className="absolute w-[800px] h-[800px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-screen"
+             animate={{ 
+               x: mousePosition.x - 400, 
+               y: mousePosition.y - 400 
+             }}
+             transition={{ type: "spring", damping: 30, stiffness: 50, mass: 0.5 }}
+           />
            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
         </div>
 
