@@ -1087,9 +1087,15 @@ export default function App() {
     try {
       const res = await fetch('/api/projects');
       const data = await res.json();
-      setProjects(data);
+      if (Array.isArray(data)) {
+        setProjects(data);
+      } else {
+        console.error('Failed to fetch projects:', data);
+        setProjects([]);
+      }
     } catch (err) {
       console.error('Failed to fetch projects', err);
+      setProjects([]);
     }
   };
 

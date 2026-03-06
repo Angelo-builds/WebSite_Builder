@@ -22,6 +22,7 @@ app.use(express.json());
 
 // Database Connection
 let db: mysql.Connection | null = null;
+let dbReady = false;
 
 const connectDB = async () => {
   try {
@@ -29,7 +30,7 @@ const connectDB = async () => {
       console.warn('DB_HOST not set. Running in mock mode (no DB).');
       return;
     }
-    db = await mysql.createConnection({
+    const connection = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
@@ -38,7 +39,7 @@ const connectDB = async () => {
     console.log('Connected to MySQL/MariaDB Database');
 
     // Create tables if they don't exist
-    await db.execute(`
+    await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
@@ -49,7 +50,7 @@ const connectDB = async () => {
       )
     `);
 
-    await db.execute(`
+    await connection.execute(`
       CREATE TABLE IF NOT EXISTS projects (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
@@ -57,9 +58,13 @@ const connectDB = async () => {
       )
     `);
     console.log('Database tables verified');
+    db = connection;
+    dbReady = true;
   } catch (err) {
     console.error('Database connection failed:', err);
     console.warn('Running in fallback mode.');
+    db = null; // Ensure db is null if initialization fails
+    dbReady = false;
   }
 };
 
@@ -71,7 +76,7 @@ connectDB();
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, surname } = req.body;
   
-  if (!db) {
+  if (!dbReady || !db) {
     return res.status(201).json({ message: 'User registered (Mock)', token: 'mock-token', user: { email, name, role: 'User' } });
   }
 
@@ -94,7 +99,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
-  if (!db) {
+  if (!dbReady || !db) {
      if (email === 'admin@example.com' && password === 'admin') {
         return res.json({ token: 'mock-admin-token', user: { email, name: 'Admin', role: 'Administrator' } });
      }
@@ -177,7 +182,7 @@ const upload = multer({ storage: storage });
 
 // Get all projects
 app.get('/api/projects', async (req, res) => {
-  if (!db) {
+  if (!dbReady || !db) {
     return res.json([
       { name: 'My First Site', description: 'A simple landing page', category: 'Landing Page', updatedAt: new Date().toISOString() },
       { name: 'Portfolio', description: 'My personal portfolio', category: 'Portfolio', updatedAt: new Date().toISOString() },
@@ -204,6 +209,7 @@ app.get('/api/projects', async (req, res) => {
     });
     res.json(projects);
   } catch (error) {
+    console.error('Error fetching projects:', error);
     res.status(500).json({ message: 'Failed to fetch projects' });
   }
 });
@@ -211,7 +217,7 @@ app.get('/api/projects', async (req, res) => {
 // Get project by ID
 app.get('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
-  if (!db) {
+  if (!dbReady || !db) {
     return res.json({
       assets: [],
       styles: [],
@@ -234,7 +240,7 @@ app.get('/api/projects/:id', async (req, res) => {
 // Create project
 app.post('/api/projects', async (req, res) => {
   const { name, description, category } = req.body;
-  if (!db) {
+  if (!dbReady || !db) {
     return res.status(201).json({ message: 'Project created (Mock)', name, description, category });
   }
   
@@ -256,7 +262,7 @@ app.post('/api/projects', async (req, res) => {
 app.post('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
   const data = req.body;
-  if (!db) {
+  if (!dbReady || !db) {
     return res.json({ message: 'Project saved (Mock)', id });
   }
   
@@ -271,7 +277,7 @@ app.post('/api/projects/:id', async (req, res) => {
 // Delete project
 app.delete('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
-  if (!db) {
+  if (!dbReady || !db) {
     return res.json({ message: 'Project deleted (Mock)', id });
   }
   
