@@ -6,7 +6,7 @@ import gjsNavbar from 'grapesjs-navbar';
 import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
-import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft } from 'lucide-react';
+import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
 import ProjectModal from './components/ProjectModal';
@@ -68,6 +68,8 @@ const TEMPLATES = [
 
 export default function App() {
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const [projects, setProjects] = useState<string[]>([]);
   const [currentProject, setCurrentProject] = useState<string | null>(null);
   const [device, setDevice] = useState('Desktop');
@@ -988,6 +990,17 @@ export default function App() {
       }
     });
 
+    // Update undo/redo state
+    const updateUndoRedo = () => {
+      const um = gjsEditor.UndoManager;
+      setCanUndo(um.hasUndo());
+      setCanRedo(um.hasRedo());
+    };
+    
+    gjsEditor.on('component:update undo redo change:changesCount', updateUndoRedo);
+    // Initial state
+    updateUndoRedo();
+
     setEditor(gjsEditor);
     editorInstanceRef.current = gjsEditor;
 
@@ -1010,6 +1023,9 @@ export default function App() {
           } else {
              editor.loadProjectData(data);
           }
+          editor.UndoManager.clear();
+          setCanUndo(false);
+          setCanRedo(false);
         }
       } catch (err) {
         console.error('Failed to load project', err);
@@ -1162,6 +1178,9 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         editor.loadProjectData(data);
+        editor.UndoManager.clear();
+        setCanUndo(false);
+        setCanRedo(false);
         setCurrentProject(id);
         setViewMode('editor');
       } else {
@@ -1191,10 +1210,7 @@ export default function App() {
           setProjects(prev => prev.filter(p => p !== id));
           if (currentProject === id) {
             setCurrentProject(null);
-            if (editor) {
-              editor.setComponents('');
-              editor.setStyle([]);
-            }
+            setViewMode('dashboard');
           }
           console.log('deleteProject: Deleted successfully');
           showToast('Project deleted successfully', 'success');
@@ -1208,44 +1224,42 @@ export default function App() {
 
   const handleCreateProject = async (name: string) => {
     setCurrentProject(name);
-    // If we are in dashboard, switch to editor first
-    if (viewMode === 'dashboard') {
-      setViewMode('editor');
-      try {
-        // Create a minimal valid project structure
-        const emptyProject = {
-          assets: [],
-          styles: [],
-          pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
-        };
-        
-        await fetch(`/api/projects/${name}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(emptyProject),
-        });
-        setProjects([...projects, name]);
-      } catch (err) {
-        console.error('Failed to create project', err);
-      }
-      return;
-    }
+    
+    // Create a minimal valid project structure
+    const emptyProject = {
+      assets: [],
+      styles: [],
+      pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
+    };
 
-    if (editor) {
-      editor.setComponents('');
-      // Save immediately to persist
-      try {
-        const data = editor.getProjectData();
-        await fetch(`/api/projects/${name}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        setProjects([...projects, name]);
-      } catch (err) {
-        console.error('Failed to create project', err);
-        alert('Failed to create project');
+    try {
+      // Create project in backend
+      await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      
+      // Initialize with empty structure
+      await fetch(`/api/projects/${name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emptyProject),
+      });
+
+      setProjects(prev => [...prev, name]);
+      
+      if (viewMode === 'dashboard') {
+        setViewMode('editor');
+      } else if (editor) {
+        editor.loadProjectData(emptyProject);
+        editor.UndoManager.clear();
+        setCanUndo(false);
+        setCanRedo(false);
       }
+    } catch (err) {
+      console.error('Failed to create project', err);
+      showToast('Failed to create project', 'error');
     }
   };
 
@@ -1433,7 +1447,10 @@ export default function App() {
         <div className={`p-4 border-b ${themeClasses.sidebarBorder} flex items-center justify-between overflow-hidden whitespace-nowrap`}>
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => setCurrentProject(null)}
+              onClick={() => {
+                setCurrentProject(null);
+                setViewMode('dashboard');
+              }}
               className={`p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
               title="Back to Dashboard"
             >
@@ -1532,7 +1549,7 @@ export default function App() {
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className={`h-16 mx-4 mt-4 rounded-2xl border ${themeClasses.border} ${themeClasses.sidebarBg} flex items-center justify-between px-6 shadow-lg z-50 relative`}
+        className={`h-16 mx-4 mt-4 rounded-2xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} flex items-center justify-between px-6 shadow-lg z-50 relative`}
       >
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
@@ -1606,6 +1623,22 @@ export default function App() {
            <div className={`w-px h-6 ${themeClasses.sidebarBorder} mx-1 hidden sm:block`}></div>
 
            <div className="flex items-center gap-1 bg-black/20 rounded-xl p-1 border border-white/5">
+              <button 
+                onClick={(e) => { e.preventDefault(); editor?.UndoManager.undo(); }}
+                disabled={!canUndo}
+                className={`p-2 rounded-lg hover:bg-white/10 ${canUndo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
+                title="Undo"
+              >
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={(e) => { e.preventDefault(); editor?.UndoManager.redo(); }}
+                disabled={!canRedo}
+                className={`p-2 rounded-lg hover:bg-white/10 ${canRedo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
+                title="Redo"
+              >
+                <Redo2 className="w-4 h-4" />
+              </button>
               <button 
                 onClick={(e) => { e.preventDefault(); handleSave(); }}
                 disabled={!currentProject || isSaving}
