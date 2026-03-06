@@ -35,7 +35,28 @@ const connectDB = async () => {
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'sitebuilder',
     });
-    console.log('Connected to MySQL Database');
+    console.log('Connected to MySQL/MariaDB Database');
+
+    // Create tables if they don't exist
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
+        surname VARCHAR(255),
+        role VARCHAR(50) DEFAULT 'user'
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        data LONGTEXT
+      )
+    `);
+    console.log('Database tables verified');
   } catch (err) {
     console.error('Database connection failed:', err);
     console.warn('Running in fallback mode.');
@@ -51,7 +72,6 @@ app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, surname } = req.body;
   
   if (!db) {
-    // Mock response for preview environment
     return res.status(201).json({ message: 'User registered (Mock)', token: 'mock-token', user: { email, name, role: 'User' } });
   }
 
@@ -75,7 +95,6 @@ app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!db) {
-     // Mock response for preview environment
      if (email === 'admin@example.com' && password === 'admin') {
         return res.json({ token: 'mock-admin-token', user: { email, name: 'Admin', role: 'Administrator' } });
      }
@@ -159,12 +178,30 @@ const upload = multer({ storage: storage });
 // Get all projects
 app.get('/api/projects', async (req, res) => {
   if (!db) {
-    // Mock projects
-    return res.json(['My First Site', 'Portfolio', 'Landing Page']);
+    return res.json([
+      { name: 'My First Site', description: 'A simple landing page', category: 'Landing Page', updatedAt: new Date().toISOString() },
+      { name: 'Portfolio', description: 'My personal portfolio', category: 'Portfolio', updatedAt: new Date().toISOString() },
+      { name: 'E-commerce', description: 'Online store', category: 'E-commerce', updatedAt: new Date().toISOString() }
+    ]);
   }
+  
   try {
-    const [rows] = await db.execute('SELECT name FROM projects');
-    const projects = (rows as any[]).map(row => row.name);
+    const [rows] = await db.execute('SELECT name, data FROM projects');
+    const projects = (rows as any[]).map(row => {
+      let metadata = { description: '', category: 'Other', updatedAt: new Date().toISOString() };
+      try {
+        if (row.data) {
+          const parsed = JSON.parse(row.data);
+          if (parsed.metadata) {
+            metadata = { ...metadata, ...parsed.metadata };
+          }
+        }
+      } catch (e) {}
+      return {
+        name: row.name,
+        ...metadata
+      };
+    });
     res.json(projects);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch projects' });
@@ -175,13 +212,13 @@ app.get('/api/projects', async (req, res) => {
 app.get('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
   if (!db) {
-    // Mock project data
     return res.json({
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     });
   }
+  
   try {
     const [rows] = await db.execute('SELECT data FROM projects WHERE name = ?', [id]);
     const projects = rows as any[];
@@ -196,12 +233,19 @@ app.get('/api/projects/:id', async (req, res) => {
 
 // Create project
 app.post('/api/projects', async (req, res) => {
-  const { name } = req.body;
+  const { name, description, category } = req.body;
   if (!db) {
-    return res.status(201).json({ message: 'Project created (Mock)', name });
+    return res.status(201).json({ message: 'Project created (Mock)', name, description, category });
   }
+  
   try {
-    await db.execute('INSERT INTO projects (id, name) VALUES (?, ?)', [name.toLowerCase().replace(/\s+/g, '-'), name]);
+    const initialData = JSON.stringify({
+      metadata: { description: description || '', category: category || 'Other', updatedAt: new Date().toISOString() },
+      assets: [],
+      styles: [],
+      pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
+    });
+    await db.execute('INSERT INTO projects (id, name, data) VALUES (?, ?, ?)', [name.toLowerCase().replace(/\s+/g, '-'), name, initialData]);
     res.status(201).json({ message: 'Project created', name });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create project' });
@@ -215,6 +259,7 @@ app.post('/api/projects/:id', async (req, res) => {
   if (!db) {
     return res.json({ message: 'Project saved (Mock)', id });
   }
+  
   try {
     await db.execute('UPDATE projects SET data = ? WHERE name = ?', [JSON.stringify(data), id]);
     res.json({ message: 'Project saved', id });
@@ -229,6 +274,7 @@ app.delete('/api/projects/:id', async (req, res) => {
   if (!db) {
     return res.json({ message: 'Project deleted (Mock)', id });
   }
+  
   try {
     await db.execute('DELETE FROM projects WHERE name = ?', [id]);
     res.json({ message: 'Project deleted', id });
@@ -237,7 +283,51 @@ app.delete('/api/projects/:id', async (req, res) => {
   }
 });
 
+// Publish project
+app.post('/api/projects/:id/publish', async (req, res) => {
+  const { id } = req.params;
+  const { html, css } = req.body;
+  
+  try {
+    const projectDir = path.join(__dirname, 'dist', 'sites', id, 'dist');
+    if (!fs.existsSync(projectDir)) {
+      fs.mkdirSync(projectDir, { recursive: true });
+    }
+    
+    const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${id}</title>
+  <style>${css}</style>
+</head>
+<body>
+  ${html}
+</body>
+</html>`;
+    
+    fs.writeFileSync(path.join(projectDir, 'index.html'), fullHtml);
+    res.json({ message: 'Project published successfully', url: `/sites/${id}/dist/index.html` });
+  } catch (error) {
+    console.error('Publish error:', error);
+    res.status(500).json({ message: 'Failed to publish project' });
+  }
+});
+
+// Serve published sites
+app.use('/sites', express.static(path.join(__dirname, 'dist', 'sites')));
+
 // --- Asset Routes ---
+const getAssetType = (filename: string) => {
+  const ext = path.extname(filename).toLowerCase();
+  if (['.mp4', '.webm', '.ogg'].includes(ext)) return 'video';
+  if (['.mp3', '.wav', '.ogg'].includes(ext)) return 'audio';
+  if (['.pdf', '.doc', '.docx'].includes(ext)) return 'document';
+  if (['.ttf', '.woff', '.woff2', '.eot'].includes(ext)) return 'font';
+  return 'image';
+};
+
 app.get('/api/assets', (req, res) => {
   const uploadDir = path.join(__dirname, 'dist', 'uploads');
   if (!fs.existsSync(uploadDir)) {
@@ -246,7 +336,7 @@ app.get('/api/assets', (req, res) => {
   
   const files = fs.readdirSync(uploadDir);
   const assets = files.map(file => ({
-    type: 'image',
+    type: getAssetType(file),
     src: `/uploads/${file}`,
     name: file
   }));
@@ -256,7 +346,7 @@ app.get('/api/assets', (req, res) => {
 app.post('/api/assets/upload', upload.array('files'), (req, res) => {
   const files = req.files as Express.Multer.File[];
   const assets = files.map(file => ({
-    type: 'image',
+    type: getAssetType(file.filename),
     src: `/uploads/${file.filename}`,
     name: file.originalname
   }));

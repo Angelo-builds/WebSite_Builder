@@ -65,16 +65,16 @@ CT_ID=$(pvesh get /cluster/nextid)
 CT_NAME="blockra"
 CT_PASSWORD=""
 STORAGE="local-lvm"
-CORES=2
-MEMORY=2048
-SWAP=512
+CORES=4
+MEMORY=4096
+SWAP=1024
 NET_MODE="dhcp"
 IP_ADDRESS=""
 GATEWAY=""
 
 # --- MENU ---
 CHOICE=$(whiptail --title "Proxmox SiteBuilder Installer" --menu "Choose Installation Type" 12 60 2 \
-"1" "Default (DHCP, 2GB RAM, ID: $CT_ID)" \
+"1" "Default (DHCP, 4GB RAM, ID: $CT_ID)" \
 "2" "Advanced (Static IP, Custom Resources)" 3>&1 1>&2 2>&3)
 
 exitstatus=$?
@@ -189,7 +189,7 @@ pct create $CT_ID "$TEMPLATE_VOLID" \
     --hostname "$CT_NAME" \
     --password "$CT_PASSWORD" \
     --storage $ROOTFS_STORAGE \
-    --rootfs 8 \
+    --rootfs 20 \
     --net0 "$NET_STRING" \
     --cores $CORES \
     --memory $MEMORY \

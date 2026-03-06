@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter } from 'lucide-react';
 import { getThemeClass } from '../theme';
+
+export interface Project {
+  name: string;
+  description?: string;
+  category?: string;
+  updatedAt?: string;
+}
 
 interface UserProfile {
   name: string;
@@ -11,7 +18,7 @@ interface UserProfile {
 }
 
 interface DashboardProps {
-  projects: string[];
+  projects: Project[];
   onSelectProject: (id: string) => void;
   onCreateProject: () => void;
   onDeleteProject: (id: string, e: React.MouseEvent) => void;
@@ -39,6 +46,18 @@ export default function Dashboard({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  const categories = ['All', ...Array.from(new Set(projects.map(p => p.category || 'Other')))];
+
+  const filteredProjects = projects.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleEmailAuth = (e: React.FormEvent) => {
     e.preventDefault();
@@ -300,7 +319,7 @@ export default function Dashboard({
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 py-12">
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-6">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-white tracking-tight">Your Projects</h2>
             <p className={theme.textMuted}>Manage and publish your websites with ease.</p>
@@ -313,6 +332,34 @@ export default function Dashboard({
             New Project
           </button>
         </div>
+
+        {projects.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <input 
+                type="text" 
+                placeholder="Search projects..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full bg-[#1c1c1e]/60 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all`}
+              />
+            </div>
+            <div className="relative min-w-[200px]">
+              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className={`w-full bg-[#1c1c1e]/60 border border-white/10 rounded-2xl pl-12 pr-10 py-3 text-white focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all appearance-none`}
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat} className="bg-[#1c1c1e] text-white">{cat}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            </div>
+          </div>
+        )}
 
         {projects.length === 0 ? (
           <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] bg-white/5 backdrop-blur-sm`}>
@@ -328,25 +375,39 @@ export default function Dashboard({
               Create Project
             </button>
           </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] bg-white/5 backdrop-blur-sm`}>
+            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
+              <Search className="w-10 h-10 opacity-30 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold mb-3 text-white">No matching projects</h3>
+            <p className={`${theme.textMuted} mb-10 max-w-md mx-auto text-lg`}>Try adjusting your search or filter criteria.</p>
+            <button 
+              onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
+              className={`px-8 py-3 bg-white/10 text-white hover:bg-white/20 rounded-xl font-medium transition-colors border border-white/10`}
+            >
+              Clear Filters
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => (
+            {filteredProjects.map((project) => (
               <motion.div
-                key={project}
+                key={project.name}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
-                onClick={() => onSelectProject(project)}
-                className={`group relative cursor-pointer rounded-[2rem] border ${theme.border} bg-[#1c1c1e]/60 overflow-hidden transition-all hover:shadow-2xl ${getThemeClass(themeColor, 'cardHoverShadow')} ${getThemeClass(themeColor, 'cardHoverBorder')} backdrop-blur-md`}
+                onClick={() => onSelectProject(project.name)}
+                className={`group relative cursor-pointer rounded-[2rem] border ${theme.border} bg-[#1c1c1e]/60 overflow-hidden transition-all hover:shadow-2xl ${getThemeClass(themeColor, 'cardHoverShadow')} ${getThemeClass(themeColor, 'cardHoverBorder')} backdrop-blur-md flex flex-col`}
               >
                 {/* Preview Area (Mock) */}
-                <div className={`h-56 w-full bg-gradient-to-br from-white/5 to-white/10 relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors`}>
+                <div className={`h-48 w-full bg-gradient-to-br from-white/5 to-white/10 relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors shrink-0`}>
                   <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
                   <Layout className={`w-16 h-16 ${theme.textMuted} opacity-20 group-hover:scale-110 group-hover:opacity-30 ${getThemeClass(themeColor, 'cardIconHover')} transition-all duration-500`} />
                   
                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                     <button 
-                      onClick={(e) => onDeleteProject(project, e)}
+                      onClick={(e) => onDeleteProject(project.name, e)}
                       className="p-3 bg-black/40 hover:bg-red-500 text-white/60 hover:text-white rounded-xl backdrop-blur-md transition-colors border border-white/10"
                       title="Delete Project"
                     >
@@ -356,22 +417,30 @@ export default function Dashboard({
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className={`font-bold text-xl truncate pr-4 text-white ${getThemeClass(themeColor, 'cardTitleHover')} transition-colors`}>{project}</h3>
-                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg ${getThemeClass(themeColor, 'badgeBg')} ${getThemeClass(themeColor, 'badgeText')} border ${getThemeClass(themeColor, 'badgeBorder')}`}>
-                      Active
+                <div className="p-6 flex flex-col flex-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className={`font-bold text-xl truncate pr-4 text-white ${getThemeClass(themeColor, 'cardTitleHover')} transition-colors`}>{project.name}</h3>
+                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg ${getThemeClass(themeColor, 'badgeBg')} ${getThemeClass(themeColor, 'badgeText')} border ${getThemeClass(themeColor, 'badgeBorder')} shrink-0`}>
+                      {project.category || 'Active'}
                     </span>
                   </div>
-                  <p className={`text-xs ${theme.textMuted} mb-8 flex items-center gap-2`}>
-                    <Sparkles className="w-3 h-3 text-yellow-500" /> Last edited just now
+                  
+                  {project.description && (
+                    <p className={`text-sm ${theme.textMuted} mb-4 line-clamp-2 flex-1`}>
+                      {project.description}
+                    </p>
+                  )}
+                  
+                  <p className={`text-xs ${theme.textFaint} mb-6 flex items-center gap-2 mt-auto`}>
+                    <Sparkles className="w-3 h-3 text-yellow-500/70" /> 
+                    {project.updatedAt ? `Updated ${new Date(project.updatedAt).toLocaleDateString()}` : 'Last edited recently'}
                   </p>
                   
                   <div className="flex items-center gap-3 pt-5 border-t border-white/5">
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open(`${window.location.origin}/sites/${project}/dist/index.html`, '_blank');
+                        window.open(`${window.location.origin}/sites/${project.name}/dist/index.html`, '_blank');
                       }}
                       className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/5 transition-colors text-white hover:text-${themeColor}-400`}
                     >

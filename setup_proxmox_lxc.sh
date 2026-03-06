@@ -11,9 +11,9 @@ CT_PASS=${2:-"proxmox"} # Default Root Password
 TEMPLATE="local:vztmpl/debian-12-standard_12.2-1_amd64.tar.zst" # Adjust if needed
 STORAGE="local-lvm"
 BRIDGE="vmbr0"
-CORES=2
-MEMORY=2048
-SWAP=512
+CORES=4
+MEMORY=4096
+SWAP=1024
 HOSTNAME="sitebuilder-lxc"
 
 # Colors
@@ -50,7 +50,7 @@ pct create $CT_ID $TEMPLATE \
     --hostname $HOSTNAME \
     --password $CT_PASS \
     --storage $STORAGE \
-    --rootfs 8 \
+    --rootfs 20 \
     --net0 name=eth0,bridge=$BRIDGE,ip=dhcp \
     --cores $CORES \
     --memory $MEMORY \

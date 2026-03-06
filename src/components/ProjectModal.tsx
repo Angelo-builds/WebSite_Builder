@@ -6,18 +6,24 @@ import { getThemeClass } from '../theme';
 interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string) => void;
+  onCreate: (name: string, description: string, category: string) => void;
   themeColor: string;
 }
 
 export default function ProjectModal({ isOpen, onClose, onCreate, themeColor }: ProjectModalProps) {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Landing Page');
+
+  const categories = ['Landing Page', 'Portfolio', 'E-commerce', 'Blog', 'Corporate', 'Other'];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onCreate(name.trim());
+      onCreate(name.trim(), description.trim(), category);
       setName('');
+      setDescription('');
+      setCategory('Landing Page');
       onClose();
     }
   };
@@ -39,8 +45,8 @@ export default function ProjectModal({ isOpen, onClose, onCreate, themeColor }: 
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
                 <label htmlFor="projectName" className="block text-xs font-bold uppercase tracking-wider text-white/60 ml-1">
                   Project Name
                 </label>
@@ -49,13 +55,42 @@ export default function ProjectModal({ isOpen, onClose, onCreate, themeColor }: 
                   id="projectName"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={`w-full bg-black/20 border border-white/10 rounded-xl px-5 py-4 text-white placeholder-white/20 focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all shadow-inner`}
+                  className={`w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all shadow-inner`}
                   placeholder="My Awesome Site"
                   autoFocus
                 />
               </div>
+
+              <div className="space-y-2">
+                <label htmlFor="projectDescription" className="block text-xs font-bold uppercase tracking-wider text-white/60 ml-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  id="projectDescription"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className={`w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all shadow-inner resize-none h-24`}
+                  placeholder="A brief description of your project..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="projectCategory" className="block text-xs font-bold uppercase tracking-wider text-white/60 ml-1">
+                  Category
+                </label>
+                <select
+                  id="projectCategory"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className={`w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all shadow-inner appearance-none`}
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat} className="bg-[#1c1c1e] text-white">{cat}</option>
+                  ))}
+                </select>
+              </div>
               
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={onClose}

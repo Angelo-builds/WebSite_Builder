@@ -10,7 +10,8 @@ import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, Chevro
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
 import ProjectModal from './components/ProjectModal';
-import Dashboard from './components/Dashboard';
+import CustomAssetManager from './components/CustomAssetManager';
+import Dashboard, { Project } from './components/Dashboard';
 import ConfirmModal from './components/ConfirmModal';
 import Toast, { ToastType } from './components/Toast';
 import SettingsModal from './components/SettingsModal';
@@ -70,12 +71,14 @@ export default function App() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
-  const [projects, setProjects] = useState<string[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<string | null>(null);
   const [device, setDevice] = useState('Desktop');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState<'styles' | 'traits' | 'layers' | 'templates'>('templates');
+  const [isAssetManagerOpen, setIsAssetManagerOpen] = useState(false);
+  const [assetManagerProps, setAssetManagerProps] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'dashboard' | 'editor' | 'code'>('dashboard');
   const [codeData, setCodeData] = useState({ html: '', css: '', js: '' });
@@ -307,12 +310,15 @@ export default function App() {
         appendTo: '#layers-container',
       },
       assetManager: {
-        upload: '/api/assets/upload',
-        uploadName: 'files',
-        multiUpload: true,
-        autoAdd: true,
-        embedAsBase64: false,
-        assets: [], // Will be populated by fetch
+        custom: {
+          open(props: any) {
+            setAssetManagerProps(props);
+            setIsAssetManagerOpen(true);
+          },
+          close(props: any) {
+            setIsAssetManagerOpen(false);
+          }
+        }
       },
       deviceManager: {
         devices: [
@@ -1094,6 +1100,17 @@ export default function App() {
     else setIsSaving(true); // Always show saving state, just maybe not toast
 
     const data = editor.getProjectData();
+    
+    // Inject metadata
+    const currentProjectObj = projects.find(p => p.name === currentProject);
+    if (currentProjectObj) {
+      data.metadata = {
+        description: currentProjectObj.description || '',
+        category: currentProjectObj.category || 'Other',
+        updatedAt: new Date().toISOString()
+      };
+    }
+
     try {
       await fetch(`/api/projects/${currentProject}`, {
         method: 'POST',
@@ -1101,6 +1118,13 @@ export default function App() {
         body: JSON.stringify(data),
       });
       if (!silent) showToast('Project saved successfully!', 'success');
+      
+      // Update local state to reflect new updatedAt
+      if (currentProjectObj) {
+        setProjects(prev => prev.map(p => 
+          p.name === currentProject ? { ...p, updatedAt: data.metadata.updatedAt } : p
+        ));
+      }
     } catch (err) {
       if (!silent) showToast('Failed to save project', 'error');
       console.error('Save error:', err);
@@ -1207,7 +1231,7 @@ export default function App() {
           const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
           if (!res.ok) throw new Error('Failed to delete');
           
-          setProjects(prev => prev.filter(p => p !== id));
+          setProjects(prev => prev.filter(p => p.name !== id));
           if (currentProject === id) {
             setCurrentProject(null);
             setViewMode('dashboard');
@@ -1222,11 +1246,12 @@ export default function App() {
     });
   };
 
-  const handleCreateProject = async (name: string) => {
+  const handleCreateProject = async (name: string, description: string, category: string) => {
     setCurrentProject(name);
     
     // Create a minimal valid project structure
     const emptyProject = {
+      metadata: { description, category, updatedAt: new Date().toISOString() },
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
@@ -1237,7 +1262,7 @@ export default function App() {
       await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, description, category }),
       });
       
       // Initialize with empty structure
@@ -1247,7 +1272,7 @@ export default function App() {
         body: JSON.stringify(emptyProject),
       });
 
-      setProjects(prev => [...prev, name]);
+      setProjects(prev => [...prev, { name, description, category, updatedAt: new Date().toISOString() }]);
       
       if (viewMode === 'dashboard') {
         setViewMode('editor');
@@ -1407,6 +1432,22 @@ export default function App() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
       
+      {/* Custom Asset Manager Modal */}
+      <CustomAssetManager
+        isOpen={isAssetManagerOpen}
+        onClose={() => {
+          setIsAssetManagerOpen(false);
+          if (assetManagerProps?.close) assetManagerProps.close();
+        }}
+        onSelect={(asset) => {
+          if (assetManagerProps?.select) {
+            assetManagerProps.select(asset, false);
+          }
+        }}
+        editor={editor}
+        themeColor={themeColor}
+      />
+
       <ProjectModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -1489,20 +1530,20 @@ export default function App() {
                   )}
                   {projects.map(p => (
                     <div
-                      key={p}
-                      onClick={() => loadProject(p)}
+                      key={p.name}
+                      onClick={() => loadProject(p.name)}
                       className={`group w-full px-3 py-2.5 rounded-lg text-sm transition-all flex items-center justify-between cursor-pointer border border-transparent ${
-                        currentProject === p 
+                        currentProject === p.name 
                           ? `${themeClasses.activeBg} ${getThemeClass(themeColor, 'text')} ${getThemeClass(themeColor, 'badgeBorder')} shadow-sm` 
                           : `${themeClasses.hoverBg} ${themeClasses.textMuted} hover:border-black/5`
                       }`}
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
-                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p ? getThemeClass(themeColor, 'text') : themeClasses.textFaint}`} />
-                        <span className="truncate font-medium">{p}</span>
+                        <FolderOpen className={`w-4 h-4 flex-shrink-0 ${currentProject === p.name ? getThemeClass(themeColor, 'text') : themeClasses.textFaint}`} />
+                        <span className="truncate font-medium">{p.name}</span>
                       </div>
                       <button 
-                        onClick={(e) => deleteProject(p, e)}
+                        onClick={(e) => deleteProject(p.name, e)}
                         className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/10 text-red-400/60 hover:text-red-500 rounded transition-all"
                         title="Delete Project"
                       >

@@ -41,10 +41,14 @@ DB_NAME="sitebuilder"
 DB_USER="sitebuilder"
 DB_PASS="proxmox_sitebuilder_secret" # Fixed password for auto-install
 
+# Allow external connections to MariaDB
+sed -i 's/bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf
+service mariadb restart
+
 # Secure MariaDB installation (basic)
 mysql -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME};"
-mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';"
-mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
+mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
 mysql -e "FLUSH PRIVILEGES;"
 
 # Import Schema
