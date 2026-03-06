@@ -50,7 +50,7 @@ export default function Dashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
-  const categories = ['All', ...Array.from(new Set(projects.map(p => p.category || 'Other')))];
+  const categories = ['All', 'Blank Project', 'Landing Page', 'Portfolio', 'Corporate'];
 
   const filteredProjects = projects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -401,11 +401,57 @@ export default function Dashboard({
                 className={`group relative cursor-pointer rounded-[2rem] border ${theme.border} bg-[#1c1c1e]/60 overflow-hidden transition-all hover:shadow-2xl ${getThemeClass(themeColor, 'cardHoverShadow')} ${getThemeClass(themeColor, 'cardHoverBorder')} backdrop-blur-md flex flex-col`}
               >
                 {/* Preview Area (Mock) */}
-                <div className={`h-48 w-full bg-gradient-to-br from-white/5 to-white/10 relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors shrink-0`}>
+                <div className={`h-48 w-full bg-gradient-to-br from-white/5 to-white/10 relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors shrink-0 overflow-hidden`}>
                   <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
-                  <Layout className={`w-16 h-16 ${theme.textMuted} opacity-20 group-hover:scale-110 group-hover:opacity-30 ${getThemeClass(themeColor, 'cardIconHover')} transition-all duration-500`} />
                   
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                  {project.category === 'Blank Project' ? (
+                    <div className="absolute inset-4 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                      <Layout className={`w-12 h-12 ${theme.textMuted} opacity-20`} />
+                    </div>
+                  ) : project.category === 'Landing Page' ? (
+                    <div className="absolute inset-4 bg-white/5 rounded-lg border border-white/10 p-2 flex flex-col gap-2 shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="h-4 w-full bg-blue-500/50 rounded flex items-center justify-center"><div className="w-1/3 h-1 bg-white/50 rounded"></div></div>
+                      <div className="flex-1 bg-white/5 rounded flex flex-col items-center justify-center gap-2">
+                        <div className="w-1/2 h-2 bg-white/40 rounded"></div>
+                        <div className="w-3/4 h-1 bg-white/20 rounded"></div>
+                        <div className="w-1/4 h-3 bg-blue-500/80 rounded-full mt-1"></div>
+                      </div>
+                      <div className="h-8 w-full flex gap-2">
+                        <div className="flex-1 bg-white/5 rounded"></div>
+                        <div className="flex-1 bg-white/5 rounded"></div>
+                        <div className="flex-1 bg-white/5 rounded"></div>
+                      </div>
+                    </div>
+                  ) : project.category === 'Portfolio' ? (
+                    <div className="absolute inset-4 bg-zinc-900/80 rounded-lg border border-white/10 p-4 flex flex-col items-center justify-center gap-3 shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="w-12 h-12 rounded-full bg-white/20"></div>
+                      <div className="w-1/2 h-2 bg-white/60 rounded"></div>
+                      <div className="w-3/4 h-1 bg-white/30 rounded"></div>
+                      <div className="flex gap-2 mt-2">
+                        <div className="w-12 h-3 bg-white/80 rounded-sm"></div>
+                        <div className="w-12 h-3 border border-white/40 rounded-sm"></div>
+                      </div>
+                    </div>
+                  ) : project.category === 'Corporate' ? (
+                    <div className="absolute inset-4 bg-slate-50/90 rounded-lg border border-white/10 flex flex-col shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="h-4 w-full border-b border-black/10 flex justify-between items-center px-2">
+                        <div className="w-8 h-1.5 bg-slate-800 rounded"></div>
+                        <div className="flex gap-1">
+                          <div className="w-4 h-1 bg-slate-400 rounded"></div>
+                          <div className="w-4 h-1 bg-slate-400 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center justify-center gap-2 p-2">
+                        <div className="w-2/3 h-3 bg-slate-800 rounded"></div>
+                        <div className="w-full h-1 bg-slate-400 rounded"></div>
+                        <div className="w-4/5 h-1 bg-slate-400 rounded"></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <Layout className={`w-16 h-16 ${theme.textMuted} opacity-20 group-hover:scale-110 group-hover:opacity-30 ${getThemeClass(themeColor, 'cardIconHover')} transition-all duration-500`} />
+                  )}
+                  
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 z-10">
                     <button 
                       onClick={(e) => onDeleteProject(project.name, e)}
                       className="p-3 bg-black/40 hover:bg-red-500 text-white/60 hover:text-white rounded-xl backdrop-blur-md transition-colors border border-white/10"
@@ -421,7 +467,7 @@ export default function Dashboard({
                   <div className="flex items-start justify-between mb-2">
                     <h3 className={`font-bold text-xl truncate pr-4 text-white ${getThemeClass(themeColor, 'cardTitleHover')} transition-colors`}>{project.name}</h3>
                     <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg ${getThemeClass(themeColor, 'badgeBg')} ${getThemeClass(themeColor, 'badgeText')} border ${getThemeClass(themeColor, 'badgeBorder')} shrink-0`}>
-                      {project.category || 'Active'}
+                      {project.category || 'Blank Project'}
                     </span>
                   </div>
                   

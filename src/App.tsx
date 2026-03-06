@@ -1256,12 +1256,95 @@ export default function App() {
     setCurrentProject(name);
     
     // Create a minimal valid project structure
-    const emptyProject = {
+    let initialProjectData: any = {
       metadata: { description, category, updatedAt: new Date().toISOString() },
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     };
+
+    // Apply template data if not blank
+    if (category === 'Landing Page') {
+      initialProjectData.pages[0].frames[0].component.components = [
+        {
+          type: 'header',
+          tagName: 'header',
+          classes: ['p-8', 'bg-blue-600', 'text-white', 'text-center'],
+          components: [
+            { type: 'text', tagName: 'h1', classes: ['text-4xl', 'font-bold', 'mb-4'], content: 'Welcome to Our Product' },
+            { type: 'text', tagName: 'p', classes: ['text-xl', 'mb-8'], content: 'The best solution for your business needs.' },
+            { type: 'link', tagName: 'a', classes: ['bg-white', 'text-blue-600', 'px-6', 'py-3', 'rounded-full', 'font-bold'], content: 'Get Started' }
+          ]
+        },
+        {
+          type: 'section',
+          tagName: 'section',
+          classes: ['p-12', 'bg-gray-100', 'text-center'],
+          components: [
+            { type: 'text', tagName: 'h2', classes: ['text-3xl', 'font-bold', 'mb-8'], content: 'Features' },
+            {
+              type: 'div',
+              classes: ['grid', 'grid-cols-3', 'gap-8'],
+              components: [
+                { type: 'div', classes: ['p-6', 'bg-white', 'rounded-xl', 'shadow'], components: [{ type: 'text', tagName: 'h3', classes: ['font-bold', 'mb-2'], content: 'Fast' }, { type: 'text', content: 'Lightning fast performance.' }] },
+                { type: 'div', classes: ['p-6', 'bg-white', 'rounded-xl', 'shadow'], components: [{ type: 'text', tagName: 'h3', classes: ['font-bold', 'mb-2'], content: 'Secure' }, { type: 'text', content: 'Enterprise-grade security.' }] },
+                { type: 'div', classes: ['p-6', 'bg-white', 'rounded-xl', 'shadow'], components: [{ type: 'text', tagName: 'h3', classes: ['font-bold', 'mb-2'], content: 'Reliable' }, { type: 'text', content: '99.9% uptime guaranteed.' }] }
+              ]
+            }
+          ]
+        }
+      ];
+    } else if (category === 'Portfolio') {
+      initialProjectData.pages[0].frames[0].component.components = [
+        {
+          type: 'section',
+          tagName: 'section',
+          classes: ['p-12', 'bg-zinc-900', 'text-white', 'min-h-screen', 'flex', 'flex-col', 'items-center', 'justify-center'],
+          components: [
+            { type: 'image', classes: ['w-32', 'h-32', 'rounded-full', 'mb-6', 'object-cover'], attributes: { src: 'https://picsum.photos/seed/portfolio/200/200' } },
+            { type: 'text', tagName: 'h1', classes: ['text-5xl', 'font-bold', 'mb-4'], content: 'Hi, I am a Designer' },
+            { type: 'text', tagName: 'p', classes: ['text-xl', 'text-zinc-400', 'mb-8', 'max-w-2xl', 'text-center'], content: 'I create beautiful and functional digital experiences.' },
+            {
+              type: 'div',
+              classes: ['flex', 'gap-4'],
+              components: [
+                { type: 'link', classes: ['bg-white', 'text-black', 'px-6', 'py-3', 'rounded-lg', 'font-medium'], content: 'View Work' },
+                { type: 'link', classes: ['border', 'border-white/20', 'px-6', 'py-3', 'rounded-lg', 'font-medium', 'hover:bg-white/10'], content: 'Contact Me' }
+              ]
+            }
+          ]
+        }
+      ];
+    } else if (category === 'Corporate') {
+       initialProjectData.pages[0].frames[0].component.components = [
+        {
+          type: 'nav',
+          tagName: 'nav',
+          classes: ['flex', 'justify-between', 'items-center', 'p-6', 'bg-white', 'border-b', 'border-gray-200'],
+          components: [
+            { type: 'text', tagName: 'div', classes: ['text-2xl', 'font-black', 'text-slate-800'], content: 'ACME Corp' },
+            {
+              type: 'div',
+              classes: ['flex', 'gap-6'],
+              components: [
+                { type: 'link', classes: ['text-slate-600', 'hover:text-slate-900'], content: 'Services' },
+                { type: 'link', classes: ['text-slate-600', 'hover:text-slate-900'], content: 'About' },
+                { type: 'link', classes: ['text-slate-600', 'hover:text-slate-900'], content: 'Contact' }
+              ]
+            }
+          ]
+        },
+        {
+          type: 'section',
+          tagName: 'section',
+          classes: ['p-20', 'bg-slate-50', 'text-center'],
+          components: [
+            { type: 'text', tagName: 'h1', classes: ['text-5xl', 'font-bold', 'text-slate-900', 'mb-6'], content: 'Corporate Excellence' },
+            { type: 'text', tagName: 'p', classes: ['text-xl', 'text-slate-600', 'max-w-3xl', 'mx-auto'], content: 'Delivering outstanding results for global enterprises through innovative solutions.' }
+          ]
+        }
+      ];
+    }
 
     try {
       // Create project in backend
@@ -1271,11 +1354,11 @@ export default function App() {
         body: JSON.stringify({ name, description, category }),
       });
       
-      // Initialize with empty structure
+      // Initialize with structure
       await fetch(`/api/projects/${name}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emptyProject),
+        body: JSON.stringify(initialProjectData),
       });
 
       setProjects(prev => [...prev, { name, description, category, updatedAt: new Date().toISOString() }]);
@@ -1283,7 +1366,7 @@ export default function App() {
       if (viewMode === 'dashboard') {
         setViewMode('editor');
       } else if (editor) {
-        editor.loadProjectData(emptyProject);
+        editor.loadProjectData(initialProjectData);
         editor.UndoManager.clear();
         setCanUndo(false);
         setCanRedo(false);

@@ -180,14 +180,26 @@ const upload = multer({ storage: storage });
 
 // --- Project Routes ---
 
+const mockProjects = new Map<string, any>();
+
 // Get all projects
 app.get('/api/projects', async (req, res) => {
   if (!dbReady || !db) {
-    return res.json([
-      { name: 'My First Site', description: 'A simple landing page', category: 'Landing Page', updatedAt: new Date().toISOString() },
-      { name: 'Portfolio', description: 'My personal portfolio', category: 'Portfolio', updatedAt: new Date().toISOString() },
-      { name: 'E-commerce', description: 'Online store', category: 'E-commerce', updatedAt: new Date().toISOString() }
-    ]);
+    const projectsList = Array.from(mockProjects.entries()).map(([name, data]) => ({
+      name,
+      description: data.metadata?.description || '',
+      category: data.metadata?.category || 'Blank Project',
+      updatedAt: data.metadata?.updatedAt || new Date().toISOString()
+    }));
+    
+    if (projectsList.length === 0) {
+      return res.json([
+        { name: 'My First Site', description: 'A simple landing page', category: 'Landing Page', updatedAt: new Date().toISOString() },
+        { name: 'Portfolio', description: 'My personal portfolio', category: 'Portfolio', updatedAt: new Date().toISOString() },
+        { name: 'Corporate', description: 'Corporate website', category: 'Corporate', updatedAt: new Date().toISOString() }
+      ]);
+    }
+    return res.json(projectsList);
   }
   
   try {
@@ -218,11 +230,12 @@ app.get('/api/projects', async (req, res) => {
 app.get('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
   if (!dbReady || !db) {
-    return res.json({
+    const project = mockProjects.get(id) || {
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
-    });
+    };
+    return res.json(project);
   }
   
   try {
@@ -241,6 +254,12 @@ app.get('/api/projects/:id', async (req, res) => {
 app.post('/api/projects', async (req, res) => {
   const { name, description, category } = req.body;
   if (!dbReady || !db) {
+    mockProjects.set(name, {
+      metadata: { description: description || '', category: category || 'Blank Project', updatedAt: new Date().toISOString() },
+      assets: [],
+      styles: [],
+      pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
+    });
     return res.status(201).json({ message: 'Project created (Mock)', name, description, category });
   }
   
@@ -263,6 +282,7 @@ app.post('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
   const data = req.body;
   if (!dbReady || !db) {
+    mockProjects.set(id, data);
     return res.json({ message: 'Project saved (Mock)', id });
   }
   
@@ -278,6 +298,7 @@ app.post('/api/projects/:id', async (req, res) => {
 app.delete('/api/projects/:id', async (req, res) => {
   const { id } = req.params;
   if (!dbReady || !db) {
+    mockProjects.delete(id);
     return res.json({ message: 'Project deleted (Mock)', id });
   }
   
