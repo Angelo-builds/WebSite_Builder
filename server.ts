@@ -60,6 +60,23 @@ const connectDB = async () => {
     console.log('Database tables verified');
     db = connection;
     dbReady = true;
+
+    // Check if we need to create an Example Project
+    try {
+      const [rows] = await db.execute('SELECT COUNT(*) as count FROM projects');
+      if ((rows as any)[0].count === 0) {
+        console.log('Database is empty. Creating Example Project...');
+        const initialData = JSON.stringify({
+          metadata: { description: 'A sample project to test the editor.', category: 'Landing Page', templateHtml: exampleHtml, updatedAt: new Date().toISOString() },
+          assets: [],
+          styles: [],
+          pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
+        });
+        await db.execute('INSERT INTO projects (name, data) VALUES (?, ?)', ['Example Project', initialData]);
+      }
+    } catch (e) {
+      console.error('Failed to create example project:', e);
+    }
   } catch (err) {
     console.error('Database connection failed:', err);
     console.warn('Running in fallback mode.');
@@ -180,7 +197,46 @@ const upload = multer({ storage: storage });
 
 // --- Project Routes ---
 
+const exampleHtml = `
+  <div class="font-sans text-gray-900">
+    <header class="px-8 py-24 flex flex-col items-center text-center bg-gradient-to-b from-indigo-50 to-white">
+      <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl mb-6 text-gray-900">Welcome to Web Builder</h1>
+      <p class="text-xl text-gray-600 max-w-2xl mb-10 leading-relaxed">This is an example project created automatically to help you get started. Feel free to edit, delete, or publish it!</p>
+      <div class="flex gap-4">
+        <a href="#" class="bg-indigo-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Start Editing</a>
+      </div>
+    </header>
+    <section class="px-8 py-24 bg-white">
+      <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div class="flex flex-col items-center text-center p-6 border border-gray-100 rounded-2xl shadow-sm">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 text-2xl">🖱️</div>
+            <h3 class="text-xl font-bold mb-3">Drag & Drop</h3>
+            <p class="text-gray-600">Drag elements from the right panel onto the canvas to build your layout.</p>
+          </div>
+          <div class="flex flex-col items-center text-center p-6 border border-gray-100 rounded-2xl shadow-sm">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 text-2xl">🎨</div>
+            <h3 class="text-xl font-bold mb-3">Style Everything</h3>
+            <p class="text-gray-600">Select any element and use the Style Manager to customize colors, spacing, and more.</p>
+          </div>
+          <div class="flex flex-col items-center text-center p-6 border border-gray-100 rounded-2xl shadow-sm">
+            <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 text-2xl">📱</div>
+            <h3 class="text-xl font-bold mb-3">Responsive</h3>
+            <p class="text-gray-600">Use the device icons at the top to ensure your site looks great on mobile and tablet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+`;
+
 const mockProjects = new Map<string, any>();
+mockProjects.set('Example Project', {
+  metadata: { description: 'A sample project to test the editor.', category: 'Landing Page', templateHtml: exampleHtml, updatedAt: new Date().toISOString() },
+  assets: [],
+  styles: [],
+  pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
+});
 
 // Get all projects
 app.get('/api/projects', async (req, res) => {
@@ -192,13 +248,6 @@ app.get('/api/projects', async (req, res) => {
       updatedAt: data.metadata?.updatedAt || new Date().toISOString()
     }));
     
-    if (projectsList.length === 0) {
-      return res.json([
-        { name: 'My First Site', description: 'A simple landing page', category: 'Landing Page', updatedAt: new Date().toISOString() },
-        { name: 'Portfolio', description: 'My personal portfolio', category: 'Portfolio', updatedAt: new Date().toISOString() },
-        { name: 'Corporate', description: 'Corporate website', category: 'Corporate', updatedAt: new Date().toISOString() }
-      ]);
-    }
     return res.json(projectsList);
   }
   
@@ -252,9 +301,9 @@ app.get('/api/projects/:id', async (req, res) => {
 
 // Create project
 app.post('/api/projects', async (req, res) => {
-  const { name, description, category } = req.body;
+  const { name, description, category, data } = req.body;
   if (!dbReady || !db) {
-    mockProjects.set(name, {
+    mockProjects.set(name, data || {
       metadata: { description: description || '', category: category || 'Blank Project', updatedAt: new Date().toISOString() },
       assets: [],
       styles: [],
@@ -264,15 +313,17 @@ app.post('/api/projects', async (req, res) => {
   }
   
   try {
-    const initialData = JSON.stringify({
+    const initialData = data ? JSON.stringify(data) : JSON.stringify({
       metadata: { description: description || '', category: category || 'Other', updatedAt: new Date().toISOString() },
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     });
-    await db.execute('INSERT INTO projects (id, name, data) VALUES (?, ?, ?)', [name.toLowerCase().replace(/\s+/g, '-'), name, initialData]);
+    // Use the name directly, no need for a separate id column if name is unique
+    await db.execute('INSERT INTO projects (name, data) VALUES (?, ?)', [name, initialData]);
     res.status(201).json({ message: 'Project created', name });
   } catch (error) {
+    console.error('Failed to create project:', error);
     res.status(500).json({ message: 'Failed to create project' });
   }
 });

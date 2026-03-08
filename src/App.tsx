@@ -1337,14 +1337,7 @@ export default function App() {
       await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, category }),
-      });
-      
-      // Initialize with structure
-      await fetch(`/api/projects/${encodeURIComponent(name)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(initialProjectData),
+        body: JSON.stringify({ name, description, category, data: initialProjectData }),
       });
 
       setProjects(prev => [...prev, { name, description, category, updatedAt: new Date().toISOString() }]);
