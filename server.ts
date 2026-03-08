@@ -72,7 +72,8 @@ const connectDB = async () => {
           styles: [],
           pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
         });
-        await db.execute('INSERT INTO projects (name, data) VALUES (?, ?)', ['Example Project', initialData]);
+        const projectId = 'Example Project'.toLowerCase().replace(/\s+/g, '-');
+        await db.execute('INSERT INTO projects (id, name, data) VALUES (?, ?, ?)', [projectId, 'Example Project', initialData]);
       }
     } catch (e) {
       console.error('Failed to create example project:', e);
@@ -288,13 +289,15 @@ app.get('/api/projects/:id', async (req, res) => {
   }
   
   try {
-    const [rows] = await db.execute('SELECT data FROM projects WHERE name = ?', [id]);
+    // Try to find by id or name
+    const [rows] = await db.execute('SELECT data FROM projects WHERE id = ? OR name = ?', [id, id]);
     const projects = rows as any[];
     if (projects.length === 0) {
       return res.status(404).json({ message: 'Project not found' });
     }
     res.json(JSON.parse(projects[0].data || '{}'));
   } catch (error) {
+    console.error('Failed to fetch project:', error);
     res.status(500).json({ message: 'Failed to fetch project' });
   }
 });
@@ -302,6 +305,7 @@ app.get('/api/projects/:id', async (req, res) => {
 // Create project
 app.post('/api/projects', async (req, res) => {
   const { name, description, category, data } = req.body;
+  const id = name.toLowerCase().replace(/\s+/g, '-');
   if (!dbReady || !db) {
     mockProjects.set(name, data || {
       metadata: { description: description || '', category: category || 'Blank Project', updatedAt: new Date().toISOString() },
@@ -319,8 +323,8 @@ app.post('/api/projects', async (req, res) => {
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     });
-    // Use the name directly, no need for a separate id column if name is unique
-    await db.execute('INSERT INTO projects (name, data) VALUES (?, ?)', [name, initialData]);
+    
+    await db.execute('INSERT INTO projects (id, name, data) VALUES (?, ?, ?)', [id, name, initialData]);
     res.status(201).json({ message: 'Project created', name });
   } catch (error) {
     console.error('Failed to create project:', error);
@@ -338,9 +342,10 @@ app.post('/api/projects/:id', async (req, res) => {
   }
   
   try {
-    await db.execute('UPDATE projects SET data = ? WHERE name = ?', [JSON.stringify(data), id]);
+    await db.execute('UPDATE projects SET data = ? WHERE id = ? OR name = ?', [JSON.stringify(data), id, id]);
     res.json({ message: 'Project saved', id });
   } catch (error) {
+    console.error('Failed to save project:', error);
     res.status(500).json({ message: 'Failed to save project' });
   }
 });
@@ -354,9 +359,10 @@ app.delete('/api/projects/:id', async (req, res) => {
   }
   
   try {
-    await db.execute('DELETE FROM projects WHERE name = ?', [id]);
+    await db.execute('DELETE FROM projects WHERE id = ? OR name = ?', [id, id]);
     res.json({ message: 'Project deleted', id });
   } catch (error) {
+    console.error('Failed to delete project:', error);
     res.status(500).json({ message: 'Failed to delete project' });
   }
 });
