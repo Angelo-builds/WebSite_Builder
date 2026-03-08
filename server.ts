@@ -52,7 +52,7 @@ const connectDB = async () => {
 
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS projects (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
         data LONGTEXT
       )

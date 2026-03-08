@@ -36,12 +36,16 @@ export default function ProjectModal({ isOpen, onClose, onCreate, themeColor }: 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
+          onClick={onClose}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="glass-panel w-full max-w-4xl rounded-3xl overflow-hidden p-8 border border-white/10 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8 shrink-0">
               <h2 className="text-2xl font-bold text-white tracking-tight">Create New Project</h2>
