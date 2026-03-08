@@ -4,6 +4,7 @@ import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Se
 import { getThemeClass } from '../theme';
 
 export interface Project {
+  id?: string;
   name: string;
   description?: string;
   category?: string;

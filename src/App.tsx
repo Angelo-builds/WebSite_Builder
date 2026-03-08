@@ -9,6 +9,13 @@ import gjsStyleBg from 'grapesjs-style-bg';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import * as prettier from 'prettier/standalone';
+import prettierPluginHtml from 'prettier/plugins/html';
+import prettierPluginCss from 'prettier/plugins/postcss';
+import prettierPluginBabel from 'prettier/plugins/babel';
+import prettierPluginEstree from 'prettier/plugins/estree';
 import ProjectModal from './components/ProjectModal';
 import CustomAssetManager from './components/CustomAssetManager';
 import Dashboard, { Project } from './components/Dashboard';
@@ -136,6 +143,8 @@ export default function App() {
     message: string;
     onConfirm: () => void;
     isDestructive?: boolean;
+    confirmText?: string;
+    cancelText?: string;
   }>({
     isOpen: false,
     title: '',
@@ -224,6 +233,10 @@ export default function App() {
       container: editorRef.current,
       height: '100vh',
       width: 'auto',
+      canvas: {
+        styles: ['https://cdn.tailwindcss.com'],
+        scripts: ['https://cdn.tailwindcss.com']
+      },
       storageManager: {
         type: 'remote',
         autosave: false, // We handle autosave manually
@@ -1045,13 +1058,28 @@ export default function App() {
           } else {
              editor.loadProjectData(data);
              // If this is a new project with template HTML that hasn't been saved into components yet
-             if (data.metadata?.templateHtml && (!data.pages || data.pages[0].frames[0].component.components.length === 0)) {
-               editor.setComponents(data.metadata.templateHtml);
+             const component = data.pages?.[0]?.frames?.[0]?.component;
+             const hasNoComponents = typeof component === 'object' && (!component.components || component.components.length === 0);
+             console.log('loadCurrentProject: Checking template', { hasTemplate: !!data.metadata?.templateHtml, hasNoComponents, component });
+             if (data.metadata?.templateHtml && hasNoComponents) {
+               console.log('loadCurrentProject: Applying template HTML');
+               const injectTemplate = () => {
+                 editor.setComponents(data.metadata.templateHtml);
+                 setTimeout(() => handleSave(true), 500);
+               };
+               // Ensure editor is ready before setting components
+               if (editor.Canvas.getBody()) {
+                 injectTemplate();
+               } else {
+                 editor.on('load', injectTemplate);
+               }
              }
           }
-          editor.UndoManager.clear();
-          setCanUndo(false);
-          setCanRedo(false);
+          setTimeout(() => {
+            editor.UndoManager.clear();
+            setCanUndo(false);
+            setCanRedo(false);
+          }, 150);
         }
       } catch (err) {
         console.error('Failed to load project', err);
@@ -1228,9 +1256,26 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         editor.loadProjectData(data);
-        editor.UndoManager.clear();
-        setCanUndo(false);
-        setCanRedo(false);
+        
+        const component = data.pages?.[0]?.frames?.[0]?.component;
+        const hasNoComponents = typeof component === 'object' && (!component.components || component.components.length === 0);
+        if (data.metadata?.templateHtml && hasNoComponents) {
+          const injectTemplate = () => {
+            editor.setComponents(data.metadata.templateHtml);
+            setTimeout(() => handleSave(true), 500);
+          };
+          if (editor.Canvas.getBody()) {
+            injectTemplate();
+          } else {
+            editor.on('load', injectTemplate);
+          }
+        }
+        
+        setTimeout(() => {
+          editor.UndoManager.clear();
+          setCanUndo(false);
+          setCanRedo(false);
+        }, 150);
         setCurrentProject(id);
         setViewMode('editor');
       } else {
@@ -1257,7 +1302,7 @@ export default function App() {
           const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
           if (!res.ok) throw new Error('Failed to delete');
           
-          setProjects(prev => prev.filter(p => p.name !== id));
+          setProjects(prev => prev.filter(p => (p.id || p.name) !== id));
           if (currentProject === id) {
             setCurrentProject(null);
             setViewMode('dashboard');
@@ -1273,8 +1318,6 @@ export default function App() {
   };
 
   const handleCreateProject = async (name: string, description: string, category: string) => {
-    setCurrentProject(name);
-    
     let templateHtml = '';
     
     if (category === 'Landing Page') {
@@ -1350,25 +1393,42 @@ export default function App() {
 
     try {
       // Create project in backend
-      await fetch('/api/projects', {
+      const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, category, data: initialProjectData }),
       });
+      
+      if (!res.ok) {
+        throw new Error('Server returned ' + res.status);
+      }
+      
+      const createdProject = await res.json();
+      const projectId = createdProject.id || name; // Fallback to name if id is missing
 
-      setProjects(prev => [...prev, { name, description, category, updatedAt: new Date().toISOString() }]);
+      setCurrentProject(projectId);
+      setProjects(prev => [...prev, { id: projectId, name, description, category, updatedAt: new Date().toISOString() }]);
       
       if (viewMode === 'dashboard') {
         setViewMode('editor');
       } else if (editor) {
+        editor.loadProjectData(initialProjectData);
         if (templateHtml) {
-          editor.setComponents(templateHtml);
-        } else {
-          editor.loadProjectData(initialProjectData);
+          const injectTemplate = () => {
+            editor.setComponents(templateHtml);
+            setTimeout(() => handleSave(true), 500);
+          };
+          if (editor.Canvas.getBody()) {
+            injectTemplate();
+          } else {
+            editor.on('load', injectTemplate);
+          }
         }
-        editor.UndoManager.clear();
-        setCanUndo(false);
-        setCanRedo(false);
+        setTimeout(() => {
+          editor.UndoManager.clear();
+          setCanUndo(false);
+          setCanRedo(false);
+        }, 150);
       }
     } catch (err) {
       console.error('Failed to create project', err);
@@ -1383,7 +1443,7 @@ export default function App() {
     }
   };
 
-  const toggleViewMode = () => {
+  const toggleViewMode = async () => {
     if (viewMode === 'editor') {
       // Switch to code
       const currentEditor = editorInstanceRef.current || editor;
@@ -1391,9 +1451,19 @@ export default function App() {
         // Force a render/update before capturing
         currentEditor.refresh(); 
         
-        const html = currentEditor.getHtml() || '';
-        const css = currentEditor.getCss() || '';
-        const js = currentEditor.getJs() || '';
+        let html = currentEditor.getHtml() || '';
+        let css = currentEditor.getCss() || '';
+        let js = currentEditor.getJs() || '';
+        
+        try {
+          html = await prettier.format(html, { parser: 'html', plugins: [prettierPluginHtml] });
+          css = await prettier.format(css, { parser: 'css', plugins: [prettierPluginCss] });
+          if (js) {
+            js = await prettier.format(js, { parser: 'babel', plugins: [prettierPluginBabel, prettierPluginEstree] });
+          }
+        } catch (e) {
+          console.error('Prettier formatting failed:', e);
+        }
         
         console.log('toggleViewMode: Capturing code data:', { htmlLength: html.length, cssLength: css.length });
         
@@ -1936,12 +2006,24 @@ export default function App() {
                 </div>
                 
                 <div className="flex-1 relative overflow-hidden group">
-                  <textarea
-                    readOnly
-                    value={activeCodeTab === 'html' ? codeData.html : activeCodeTab === 'css' ? codeData.css : codeData.js}
-                    className={`w-full h-full p-6 font-mono text-sm bg-transparent resize-none focus:outline-none ${themeClasses.codeText} leading-relaxed`}
-                    spellCheck={false}
-                  />
+                  <div className={`w-full h-full overflow-auto ${isDarkMode ? 'bg-[#1e1e1e]' : 'bg-white'}`}>
+                    <SyntaxHighlighter
+                      language={activeCodeTab === 'js' ? 'javascript' : activeCodeTab}
+                      style={isDarkMode ? vscDarkPlus : vs}
+                      customStyle={{
+                        margin: 0,
+                        padding: '1.5rem',
+                        fontSize: '0.875rem',
+                        lineHeight: '1.5',
+                        background: 'transparent',
+                        minHeight: '100%',
+                      }}
+                      showLineNumbers={true}
+                      wrapLines={true}
+                    >
+                      {activeCodeTab === 'html' ? codeData.html : activeCodeTab === 'css' ? codeData.css : codeData.js}
+                    </SyntaxHighlighter>
+                  </div>
                 </div>
               </div>
             </div>

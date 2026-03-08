@@ -57,6 +57,18 @@ const connectDB = async () => {
         data LONGTEXT
       )
     `);
+    
+    // Ensure data column exists if table was created by schema.sql
+    try {
+      await connection.execute('ALTER TABLE projects ADD COLUMN data LONGTEXT');
+      console.log('Added data column to projects table');
+    } catch (e: any) {
+      // Ignore error if column already exists (ER_DUP_FIELDNAME)
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.log('Data column check:', e.message);
+      }
+    }
+    
     console.log('Database tables verified');
     db = connection;
     dbReady = true;
@@ -253,7 +265,7 @@ app.get('/api/projects', async (req, res) => {
   }
   
   try {
-    const [rows] = await db.execute('SELECT name, data FROM projects');
+    const [rows] = await db.execute('SELECT id, name, data FROM projects');
     const projects = (rows as any[]).map(row => {
       let metadata = { description: '', category: 'Other', updatedAt: new Date().toISOString() };
       try {
@@ -265,6 +277,7 @@ app.get('/api/projects', async (req, res) => {
         }
       } catch (e) {}
       return {
+        id: row.id,
         name: row.name,
         ...metadata
       };
@@ -305,15 +318,15 @@ app.get('/api/projects/:id', async (req, res) => {
 // Create project
 app.post('/api/projects', async (req, res) => {
   const { name, description, category, data } = req.body;
-  const id = name.toLowerCase().replace(/\s+/g, '-');
+  const id = name.toLowerCase().replace(/\s+/g, '-').substring(0, 30) + '-' + Date.now().toString(36);
   if (!dbReady || !db) {
-    mockProjects.set(name, data || {
+    mockProjects.set(id, data || {
       metadata: { description: description || '', category: category || 'Blank Project', updatedAt: new Date().toISOString() },
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     });
-    return res.status(201).json({ message: 'Project created (Mock)', name, description, category });
+    return res.status(201).json({ message: 'Project created (Mock)', id, name, description, category });
   }
   
   try {
@@ -325,7 +338,7 @@ app.post('/api/projects', async (req, res) => {
     });
     
     await db.execute('INSERT INTO projects (id, name, data) VALUES (?, ?, ?)', [id, name, initialData]);
-    res.status(201).json({ message: 'Project created', name });
+    res.status(201).json({ message: 'Project created', id, name });
   } catch (error) {
     console.error('Failed to create project:', error);
     res.status(500).json({ message: 'Failed to create project' });
