@@ -1020,7 +1020,7 @@ export default function App() {
     
     const loadCurrentProject = async () => {
       try {
-        const res = await fetch(`/api/projects/${currentProject}`);
+        const res = await fetch(`/api/projects/${encodeURIComponent(currentProject)}`);
         if (res.ok) {
           const data = await res.json();
           if (!data || Object.keys(data).length === 0 || (data.pages && data.pages.length === 0)) {
@@ -1028,6 +1028,10 @@ export default function App() {
              editor.setStyle([]);
           } else {
              editor.loadProjectData(data);
+             // If this is a new project with template HTML that hasn't been saved into components yet
+             if (data.metadata?.templateHtml && (!data.pages || data.pages[0].frames[0].component.components.length === 0)) {
+               editor.setComponents(data.metadata.templateHtml);
+             }
           }
           editor.UndoManager.clear();
           setCanUndo(false);
@@ -1255,96 +1259,78 @@ export default function App() {
   const handleCreateProject = async (name: string, description: string, category: string) => {
     setCurrentProject(name);
     
+    let templateHtml = '';
+    
+    if (category === 'Landing Page') {
+      templateHtml = `
+        <header class="p-12 bg-blue-600 text-white text-center">
+          <h1 class="text-5xl font-bold mb-6">Welcome to Our Product</h1>
+          <p class="text-xl mb-10 opacity-90 max-w-2xl mx-auto">The best solution for your business needs. Built for scale and performance.</p>
+          <a href="#" class="bg-white text-blue-600 px-8 py-4 rounded-full font-bold inline-block hover:bg-blue-50 transition-colors">Get Started Today</a>
+        </header>
+        <section class="p-16 bg-gray-50 text-center">
+          <h2 class="text-3xl font-bold mb-12 text-slate-900">Amazing Features</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div class="p-8 bg-white rounded-2xl shadow-sm border border-gray-100 text-slate-800 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6 text-2xl">⚡</div>
+              <h3 class="font-bold mb-3 text-xl">Lightning Fast</h3>
+              <p class="text-slate-600">Optimized for speed and performance out of the box.</p>
+            </div>
+            <div class="p-8 bg-white rounded-2xl shadow-sm border border-gray-100 text-slate-800 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6 text-2xl">🛡️</div>
+              <h3 class="font-bold mb-3 text-xl">Highly Secure</h3>
+              <p class="text-slate-600">Enterprise-grade security to protect your data.</p>
+            </div>
+            <div class="p-8 bg-white rounded-2xl shadow-sm border border-gray-100 text-slate-800 hover:shadow-md transition-shadow">
+              <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6 text-2xl">💎</div>
+              <h3 class="font-bold mb-3 text-xl">Premium Design</h3>
+              <p class="text-slate-600">Beautifully crafted components and layouts.</p>
+            </div>
+          </div>
+        </section>
+      `;
+    } else if (category === 'Portfolio') {
+      templateHtml = `
+        <section class="p-12 bg-zinc-900 text-white min-h-screen flex flex-col items-center justify-center text-center">
+          <img src="https://picsum.photos/seed/portfolio/200/200" class="w-40 h-40 rounded-full mb-8 object-cover border-4 border-white/10" alt="Profile" />
+          <h1 class="text-6xl font-bold mb-6 tracking-tight">Hi, I'm a Designer</h1>
+          <p class="text-2xl text-zinc-400 mb-10 max-w-2xl font-light">I create beautiful, functional, and user-centered digital experiences.</p>
+          <div class="flex gap-4">
+            <a href="#" class="bg-white text-black px-8 py-4 rounded-xl font-bold hover:bg-gray-100 transition-colors">View My Work</a>
+            <a href="#" class="border border-white/20 px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition-colors">Contact Me</a>
+          </div>
+        </section>
+      `;
+    } else if (category === 'Corporate') {
+      templateHtml = `
+        <nav class="flex justify-between items-center p-6 bg-white border-b border-gray-100 text-black">
+          <div class="text-2xl font-black text-slate-900 tracking-tighter">ACME<span class="text-blue-600">Corp</span></div>
+          <div class="flex gap-8">
+            <a href="#" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">Services</a>
+            <a href="#" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
+            <a href="#" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">Careers</a>
+            <a href="#" class="text-slate-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+          </div>
+        </nav>
+        <section class="p-24 bg-slate-50 text-center text-black min-h-[70vh] flex flex-col justify-center items-center relative overflow-hidden">
+          <div class="absolute inset-0 bg-blue-600/5 skew-y-3 transform origin-bottom-left -z-10"></div>
+          <h1 class="text-6xl font-bold text-slate-900 mb-8 tracking-tight">Corporate Excellence <br/>for the Modern Age</h1>
+          <p class="text-xl text-slate-600 max-w-3xl mx-auto mb-12 leading-relaxed">Delivering outstanding results for global enterprises through innovative solutions, strategic thinking, and unparalleled execution.</p>
+          <div class="flex gap-4">
+            <a href="#" class="bg-slate-900 text-white px-8 py-4 rounded-lg font-bold hover:bg-slate-800 transition-colors shadow-lg">Our Solutions</a>
+            <a href="#" class="bg-white text-slate-900 border border-slate-200 px-8 py-4 rounded-lg font-bold hover:bg-slate-50 transition-colors">Read Case Studies</a>
+          </div>
+        </section>
+      `;
+    }
+
     // Create a minimal valid project structure
     let initialProjectData: any = {
-      metadata: { description, category, updatedAt: new Date().toISOString() },
+      metadata: { description, category, templateHtml, updatedAt: new Date().toISOString() },
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     };
-
-    // Apply template data if not blank
-    if (category === 'Landing Page') {
-      initialProjectData.pages[0].frames[0].component.components = [
-        {
-          type: 'header',
-          tagName: 'header',
-          classes: ['p-8', 'bg-blue-600', 'text-white', 'text-center'],
-          components: [
-            { type: 'text', tagName: 'h1', classes: ['text-4xl', 'font-bold', 'mb-4'], content: 'Welcome to Our Product' },
-            { type: 'text', tagName: 'p', classes: ['text-xl', 'mb-8'], content: 'The best solution for your business needs.' },
-            { type: 'link', tagName: 'a', classes: ['bg-white', 'text-blue-600', 'px-6', 'py-3', 'rounded-full', 'font-bold'], content: 'Get Started' }
-          ]
-        },
-        {
-          type: 'section',
-          tagName: 'section',
-          classes: ['p-12', 'bg-gray-100', 'text-center'],
-          components: [
-            { type: 'text', tagName: 'h2', classes: ['text-3xl', 'font-bold', 'mb-8'], content: 'Features' },
-            {
-              type: 'div',
-              classes: ['grid', 'grid-cols-3', 'gap-8'],
-              components: [
-                { type: 'div', classes: ['p-6', 'bg-white', 'rounded-xl', 'shadow'], components: [{ type: 'text', tagName: 'h3', classes: ['font-bold', 'mb-2'], content: 'Fast' }, { type: 'text', content: 'Lightning fast performance.' }] },
-                { type: 'div', classes: ['p-6', 'bg-white', 'rounded-xl', 'shadow'], components: [{ type: 'text', tagName: 'h3', classes: ['font-bold', 'mb-2'], content: 'Secure' }, { type: 'text', content: 'Enterprise-grade security.' }] },
-                { type: 'div', classes: ['p-6', 'bg-white', 'rounded-xl', 'shadow'], components: [{ type: 'text', tagName: 'h3', classes: ['font-bold', 'mb-2'], content: 'Reliable' }, { type: 'text', content: '99.9% uptime guaranteed.' }] }
-              ]
-            }
-          ]
-        }
-      ];
-    } else if (category === 'Portfolio') {
-      initialProjectData.pages[0].frames[0].component.components = [
-        {
-          type: 'section',
-          tagName: 'section',
-          classes: ['p-12', 'bg-zinc-900', 'text-white', 'min-h-screen', 'flex', 'flex-col', 'items-center', 'justify-center'],
-          components: [
-            { type: 'image', classes: ['w-32', 'h-32', 'rounded-full', 'mb-6', 'object-cover'], attributes: { src: 'https://picsum.photos/seed/portfolio/200/200' } },
-            { type: 'text', tagName: 'h1', classes: ['text-5xl', 'font-bold', 'mb-4'], content: 'Hi, I am a Designer' },
-            { type: 'text', tagName: 'p', classes: ['text-xl', 'text-zinc-400', 'mb-8', 'max-w-2xl', 'text-center'], content: 'I create beautiful and functional digital experiences.' },
-            {
-              type: 'div',
-              classes: ['flex', 'gap-4'],
-              components: [
-                { type: 'link', classes: ['bg-white', 'text-black', 'px-6', 'py-3', 'rounded-lg', 'font-medium'], content: 'View Work' },
-                { type: 'link', classes: ['border', 'border-white/20', 'px-6', 'py-3', 'rounded-lg', 'font-medium', 'hover:bg-white/10'], content: 'Contact Me' }
-              ]
-            }
-          ]
-        }
-      ];
-    } else if (category === 'Corporate') {
-       initialProjectData.pages[0].frames[0].component.components = [
-        {
-          type: 'nav',
-          tagName: 'nav',
-          classes: ['flex', 'justify-between', 'items-center', 'p-6', 'bg-white', 'border-b', 'border-gray-200'],
-          components: [
-            { type: 'text', tagName: 'div', classes: ['text-2xl', 'font-black', 'text-slate-800'], content: 'ACME Corp' },
-            {
-              type: 'div',
-              classes: ['flex', 'gap-6'],
-              components: [
-                { type: 'link', classes: ['text-slate-600', 'hover:text-slate-900'], content: 'Services' },
-                { type: 'link', classes: ['text-slate-600', 'hover:text-slate-900'], content: 'About' },
-                { type: 'link', classes: ['text-slate-600', 'hover:text-slate-900'], content: 'Contact' }
-              ]
-            }
-          ]
-        },
-        {
-          type: 'section',
-          tagName: 'section',
-          classes: ['p-20', 'bg-slate-50', 'text-center'],
-          components: [
-            { type: 'text', tagName: 'h1', classes: ['text-5xl', 'font-bold', 'text-slate-900', 'mb-6'], content: 'Corporate Excellence' },
-            { type: 'text', tagName: 'p', classes: ['text-xl', 'text-slate-600', 'max-w-3xl', 'mx-auto'], content: 'Delivering outstanding results for global enterprises through innovative solutions.' }
-          ]
-        }
-      ];
-    }
 
     try {
       // Create project in backend
@@ -1355,7 +1341,7 @@ export default function App() {
       });
       
       // Initialize with structure
-      await fetch(`/api/projects/${name}`, {
+      await fetch(`/api/projects/${encodeURIComponent(name)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(initialProjectData),
@@ -1366,7 +1352,11 @@ export default function App() {
       if (viewMode === 'dashboard') {
         setViewMode('editor');
       } else if (editor) {
-        editor.loadProjectData(initialProjectData);
+        if (templateHtml) {
+          editor.setComponents(templateHtml);
+        } else {
+          editor.loadProjectData(initialProjectData);
+        }
         editor.UndoManager.clear();
         setCanUndo(false);
         setCanRedo(false);

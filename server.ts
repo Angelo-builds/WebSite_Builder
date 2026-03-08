@@ -345,6 +345,67 @@ app.post('/api/projects/:id/publish', async (req, res) => {
 // Serve published sites
 app.use('/sites', express.static(path.join(__dirname, 'dist', 'sites')));
 
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+// --- System Update Routes ---
+app.get('/api/system/check-update', async (req, res) => {
+  try {
+    // Check if git is available and we are in a git repo
+    await execAsync('git rev-parse --is-inside-work-tree');
+    
+    // Fetch latest
+    await execAsync('git fetch origin');
+    
+    // Check local and remote hashes
+    const { stdout: localHash } = await execAsync('git rev-parse @');
+    const { stdout: remoteHash } = await execAsync('git rev-parse @{u}');
+    
+    const isUpdateAvailable = localHash.trim() !== remoteHash.trim();
+    
+    res.json({ 
+      isUpdateAvailable, 
+      message: isUpdateAvailable ? 'An update is available.' : 'System is up to date.' 
+    });
+  } catch (error) {
+    console.error('Update check error:', error);
+    res.status(500).json({ 
+      isUpdateAvailable: false, 
+      error: 'Cannot check for updates. Ensure the project is a git repository.' 
+    });
+  }
+});
+
+app.post('/api/system/update', async (req, res) => {
+  try {
+    console.log('Starting system update...');
+    
+    // Stash local changes just in case
+    await execAsync('git stash');
+    
+    // Pull latest changes
+    await execAsync('git pull origin main');
+    
+    // Install dependencies
+    await execAsync('npm install');
+    
+    // Build the application
+    await execAsync('npm run build');
+    
+    console.log('Update completed successfully.');
+    res.json({ message: 'Update completed successfully. Please restart the server.' });
+    
+    // Optional: If running under PM2, we could restart automatically
+    // execAsync('pm2 restart all').catch(console.error);
+    
+  } catch (error) {
+    console.error('Update execution error:', error);
+    res.status(500).json({ error: 'Failed to apply update. Check server logs.' });
+  }
+});
+
 // --- Asset Routes ---
 const getAssetType = (filename: string) => {
   const ext = path.extname(filename).toLowerCase();

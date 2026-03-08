@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Palette, Settings as SettingsIcon, Check, Save } from 'lucide-react';
+import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import FileUpload from './FileUpload';
 
@@ -46,6 +46,11 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState(userProfile);
+  
+  // Update state
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<{available: boolean, message: string} | null>(null);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -59,6 +64,43 @@ export default function SettingsModal({
     e.preventDefault();
     onUpdateProfile(formData);
     // Optional: Show success message inside modal or close it
+  };
+
+  const checkForUpdates = async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatus(null);
+    try {
+      const res = await fetch('/api/system/check-update');
+      const data = await res.json();
+      setUpdateStatus({ available: data.isUpdateAvailable, message: data.message || data.error });
+    } catch (err) {
+      setUpdateStatus({ available: false, message: 'Failed to check for updates. Ensure you are connected to the internet.' });
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  const applyUpdate = async () => {
+    if (!confirm('Are you sure you want to update the system? Your projects will NOT be deleted. The server will restart after the update.')) {
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      const res = await fetch('/api/system/update', { method: 'POST' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        alert(data.message || 'Update successful! Please refresh the page in a few moments.');
+        window.location.reload();
+      } else {
+        alert('Update failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Failed to apply update. See console for details.');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -288,6 +330,46 @@ export default function SettingsModal({
                     </div>
                     <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-gray-700 cursor-pointer">
                       <span className="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition" />
+                    </div>
+                  </div>
+
+                  <div className="mt-8 pt-6 border-t border-white/10">
+                    <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                      <RefreshCw className="w-5 h-5" />
+                      System Updates
+                    </h4>
+                    <div className="p-5 rounded-xl border border-blue-500/30 bg-blue-500/5 flex flex-col gap-4">
+                      <p className={`text-sm ${theme.textMuted}`}>
+                        Check for new features and bug fixes. Updating will <strong>NOT</strong> delete your existing projects or database.
+                      </p>
+                      
+                      {updateStatus && (
+                        <div className={`p-3 rounded-lg text-sm flex items-start gap-2 ${updateStatus.available ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/30' : 'bg-white/5 text-white/70 border border-white/10'}`}>
+                          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                          <span>{updateStatus.message}</span>
+                        </div>
+                      )}
+
+                      <div className="flex gap-3 mt-2">
+                        <button 
+                          onClick={checkForUpdates}
+                          disabled={isCheckingUpdate || isUpdating}
+                          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {isCheckingUpdate ? <RefreshCw className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                          Check for Updates
+                        </button>
+                        
+                        {updateStatus?.available && (
+                          <button 
+                            onClick={applyUpdate}
+                            disabled={isUpdating}
+                            className={`px-4 py-2 ${getButtonColor(themeColor)} text-white rounded-lg text-sm font-bold shadow-lg transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-2`}
+                          >
+                            {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Apply Update Now'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
