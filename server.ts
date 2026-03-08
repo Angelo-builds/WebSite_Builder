@@ -405,26 +405,50 @@ const execAsync = promisify(exec);
 app.get('/api/system/check-update', async (req, res) => {
   try {
     // Check if git is available and we are in a git repo
-    await execAsync('git rev-parse --is-inside-work-tree');
+    try {
+      await execAsync('git rev-parse --is-inside-work-tree');
+    } catch (e) {
+      // Not a git repository or git not installed
+      return res.json({ 
+        isUpdateAvailable: false, 
+        message: 'System is up to date (Not a git repository).' 
+      });
+    }
     
     // Fetch latest
-    await execAsync('git fetch origin');
+    try {
+      await execAsync('git fetch origin');
+    } catch (e) {
+      // Might not have an origin or network issue
+      return res.json({ 
+        isUpdateAvailable: false, 
+        message: 'System is up to date (Cannot fetch from origin).' 
+      });
+    }
     
     // Check local and remote hashes
-    const { stdout: localHash } = await execAsync('git rev-parse @');
-    const { stdout: remoteHash } = await execAsync('git rev-parse @{u}');
-    
-    const isUpdateAvailable = localHash.trim() !== remoteHash.trim();
-    
-    res.json({ 
-      isUpdateAvailable, 
-      message: isUpdateAvailable ? 'An update is available.' : 'System is up to date.' 
-    });
+    try {
+      const { stdout: localHash } = await execAsync('git rev-parse @');
+      const { stdout: remoteHash } = await execAsync('git rev-parse @{u}');
+      
+      const isUpdateAvailable = localHash.trim() !== remoteHash.trim();
+      
+      res.json({ 
+        isUpdateAvailable, 
+        message: isUpdateAvailable ? 'An update is available.' : 'System is up to date.' 
+      });
+    } catch (e) {
+      // No upstream branch set
+      return res.json({ 
+        isUpdateAvailable: false, 
+        message: 'System is up to date (No upstream branch).' 
+      });
+    }
   } catch (error) {
     console.error('Update check error:', error);
     res.status(500).json({ 
       isUpdateAvailable: false, 
-      error: 'Cannot check for updates. Ensure the project is a git repository.' 
+      error: 'Cannot check for updates.' 
     });
   }
 });

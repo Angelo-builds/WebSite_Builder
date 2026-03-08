@@ -92,6 +92,7 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   
   // Settings State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -162,6 +163,21 @@ export default function App() {
 
   useEffect(() => {
     fetchProjects();
+    
+    // Auto-check for updates on mount
+    const checkUpdate = async () => {
+      try {
+        const res = await fetch('/api/system/check-update');
+        const data = await res.json();
+        if (data.isUpdateAvailable) {
+          setUpdateAvailable(true);
+        }
+      } catch (e) {
+        console.error('Auto-update check failed', e);
+      }
+    };
+    // Check after a short delay so it doesn't block initial load
+    setTimeout(checkUpdate, 5000);
   }, []);
 
   useEffect(() => {
@@ -1449,6 +1465,34 @@ export default function App() {
             onCreate={handleCreateProject}
             themeColor={themeColor}
           />
+
+          {/* Update Banner */}
+          {updateAvailable && (
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="fixed bottom-6 right-6 z-[150] bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-indigo-500/50"
+            >
+              <div className="flex flex-col">
+                <span className="font-bold text-sm">Update Available</span>
+                <span className="text-xs text-indigo-200">A new version of Web Builder is ready.</span>
+              </div>
+              <button 
+                onClick={() => {
+                  setActiveSettingsTab('settings');
+                  setIsSettingsModalOpen(true);
+                  setUpdateAvailable(false);
+                }}
+                className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-50 transition shadow-sm"
+              >
+                View Details
+              </button>
+              <button onClick={() => setUpdateAvailable(false)} className="text-indigo-200 hover:text-white p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
           <Dashboard 
             projects={projects}
             onSelectProject={loadProject}
@@ -1519,6 +1563,33 @@ export default function App() {
         editor={editor}
         themeColor={themeColor}
       />
+
+      {/* Update Banner */}
+      {updateAvailable && (
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-6 right-6 z-[150] bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-indigo-500/50"
+        >
+          <div className="flex flex-col">
+            <span className="font-bold text-sm">Update Available</span>
+            <span className="text-xs text-indigo-200">A new version of Web Builder is ready.</span>
+          </div>
+          <button 
+            onClick={() => {
+              setActiveSettingsTab('settings');
+              setIsSettingsModalOpen(true);
+              setUpdateAvailable(false);
+            }}
+            className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-50 transition shadow-sm"
+          >
+            View Details
+          </button>
+          <button onClick={() => setUpdateAvailable(false)} className="text-indigo-200 hover:text-white p-1">
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      )}
 
       <ProjectModal 
         isOpen={isModalOpen} 
