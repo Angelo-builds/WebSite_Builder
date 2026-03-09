@@ -6,7 +6,7 @@ import gjsNavbar from 'grapesjs-navbar';
 import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
-import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X } from 'lucide-react';
+import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -95,6 +95,12 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
+  const [pages, setPages] = useState<{ id: string, name: string }[]>([]);
+  const [currentPage, setCurrentPage] = useState<string>('');
+  const [linkHref, setLinkHref] = useState('');
+  const [linkTarget, setLinkTarget] = useState('_self');
+  const [formAction, setFormAction] = useState('');
+  const [formMethod, setFormMethod] = useState('POST');
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -985,6 +991,12 @@ export default function App() {
       setSelectedComponent(selected);
 
       if (selected) {
+        const attrs = selected.getAttributes();
+        setLinkHref(attrs.href || '');
+        setLinkTarget(attrs.target || '_self');
+        setFormAction(attrs.action || '');
+        setFormMethod(attrs.method || 'POST');
+
         const toolbar = selected.get('toolbar');
         // Filter out 'tlb-move' (4-way arrow) and 'tlb-up' (up arrow) as per user request
         const newToolbar = toolbar.filter((t: any) => t.command !== 'tlb-move' && t.command !== 'tlb-up');
@@ -1013,6 +1025,35 @@ export default function App() {
 
     gjsEditor.on('component:deselected', () => {
       setSelectedComponent(null);
+    });
+
+    // Page Manager listeners
+    const updatePages = () => {
+      const pm = gjsEditor.Pages;
+      const allPages = pm.getAll().map((p: any) => ({ id: p.getId(), name: p.getName() || 'Page' }));
+      setPages(allPages);
+      setCurrentPage(pm.getSelected()?.getId() || '');
+    };
+
+    gjsEditor.on('page', updatePages);
+    gjsEditor.on('load', () => {
+      updatePages();
+      
+      // Add Back to Top block
+      gjsEditor.BlockManager.add('back-to-top', {
+        label: 'Back to Top',
+        category: 'Basic',
+        attributes: { class: 'fa fa-arrow-up' },
+        content: `
+          <a href="#" class="back-to-top" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; background-color: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 9999; transition: all 0.3s ease;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+          </a>
+          <style>
+            html { scroll-behavior: smooth; }
+            .back-to-top:hover { transform: translateY(-3px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
+          </style>
+        `,
+      });
     });
 
     // Auto-save listener
@@ -1204,17 +1245,24 @@ export default function App() {
       return;
     }
 
-    console.log('handlePublish: Getting HTML/CSS...');
-    const html = editorInstance.getHtml();
-    const css = editorInstance.getCss();
-    console.log(`handlePublish: HTML length: ${html.length}, CSS length: ${css.length}`);
+    console.log('handlePublish: Getting HTML/CSS for all pages...');
+    const pagesData = editorInstance.Pages.getAll().map((page: any) => {
+      const component = page.getMainComponent();
+      const html = editorInstance.getHtml({ component });
+      const css = editorInstance.getCss({ component });
+      // Use 'index' for the first page or if name is empty/Main
+      let name = page.getName() || 'index';
+      name = name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      if (name === 'main' || name === 'page') name = 'index';
+      return { name, html, css };
+    });
 
     try {
       console.log('handlePublish: Sending fetch request...');
       const response = await fetch(`/api/projects/${currentProject}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html, css }),
+        body: JSON.stringify({ pages: pagesData }),
       });
       
       console.log('handlePublish: Fetch response status:', response.status);
@@ -1803,28 +1851,59 @@ export default function App() {
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className={`h-16 mx-4 mt-4 rounded-2xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} flex items-center justify-between px-6 shadow-lg z-50 relative`}
+        className={`h-16 mx-2 sm:mx-4 mt-2 sm:mt-4 rounded-2xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} flex items-center justify-between px-3 sm:px-6 shadow-lg z-50 relative`}
       >
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-             <div className={`w-8 h-8 ${getThemeClass(themeColor, 'gradientIcon')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadow')}`}>
+        <div className="flex items-center gap-2 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+             <div className={`w-8 h-8 ${getThemeClass(themeColor, 'gradientIcon')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadow')} shrink-0`}>
                <Layout className="w-5 h-5 text-white" />
              </div>
-             <div className="flex flex-col">
+             <div className="hidden lg:flex flex-col">
                <h1 className={`text-sm font-bold tracking-tight ${themeClasses.text}`}>Proxmox SiteBuilder</h1>
                <span className={`text-[10px] font-medium ${themeClasses.textMuted} uppercase tracking-wider`}>v2.4.0</span>
              </div>
           </div>
 
-          <div className={`h-8 w-px ${themeClasses.sidebarBorder}`}></div>
+          <div className={`h-8 w-px ${themeClasses.sidebarBorder} hidden sm:block`}></div>
 
           <div className="flex items-center gap-2">
-             <span className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider`}>Project:</span>
-             <span className={`text-sm font-medium ${themeClasses.text} bg-white/5 px-3 py-1 rounded-lg border border-white/5`}>
+             <span className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider hidden xl:inline`}>Project:</span>
+             <span className={`text-xs sm:text-sm font-medium ${themeClasses.text} bg-white/5 px-2 sm:px-3 py-1 rounded-lg border border-white/5 truncate max-w-[80px] sm:max-w-[150px] md:max-w-[200px]`}>
                {currentProject || 'Untitled'}
              </span>
+             
+             {/* Page Selector */}
+             {pages.length > 0 && (
+               <div className="flex items-center ml-2 bg-black/20 rounded-lg border border-white/5 px-2 py-1">
+                 <select
+                   value={currentPage}
+                   onChange={(e) => {
+                     if (e.target.value === 'new_page') {
+                       const pageName = prompt('Enter new page name (e.g., About, Contact):');
+                       if (pageName && editor) {
+                         const newPage = editor.Pages.add({ name: pageName, component: '' });
+                         editor.Pages.select(newPage);
+                       } else {
+                         // Reset to current page if cancelled
+                         e.target.value = currentPage;
+                       }
+                     } else if (editor) {
+                       editor.Pages.select(e.target.value);
+                     }
+                   }}
+                   className={`bg-transparent text-xs sm:text-sm font-medium ${themeClasses.text} focus:outline-none appearance-none cursor-pointer pr-4`}
+                   style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center', backgroundSize: '8px auto' }}
+                 >
+                   {pages.map(p => (
+                     <option key={p.id} value={p.id} className="bg-gray-800 text-white">{p.name}</option>
+                   ))}
+                   <option value="new_page" className="bg-gray-800 text-blue-400 font-bold">+ New Page</option>
+                 </select>
+               </div>
+             )}
+
              {isSaving && (
-                <span className={`ml-2 text-xs font-medium ${getThemeClass(themeColor, 'text')} animate-pulse`}>
+                <span className={`ml-1 sm:ml-2 text-[10px] sm:text-xs font-medium ${getThemeClass(themeColor, 'text')} animate-pulse hidden md:inline`}>
                   Saving...
                 </span>
              )}
@@ -1835,93 +1914,93 @@ export default function App() {
         <div className={`hidden md:flex items-center bg-black/20 rounded-xl p-1 border ${themeClasses.sidebarBorder} shadow-inner`}>
           <button 
             onClick={() => handleDeviceChange('Desktop')} 
-            className={`p-2 rounded-lg transition-all duration-200 ${device === 'Desktop' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
+            className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${device === 'Desktop' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
             title="Desktop"
           >
             <Monitor className="w-4 h-4" />
           </button>
           <button 
             onClick={() => handleDeviceChange('Tablet')} 
-            className={`p-2 rounded-lg transition-all duration-200 ${device === 'Tablet' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
+            className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${device === 'Tablet' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
             title="Tablet"
           >
             <Tablet className="w-4 h-4" />
           </button>
           <button 
             onClick={() => handleDeviceChange('Mobile')} 
-            className={`p-2 rounded-lg transition-all duration-200 ${device === 'Mobile' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
+            className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${device === 'Mobile' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
             title="Mobile"
           >
             <Smartphone className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-3">
            {/* Publish Button - Prominent */}
            <button
              onClick={handlePublish}
              disabled={!currentProject || isPublishing}
-             className={`hidden sm:flex items-center gap-2 px-4 py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-bold text-xs uppercase tracking-wide shadow-lg ${getThemeClass(themeColor, 'shadow')} transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+             className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wide shadow-lg ${getThemeClass(themeColor, 'shadow')} transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
            >
              {isPublishing ? (
                <>
-                 <RefreshCw className="w-3 h-3 animate-spin" /> Publishing...
+                 <RefreshCw className="w-3 h-3 animate-spin" /> <span className="hidden sm:inline">Publishing...</span>
                </>
              ) : (
                <>
-                 <Globe className="w-3 h-3" /> Publish
+                 <Globe className="w-3 h-3" /> <span className="hidden sm:inline">Publish</span>
                </>
              )}
            </button>
 
-           <div className={`w-px h-6 ${themeClasses.sidebarBorder} mx-1 hidden sm:block`}></div>
+           <div className={`w-px h-6 ${themeClasses.sidebarBorder} mx-0.5 sm:mx-1 hidden sm:block`}></div>
 
-           <div className="flex items-center gap-1 bg-black/20 rounded-xl p-1 border border-white/5">
+           <div className="flex items-center gap-0.5 sm:gap-1 bg-black/20 rounded-xl p-0.5 sm:p-1 border border-white/5">
               <button 
                 onClick={(e) => { e.preventDefault(); editor?.UndoManager.undo(); }}
                 disabled={!canUndo}
-                className={`p-2 rounded-lg hover:bg-white/10 ${canUndo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${canUndo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors hidden sm:block`}
                 title="Undo"
               >
-                <Undo2 className="w-4 h-4" />
+                <Undo2 className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button 
                 onClick={(e) => { e.preventDefault(); editor?.UndoManager.redo(); }}
                 disabled={!canRedo}
-                className={`p-2 rounded-lg hover:bg-white/10 ${canRedo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${canRedo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors hidden sm:block`}
                 title="Redo"
               >
-                <Redo2 className="w-4 h-4" />
+                <Redo2 className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button 
                 onClick={(e) => { e.preventDefault(); handleSave(); }}
                 disabled={!currentProject || isSaving}
-                className={`p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
                 title="Save"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button 
                 onClick={() => toggleViewMode()}
-                className={`p-2 rounded-lg hover:bg-white/10 ${viewMode === 'code' ? 'text-blue-400 bg-blue-500/10' : 'text-white/60 hover:text-white'} transition-colors`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${viewMode === 'code' ? `text-${themeColor}-400 bg-${themeColor}-500/10` : 'text-white/60 hover:text-white'} transition-colors`}
                 title="Code"
               >
-                <Code className="w-4 h-4" />
+                <Code className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors hidden sm:block`}
                 title="Theme"
               >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {isDarkMode ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
               </button>
            </div>
            
            <button 
              onClick={() => toggleRightSidebar('styles')}
-             className={`ml-2 p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all hover:scale-105 active:scale-95 ${isRightSidebarOpen ? 'bg-white/10 ring-1 ring-white/20' : ''}`}
+             className={`ml-1 sm:ml-2 p-1.5 sm:p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all hover:scale-105 active:scale-95 ${isRightSidebarOpen ? 'bg-white/10 ring-1 ring-white/20' : ''}`}
            >
-             <Sliders className="w-5 h-5" />
+             <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
            </button>
         </div>
       </motion.header>
@@ -2088,6 +2167,140 @@ export default function App() {
         )}
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 relative">
+          {/* Image Settings (if image selected) */}
+          {selectedComponent && selectedComponent.get('type') === 'image' && (activeRightTab === 'styles' || activeRightTab === 'traits') && (
+            <div className={`mb-6 p-4 rounded-xl bg-white/5 border ${themeClasses.sidebarBorder}`}>
+              <div className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider mb-3 flex items-center gap-2`}>
+                <ImageIcon className="w-3 h-3" /> Image Settings
+              </div>
+              <button
+                onClick={() => {
+                  if (editor) {
+                    editor.runCommand('open-assets', {
+                      target: selectedComponent,
+                      onSelect() {
+                        editor.Modal.close();
+                        editor.AssetManager.close();
+                      }
+                    });
+                  }
+                }}
+                className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white shadow-lg ${getThemeClass(themeColor, 'shadow')}`}
+              >
+                <Upload className="w-4 h-4" />
+                Change Image
+              </button>
+              <p className={`text-[10px] mt-3 text-center ${themeClasses.textMuted}`}>
+                You can also double-click the image on the canvas to change it.
+              </p>
+            </div>
+          )}
+
+          {/* Link Settings (if link selected) */}
+          {selectedComponent && (selectedComponent.is('link') || selectedComponent.get('tagName') === 'a') && (activeRightTab === 'styles' || activeRightTab === 'traits') && (
+            <div className={`mb-6 p-4 rounded-xl bg-white/5 border ${themeClasses.sidebarBorder}`}>
+              <div className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider mb-3 flex items-center gap-2`}>
+                <LinkIcon className="w-3 h-3" /> Link Settings
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className={`block text-[10px] font-bold uppercase tracking-wider ${themeClasses.textMuted} mb-1.5`}>URL Destination</label>
+                  <div className="flex gap-2 mb-2">
+                    <select
+                      className={`flex-1 bg-black/20 border ${themeClasses.sidebarBorder} rounded-lg px-2 py-1.5 text-xs ${themeClasses.text} focus:outline-none focus:border-${themeColor}-500 transition-colors appearance-none`}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const val = e.target.value;
+                          setLinkHref(val);
+                          selectedComponent.addAttributes({ href: val });
+                        }
+                      }}
+                    >
+                      <option value="">Link to page...</option>
+                      {pages.map(p => {
+                        let name = p.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                        if (name === 'main' || name === 'page') name = 'index';
+                        return <option key={p.id} value={`${name}.html`}>{p.name}</option>;
+                      })}
+                    </select>
+                  </div>
+                  <input
+                    type="text"
+                    value={linkHref}
+                    onChange={(e) => {
+                      setLinkHref(e.target.value);
+                      selectedComponent.addAttributes({ href: e.target.value });
+                    }}
+                    placeholder="https://example.com or #section"
+                    className={`w-full bg-black/20 border ${themeClasses.sidebarBorder} rounded-lg px-3 py-2 text-sm ${themeClasses.text} focus:outline-none focus:border-${themeColor}-500 transition-colors`}
+                  />
+                </div>
+                
+                <div>
+                  <label className={`block text-[10px] font-bold uppercase tracking-wider ${themeClasses.textMuted} mb-1.5`}>Open In</label>
+                  <select
+                    value={linkTarget}
+                    onChange={(e) => {
+                      setLinkTarget(e.target.value);
+                      selectedComponent.addAttributes({ target: e.target.value });
+                    }}
+                    className={`w-full bg-black/20 border ${themeClasses.sidebarBorder} rounded-lg px-3 py-2 text-sm ${themeClasses.text} focus:outline-none focus:border-${themeColor}-500 transition-colors appearance-none`}
+                  >
+                    <option value="_self">Same Tab</option>
+                    <option value="_blank">New Tab</option>
+                  </select>
+                </div>
+              </div>
+              <p className={`text-[10px] mt-3 text-center ${themeClasses.textMuted}`}>
+                Tip: Use <code className="bg-black/30 px-1 rounded">#id</code> to scroll to a section on this page, or <code className="bg-black/30 px-1 rounded">https://...</code> for external links.
+              </p>
+            </div>
+          )}
+
+          {/* Form Settings (if form selected) */}
+          {selectedComponent && selectedComponent.get('tagName') === 'form' && (activeRightTab === 'styles' || activeRightTab === 'traits') && (
+            <div className={`mb-6 p-4 rounded-xl bg-white/5 border ${themeClasses.sidebarBorder}`}>
+              <div className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider mb-3 flex items-center gap-2`}>
+                <Settings className="w-3 h-3" /> Form Settings
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className={`block text-[10px] font-bold uppercase tracking-wider ${themeClasses.textMuted} mb-1.5`}>Action URL</label>
+                  <input
+                    type="text"
+                    value={formAction}
+                    onChange={(e) => {
+                      setFormAction(e.target.value);
+                      selectedComponent.addAttributes({ action: e.target.value });
+                    }}
+                    placeholder="/api/submit or https://..."
+                    className={`w-full bg-black/20 border ${themeClasses.sidebarBorder} rounded-lg px-3 py-2 text-sm ${themeClasses.text} focus:outline-none focus:border-${themeColor}-500 transition-colors`}
+                  />
+                </div>
+                
+                <div>
+                  <label className={`block text-[10px] font-bold uppercase tracking-wider ${themeClasses.textMuted} mb-1.5`}>Method</label>
+                  <select
+                    value={formMethod}
+                    onChange={(e) => {
+                      setFormMethod(e.target.value);
+                      selectedComponent.addAttributes({ method: e.target.value });
+                    }}
+                    className={`w-full bg-black/20 border ${themeClasses.sidebarBorder} rounded-lg px-3 py-2 text-sm ${themeClasses.text} focus:outline-none focus:border-${themeColor}-500 transition-colors appearance-none`}
+                  >
+                    <option value="POST">POST</option>
+                    <option value="GET">GET</option>
+                  </select>
+                </div>
+              </div>
+              <p className={`text-[10px] mt-3 text-center ${themeClasses.textMuted}`}>
+                Where and how to send the form data when submitted.
+              </p>
+            </div>
+          )}
+
           {/* Empty State for Styles/Traits */}
           {(!selectedComponent && (activeRightTab === 'styles' || activeRightTab === 'traits')) && (
             <div className={`flex flex-col items-center justify-center h-full text-center ${themeClasses.textMuted} py-12 absolute inset-0 pointer-events-none`}>

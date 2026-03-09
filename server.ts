@@ -383,7 +383,7 @@ app.delete('/api/projects/:id', async (req, res) => {
 // Publish project
 app.post('/api/projects/:id/publish', async (req, res) => {
   const { id } = req.params;
-  const { html, css } = req.body;
+  const { pages, html, css } = req.body; // Support both old and new format
   
   try {
     const projectDir = path.join(__dirname, 'dist', 'sites', id, 'dist');
@@ -391,20 +391,26 @@ app.post('/api/projects/:id/publish', async (req, res) => {
       fs.mkdirSync(projectDir, { recursive: true });
     }
     
-    const fullHtml = `<!DOCTYPE html>
+    const pagesToPublish = pages || [{ name: 'index', html, css }];
+
+    pagesToPublish.forEach((page: any) => {
+      const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${id}</title>
-  <style>${css}</style>
+  <title>${id} - ${page.name}</title>
+  <style>${page.css}</style>
 </head>
 <body>
-  ${html}
+  ${page.html}
 </body>
 </html>`;
-    
-    fs.writeFileSync(path.join(projectDir, 'index.html'), fullHtml);
+      
+      const fileName = page.name.endsWith('.html') ? page.name : `${page.name}.html`;
+      fs.writeFileSync(path.join(projectDir, fileName), fullHtml);
+    });
+
     res.json({ message: 'Project published successfully', url: `/sites/${id}/dist/index.html` });
   } catch (error) {
     console.error('Publish error:', error);
