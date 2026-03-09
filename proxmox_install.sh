@@ -107,7 +107,7 @@ if [ "$CHOICE" == "2" ]; then
     MEMORY=$(whiptail --inputbox "Memory (MB)" 8 40 "$MEMORY" --title "System Resources" 3>&1 1>&2 2>&3)
     
     # 5. Network
-    NET_CHOICE=$(whiptail --menu "Network Configuration" 10 40 2 \
+    NET_CHOICE=$(whiptail --menu "Network Configuration\nIf you are unsure, choose DHCP." 12 50 2 \
     "dhcp" "DHCP (Auto)" \
     "static" "Static IP" 3>&1 1>&2 2>&3)
     
@@ -115,6 +115,14 @@ if [ "$CHOICE" == "2" ]; then
         NET_MODE="static"
         IP_ADDRESS=$(whiptail --inputbox "IP Address (CIDR, e.g. 192.168.1.100/24)" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
         GATEWAY=$(whiptail --inputbox "Gateway (e.g. 192.168.1.1)" 8 50 --title "Network Configuration" 3>&1 1>&2 2>&3)
+        
+        # Auto-detect host DNS
+        HOST_DNS=$(grep -i '^nameserver' /etc/resolv.conf | awk '{print $2}' | xargs)
+        if [ -z "$HOST_DNS" ]; then
+            HOST_DNS="8.8.8.8 1.1.1.1"
+        fi
+        
+        DNS_SERVERS=$(whiptail --inputbox "DNS Servers (space separated)" 8 50 "$HOST_DNS" --title "Network Configuration" 3>&1 1>&2 2>&3)
     fi
 fi
 
@@ -135,6 +143,7 @@ echo -e "  Memory:   ${MEMORY}MB"
 if [ "$NET_MODE" == "static" ]; then
     echo -e "  IP:       ${IP_ADDRESS}"
     echo -e "  Gateway:  ${GATEWAY}"
+    echo -e "  DNS:      ${DNS_SERVERS}"
 else
     echo -e "  Network:  DHCP"
 fi
@@ -160,14 +169,14 @@ if pveam list $TEMPLATE_STORAGE | grep -q "debian-12-standard"; then
 else
     # Template does not exist, download it
     msg_info "Downloading Debian 12 Template"
-    pveam update >/dev/null
+    pveam update >/dev/null 2>&1
     # Find available template name
     AVAIL_TEMPLATE=$(pveam available --section system | grep "debian-12-standard" | head -n 1 | awk '{print $2}')
     if [ -z "$AVAIL_TEMPLATE" ]; then
         msg_error "Could not find Debian 12 template."
         exit 1
     fi
-    pveam download $TEMPLATE_STORAGE $AVAIL_TEMPLATE >/dev/null
+    pveam download $TEMPLATE_STORAGE $AVAIL_TEMPLATE >/dev/null 2>&1
     # Re-fetch VolID after download
     TEMPLATE_VOLID=$(pveam list $TEMPLATE_STORAGE | grep "debian-12-standard" | head -n 1 | awk '{print $1}')
     msg_ok "Template Downloaded: $TEMPLATE_VOLID"
@@ -185,7 +194,7 @@ fi
 ROOTFS_STORAGE=$(pvesm status -content rootdir | awk 'NR>1 {print $1}' | head -n 1)
 if [ -z "$ROOTFS_STORAGE" ]; then ROOTFS_STORAGE="local-lvm"; fi
 
-pct create $CT_ID "$TEMPLATE_VOLID" \
+CREATE_CMD=(pct create $CT_ID "$TEMPLATE_VOLID" \
     --hostname "$CT_NAME" \
     --password "$CT_PASSWORD" \
     --storage $ROOTFS_STORAGE \
@@ -196,7 +205,13 @@ pct create $CT_ID "$TEMPLATE_VOLID" \
     --swap $SWAP \
     --features nesting=1 \
     --unprivileged 1 \
-    --start 1 >/dev/null
+    --start 1)
+
+if [ "$NET_MODE" == "static" ] && [ -n "$DNS_SERVERS" ]; then
+    CREATE_CMD+=(--nameserver "$DNS_SERVERS")
+fi
+
+"${CREATE_CMD[@]}" >/dev/null 2>&1
 msg_ok "Container Created & Started"
 
 msg_info "Waiting for Network"
@@ -204,20 +219,20 @@ sleep 10
 msg_ok "Network Ready"
 
 msg_info "Installing Dependencies inside Container"
-pct exec $CT_ID -- bash -c "export LC_ALL=C; export DEBIAN_FRONTEND=noninteractive; apt-get update" >/dev/null
-pct exec $CT_ID -- bash -c "export LC_ALL=C; export DEBIAN_FRONTEND=noninteractive; apt-get install -y git curl build-essential gnupg openssh-server" >/dev/null
+pct exec $CT_ID -- bash -c "export LC_ALL=C; export DEBIAN_FRONTEND=noninteractive; apt-get update" >/dev/null 2>&1
+pct exec $CT_ID -- bash -c "export LC_ALL=C; export DEBIAN_FRONTEND=noninteractive; apt-get install -y git curl build-essential gnupg openssh-server" >/dev/null 2>&1
 # Enable Root Login for SSH
-pct exec $CT_ID -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-pct exec $CT_ID -- systemctl enable ssh >/dev/null
-pct exec $CT_ID -- systemctl restart ssh >/dev/null
+pct exec $CT_ID -- sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config >/dev/null 2>&1
+pct exec $CT_ID -- systemctl enable ssh >/dev/null 2>&1
+pct exec $CT_ID -- systemctl restart ssh >/dev/null 2>&1
 msg_ok "Dependencies Installed & SSH Configured"
 
 msg_info "Cloning Repository"
 REPO_URL="https://github.com/${GITHUB_USER}/${GITHUB_REPO}.git"
 # Ensure directory is empty/clean
-pct exec $CT_ID -- rm -rf /opt/sitebuilder
+pct exec $CT_ID -- rm -rf /opt/sitebuilder >/dev/null 2>&1
 # Verbose clone to see errors
-if ! pct exec $CT_ID -- git clone -b "${GITHUB_BRANCH}" "${REPO_URL}" /opt/sitebuilder; then
+if ! pct exec $CT_ID -- git clone -q -b "${GITHUB_BRANCH}" "${REPO_URL}" /opt/sitebuilder >/dev/null 2>&1; then
     msg_error "Failed to clone repository. Check internet connection or repo URL."
     exit 1
 fi
@@ -233,8 +248,8 @@ if ! pct exec $CT_ID -- test -f /opt/sitebuilder/install.sh; then
     exit 1
 fi
 
-pct exec $CT_ID -- chmod +x /opt/sitebuilder/install.sh
-pct exec $CT_ID -- bash -c "export LC_ALL=C; cd /opt/sitebuilder && ./install.sh" >/dev/null
+pct exec $CT_ID -- chmod +x /opt/sitebuilder/install.sh >/dev/null 2>&1
+pct exec $CT_ID -- bash -c "export LC_ALL=C; cd /opt/sitebuilder && ./install.sh" >/dev/null 2>&1
 msg_ok "Installation Script Completed"
 
 if [ "$NET_MODE" == "dhcp" ]; then
