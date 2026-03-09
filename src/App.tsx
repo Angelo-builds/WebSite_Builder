@@ -6,7 +6,7 @@ import gjsNavbar from 'grapesjs-navbar';
 import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
-import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon } from 'lucide-react';
+import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -111,6 +111,7 @@ export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings'>('profile');
   const [themeColor, setThemeColor] = useState('blue');
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: 'Admin',
     surname: 'User',
@@ -118,7 +119,7 @@ export default function App() {
     role: 'Administrator'
   });
 
-  const handleLogin = (status: boolean, guest: boolean = false) => {
+  const handleLogin = (status: boolean, guest: boolean = false, user?: any) => {
     setIsLoggedIn(status);
     setIsGuest(guest);
     if (guest) {
@@ -132,6 +133,13 @@ export default function App() {
       if (!['blue', 'emerald'].includes(themeColor)) {
         setThemeColor('blue');
       }
+    } else if (user) {
+      setUserProfile({
+        name: user.name || 'Admin',
+        surname: user.surname || 'User',
+        email: user.email || 'admin@example.com',
+        role: user.role || 'Administrator'
+      });
     } else {
       setUserProfile({
         name: 'Admin',
@@ -1853,14 +1861,14 @@ export default function App() {
         animate={{ y: 0, opacity: 1 }}
         className={`h-16 mx-2 sm:mx-4 mt-2 sm:mt-4 rounded-2xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} flex items-center justify-between px-3 sm:px-6 shadow-lg z-50 relative`}
       >
-        <div className="flex items-center gap-2 sm:gap-6">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2">
              <div className={`w-8 h-8 ${getThemeClass(themeColor, 'gradientIcon')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadow')} shrink-0`}>
                <Layout className="w-5 h-5 text-white" />
              </div>
-             <div className="hidden lg:flex flex-col">
-               <h1 className={`text-sm font-bold tracking-tight ${themeClasses.text}`}>Proxmox SiteBuilder</h1>
-               <span className={`text-[10px] font-medium ${themeClasses.textMuted} uppercase tracking-wider`}>v2.4.0</span>
+             {/* Title and version hidden on smaller screens to save space */}
+             <div className="hidden 2xl:flex flex-col">
+               <h1 className={`text-sm font-bold tracking-tight ${themeClasses.text}`}>Blockra</h1>
              </div>
           </div>
 
@@ -1868,13 +1876,13 @@ export default function App() {
 
           <div className="flex items-center gap-2">
              <span className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider hidden xl:inline`}>Project:</span>
-             <span className={`text-xs sm:text-sm font-medium ${themeClasses.text} bg-white/5 px-2 sm:px-3 py-1 rounded-lg border border-white/5 truncate max-w-[80px] sm:max-w-[150px] md:max-w-[200px]`}>
+             <span className={`text-xs sm:text-sm font-medium ${themeClasses.text} bg-white/5 px-2 sm:px-3 py-1 rounded-lg border border-white/5 truncate max-w-[80px] sm:max-w-[150px]`}>
                {currentProject || 'Untitled'}
              </span>
              
              {/* Page Selector */}
              {pages.length > 0 && (
-               <div className="flex items-center ml-2 bg-black/20 rounded-lg border border-white/5 px-2 py-1">
+               <div className="flex items-center ml-1 sm:ml-2 bg-black/20 rounded-lg border border-white/5 px-2 py-1">
                  <select
                    value={currentPage}
                    onChange={(e) => {
@@ -1911,7 +1919,7 @@ export default function App() {
         </div>
 
         {/* Center - Device Controls */}
-        <div className={`hidden md:flex items-center bg-black/20 rounded-xl p-1 border ${themeClasses.sidebarBorder} shadow-inner`}>
+        <div className={`hidden lg:flex items-center bg-black/20 rounded-xl p-1 border ${themeClasses.sidebarBorder} shadow-inner absolute left-1/2 -translate-x-1/2`}>
           <button 
             onClick={() => handleDeviceChange('Desktop')} 
             className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${device === 'Desktop' ? `bg-white/10 text-white shadow-sm` : `text-white/40 hover:text-white hover:bg-white/5`}`} 
@@ -1935,42 +1943,43 @@ export default function App() {
           </button>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
            {/* Publish Button - Prominent */}
            <button
              onClick={handlePublish}
              disabled={!currentProject || isPublishing}
-             className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wide shadow-lg ${getThemeClass(themeColor, 'shadow')} transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+             className={`hidden sm:flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wide shadow-lg ${getThemeClass(themeColor, 'shadow')} transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
            >
              {isPublishing ? (
                <>
-                 <RefreshCw className="w-3 h-3 animate-spin" /> <span className="hidden sm:inline">Publishing...</span>
+                 <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" /> <span className="hidden sm:inline">Publishing...</span>
                </>
              ) : (
                <>
-                 <Globe className="w-3 h-3" /> <span className="hidden sm:inline">Publish</span>
+                 <Globe className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Publish</span>
                </>
              )}
            </button>
 
-           <div className={`w-px h-6 ${themeClasses.sidebarBorder} mx-0.5 sm:mx-1 hidden sm:block`}></div>
+           <div className={`w-px h-6 ${themeClasses.sidebarBorder} mx-0.5 sm:mx-1 hidden md:block`}></div>
 
-           <div className="flex items-center gap-0.5 sm:gap-1 bg-black/20 rounded-xl p-0.5 sm:p-1 border border-white/5">
+           {/* Desktop Action Buttons */}
+           <div className="hidden md:flex items-center gap-0.5 sm:gap-1 bg-black/20 rounded-xl p-0.5 sm:p-1 border border-white/5">
               <button 
                 onClick={(e) => { e.preventDefault(); editor?.UndoManager.undo(); }}
                 disabled={!canUndo}
-                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${canUndo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors hidden sm:block`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${canUndo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
                 title="Undo"
               >
-                <Undo2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Undo2 className="w-4 h-4" />
               </button>
               <button 
                 onClick={(e) => { e.preventDefault(); editor?.UndoManager.redo(); }}
                 disabled={!canRedo}
-                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${canRedo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors hidden sm:block`}
+                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${canRedo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
                 title="Redo"
               >
-                <Redo2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Redo2 className="w-4 h-4" />
               </button>
               <button 
                 onClick={(e) => { e.preventDefault(); handleSave(); }}
@@ -1978,22 +1987,85 @@ export default function App() {
                 className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
                 title="Save"
               >
-                <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Save className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => toggleViewMode()}
                 className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 ${viewMode === 'code' ? `text-${themeColor}-400 bg-${themeColor}-500/10` : 'text-white/60 hover:text-white'} transition-colors`}
                 title="Code"
               >
-                <Code className="w-3 h-3 sm:w-4 sm:h-4" />
+                <Code className="w-4 h-4" />
               </button>
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)}
-                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors hidden sm:block`}
-                title="Theme"
-              >
-                {isDarkMode ? <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : <Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
-              </button>
+           </div>
+
+           {/* Mobile More Options Menu */}
+           <div className="relative md:hidden">
+             <button 
+               onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+               className={`p-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all ${isMoreMenuOpen ? 'bg-white/10 ring-1 ring-white/20' : ''}`}
+             >
+               <MoreVertical className="w-4 h-4" />
+             </button>
+             
+             <AnimatePresence>
+               {isMoreMenuOpen && (
+                 <motion.div
+                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                   animate={{ opacity: 1, scale: 1, y: 0 }}
+                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                   transition={{ duration: 0.15 }}
+                   className={`absolute right-0 top-full mt-2 w-48 rounded-xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} shadow-2xl overflow-hidden z-[100]`}
+                 >
+                   <div className="p-2 flex flex-col gap-1">
+                     <button
+                       onClick={() => { handlePublish(); setIsMoreMenuOpen(false); }}
+                       disabled={!currentProject || isPublishing}
+                       className={`w-full flex items-center justify-center gap-2 px-3 py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-lg font-bold text-xs uppercase tracking-wide shadow-lg mb-1 disabled:opacity-50`}
+                     >
+                       <Globe className="w-4 h-4" /> Publish
+                     </button>
+                     <div className="flex justify-between px-2 py-1 mb-1 border-b border-white/10">
+                       <button 
+                         onClick={(e) => { e.preventDefault(); editor?.UndoManager.undo(); setIsMoreMenuOpen(false); }}
+                         disabled={!canUndo}
+                         className={`p-2 rounded-lg hover:bg-white/10 ${canUndo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
+                         title="Undo"
+                       >
+                         <Undo2 className="w-4 h-4" />
+                       </button>
+                       <button 
+                         onClick={(e) => { e.preventDefault(); editor?.UndoManager.redo(); setIsMoreMenuOpen(false); }}
+                         disabled={!canRedo}
+                         className={`p-2 rounded-lg hover:bg-white/10 ${canRedo ? 'text-white/60 hover:text-white' : 'text-white/20 cursor-not-allowed'} transition-colors`}
+                         title="Redo"
+                       >
+                         <Redo2 className="w-4 h-4" />
+                       </button>
+                     </div>
+                     <button 
+                       onClick={(e) => { e.preventDefault(); handleSave(); setIsMoreMenuOpen(false); }}
+                       disabled={!currentProject || isSaving}
+                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                     >
+                       <Save className="w-4 h-4" /> Save Project
+                     </button>
+                     <button 
+                       onClick={() => { toggleViewMode(); setIsMoreMenuOpen(false); }}
+                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${viewMode === 'code' ? `text-${themeColor}-400 bg-${themeColor}-500/10` : 'text-white/80 hover:text-white hover:bg-white/10'}`}
+                     >
+                       <Code className="w-4 h-4" /> {viewMode === 'code' ? 'Editor Mode' : 'Code Mode'}
+                     </button>
+                     <div className="border-t border-white/10 my-1"></div>
+                     <div className="px-3 py-2 text-xs font-bold text-white/40 uppercase tracking-wider">Device</div>
+                     <div className="flex justify-between px-2">
+                       <button onClick={() => { handleDeviceChange('Desktop'); setIsMoreMenuOpen(false); }} className={`p-2 rounded-lg ${device === 'Desktop' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}><Monitor className="w-4 h-4" /></button>
+                       <button onClick={() => { handleDeviceChange('Tablet'); setIsMoreMenuOpen(false); }} className={`p-2 rounded-lg ${device === 'Tablet' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}><Tablet className="w-4 h-4" /></button>
+                       <button onClick={() => { handleDeviceChange('Mobile'); setIsMoreMenuOpen(false); }} className={`p-2 rounded-lg ${device === 'Mobile' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}><Smartphone className="w-4 h-4" /></button>
+                     </div>
+                   </div>
+                 </motion.div>
+               )}
+             </AnimatePresence>
            </div>
            
            <button 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# Proxmox SiteBuilder - Installer
+# Blockra - Installer
 # ==============================================================================
 # Usage:
 #   bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
@@ -73,7 +73,7 @@ IP_ADDRESS=""
 GATEWAY=""
 
 # --- MENU ---
-CHOICE=$(whiptail --title "Proxmox SiteBuilder Installer" --menu "Choose Installation Type" 12 60 2 \
+CHOICE=$(whiptail --title "Blockra Installer" --menu "Choose Installation Type" 12 60 2 \
 "1" "Default (DHCP, 4GB RAM, ID: $CT_ID)" \
 "2" "Advanced (Static IP, Custom Resources)" 3>&1 1>&2 2>&3)
 

@@ -335,10 +335,15 @@ export default function SettingsModal({
                   </div>
 
                   <div className="mt-8 pt-6 border-t border-white/10">
-                    <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
-                      <RefreshCw className="w-5 h-5" />
-                      System Updates
-                    </h4>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-lg flex items-center gap-2">
+                        <RefreshCw className="w-5 h-5" />
+                        System Updates
+                      </h4>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-md bg-white/10 ${theme.textMuted}`}>
+                        Version 2.4.0
+                      </span>
+                    </div>
                     <div className="p-5 rounded-xl border border-blue-500/30 bg-blue-500/5 flex flex-col gap-4">
                       <p className={`text-sm ${theme.textMuted}`}>
                         Check for new features and bug fixes. Updating will <strong>NOT</strong> delete your existing projects or database.

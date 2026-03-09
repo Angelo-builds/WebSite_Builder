@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# Proxmox SiteBuilder - One-Click Deployment Script
+# Blockra - One-Click Deployment Script
 # ==============================================================================
 # This script is designed to be run on a Proxmox VE node.
 # It clones the repository and initiates the LXC container creation and setup.
@@ -26,7 +26,7 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}=== Proxmox SiteBuilder Installer ===${NC}"
+echo -e "${BLUE}=== Blockra Installer ===${NC}"
 
 # Check if running on Proxmox
 if ! command -v pveversion >/dev/null 2>&1; then

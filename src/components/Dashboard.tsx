@@ -48,6 +48,9 @@ export default function Dashboard({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
@@ -60,11 +63,42 @@ export default function Dashboard({
     return matchesSearch && matchesCategory;
   });
 
-  const handleEmailAuth = (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real implementation, this would call the backend API
-    console.log('Authenticating with:', { email, password, isRegistering });
-    onLogin(true, false);
+    setError('');
+    
+    if (isRegistering && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name: email.split('@')[0] })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Authentication failed');
+      }
+
+      // Store token if needed
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
+      onLogin(true, false, data.user);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Theme classes - Enhanced for Liquid Glass
@@ -117,24 +151,17 @@ export default function Dashboard({
               <div className="absolute inset-0 bg-white/20 skew-x-12 -translate-x-full group-hover:animate-shimmer"></div>
               <Layout className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-4xl font-bold mb-3 tracking-tight text-white drop-shadow-sm">Proxmox <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Builder</span></h1>
+            <h1 className="text-4xl font-bold mb-3 tracking-tight text-white drop-shadow-sm">Blockra</h1>
             <p className="text-white/60 text-lg font-medium leading-relaxed max-w-[280px]">The next generation of web design. Fluid, fast, and intuitive.</p>
           </div>
           
           <div className="space-y-4">
-            <button 
-              onClick={() => onLogin(true, false)}
-              className="w-full py-4 px-6 bg-white text-black hover:bg-gray-100 rounded-2xl font-bold text-base transition-all shadow-xl shadow-white/5 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              Sign In with Proxmox <ArrowRight className="w-4 h-4" />
-            </button>
-            
             {!showEmailForm ? (
               <button 
                 onClick={() => setShowEmailForm(true)}
-                className="w-full py-4 px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl font-medium text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full py-4 px-6 bg-white text-black hover:bg-gray-100 rounded-2xl font-bold text-base transition-all shadow-xl shadow-white/5 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                Continue with Email
+                Sign In to Blockra <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <motion.form 
@@ -143,6 +170,11 @@ export default function Dashboard({
                 onSubmit={handleEmailAuth}
                 className="space-y-4 pt-2"
               >
+                {error && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-xs font-medium text-center">
+                    {error}
+                  </div>
+                )}
                 <div className="space-y-2 text-left">
                   <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Email Address</label>
                   <input
@@ -182,22 +214,27 @@ export default function Dashboard({
 
                 <button 
                   type="submit"
-                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] mt-4"
+                  disabled={isLoading}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-600/20 active:scale-[0.98] mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
                 >
-                  {isRegistering ? 'Create Account' : 'Sign In'}
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    isRegistering ? 'Create Account' : 'Sign In'
+                  )}
                 </button>
 
                 <div className="flex justify-between items-center text-xs pt-2 px-1">
                   <button 
                     type="button"
-                    onClick={() => setShowEmailForm(false)}
+                    onClick={() => { setShowEmailForm(false); setError(''); }}
                     className="text-white/40 hover:text-white transition-colors"
                   >
                     Back
                   </button>
                   <button 
                     type="button"
-                    onClick={() => setIsRegistering(!isRegistering)}
+                    onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
                     className="text-blue-400 hover:text-blue-300 hover:underline font-medium"
                   >
                     {isRegistering ? 'Already have an account?' : 'Need an account?'}
@@ -224,7 +261,7 @@ export default function Dashboard({
           </div>
           
           <p className="mt-10 text-[10px] text-white/20 font-medium tracking-widest uppercase">
-            v2.4.0 • Proxmox SiteBuilder
+            Blockra
           </p>
         </motion.div>
       </div>
@@ -240,8 +277,7 @@ export default function Dashboard({
             <Layout className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="font-bold text-lg tracking-tight text-white block leading-none">Proxmox</span>
-            <span className="text-xs font-medium text-white/40 tracking-wider uppercase">SiteBuilder</span>
+            <span className="font-bold text-lg tracking-tight text-white block leading-none">Blockra</span>
           </div>
         </div>
         

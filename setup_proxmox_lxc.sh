@@ -22,7 +22,7 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}=== Proxmox SiteBuilder Deployment ===${NC}"
+echo -e "${BLUE}=== Blockra Deployment ===${NC}"
 echo -e "Container ID: ${GREEN}${CT_ID}${NC}"
 echo -e "Hostname: ${GREEN}${HOSTNAME}${NC}"
 

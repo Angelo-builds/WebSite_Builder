@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Proxmox SiteBuilder Auto-Installation Script
+# Blockra Auto-Installation Script
 # This script runs INSIDE the LXC container.
 
 set -e
@@ -77,7 +77,7 @@ EOF
 echo -e "${GREEN}[6/6] Creating Service...${NC}"
 cat <<EOF > /etc/systemd/system/sitebuilder.service
 [Unit]
-Description=Proxmox SiteBuilder
+Description=Blockra
 After=network.target mariadb.service
 
 [Service]

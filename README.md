@@ -1,4 +1,4 @@
-# Proxmox SiteBuilder
+# Blockra
 
 A powerful, self-hosted website builder designed to run on Proxmox LXC containers. Built with React, GrapesJS, and Node.js.
 
@@ -6,7 +6,7 @@ A powerful, self-hosted website builder designed to run on Proxmox LXC container
 
 ## 🚀 Quick Installation (Proxmox VE)
 
-To install Proxmox SiteBuilder on your Proxmox VE node, simply run the following command in your Proxmox shell:
+To install Blockra on your Proxmox VE node, simply run the following command in your Proxmox shell:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
