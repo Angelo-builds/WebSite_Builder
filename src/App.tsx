@@ -6,6 +6,7 @@ import gjsNavbar from 'grapesjs-navbar';
 import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
+import addSmartComponents from './grapesjs-smart-components';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
@@ -117,7 +118,16 @@ export default function App() {
     surname: 'User',
     email: 'admin@example.com',
     username: 'admin',
-    role: 'Administrator'
+    role: 'Administrator',
+    plan: 'Pro' as 'Free' | 'Basic' | 'Pro' | 'Agency'
+  });
+
+  const [uiPreferences, setUiPreferences] = useState({
+    sidebarLayout: 'left',
+    uiDensity: 'normal',
+    fontFamily: 'Inter',
+    customLogo: '',
+    customCss: ''
   });
 
   const handleLogin = (status: boolean, guest: boolean = false, user?: any) => {
@@ -129,7 +139,8 @@ export default function App() {
         surname: '',
         email: '',
         username: 'guest',
-        role: 'Guest User'
+        role: 'Guest User',
+        plan: 'Free'
       });
       // Reset theme to blue if not allowed
       if (!['blue', 'emerald'].includes(themeColor)) {
@@ -141,7 +152,8 @@ export default function App() {
         surname: user.surname || 'User',
         email: user.email || 'admin@example.com',
         username: user.username || 'admin',
-        role: user.role || 'Administrator'
+        role: user.role || 'Administrator',
+        plan: user.plan || 'Pro'
       });
     } else {
       setUserProfile({
@@ -149,7 +161,8 @@ export default function App() {
         surname: 'User',
         email: 'admin@example.com',
         username: 'admin',
-        role: 'Administrator'
+        role: 'Administrator',
+        plan: 'Pro'
       });
     }
   };
@@ -271,7 +284,8 @@ export default function App() {
         gjsNavbar,
         gjsForms,
         gjsCountdown,
-        gjsStyleBg
+        gjsStyleBg,
+        addSmartComponents
       ],
       pluginsOpts: {
         [gjsBlocksBasic as any]: {
@@ -287,6 +301,7 @@ export default function App() {
         [gjsForms as any]: {},
         [gjsCountdown as any]: {},
         [gjsStyleBg as any]: {},
+        [addSmartComponents as any]: {},
       },
       // selectorManager: {
       //   appendTo: '#selector-container',
@@ -1908,6 +1923,7 @@ export default function App() {
               setActiveSettingsTab(tab);
               setIsSettingsModalOpen(true);
             }}
+            uiPreferences={uiPreferences}
           />
           
           <ConfirmModal
@@ -2721,6 +2737,9 @@ export default function App() {
         themeColor={themeColor}
         onUpdateThemeColor={setThemeColor}
         isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        uiPreferences={uiPreferences}
+        onUpdateUiPreferences={setUiPreferences}
       />
       
       <ConfirmModal

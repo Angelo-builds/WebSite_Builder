@@ -16,6 +16,15 @@ interface UserProfile {
   surname: string;
   email: string;
   role: string;
+  plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
+}
+
+interface UIPreferences {
+  sidebarLayout: string;
+  uiDensity: string;
+  fontFamily: string;
+  customLogo: string;
+  customCss: string;
 }
 
 interface DashboardProps {
@@ -27,6 +36,7 @@ interface DashboardProps {
   userProfile: UserProfile;
   themeColor: string;
   onOpenSettings: (tab: 'profile' | 'appearance' | 'settings') => void;
+  uiPreferences: UIPreferences;
 }
 
 export default function Dashboard({ 
@@ -39,7 +49,8 @@ export default function Dashboard({
   onLogin,
   userProfile,
   themeColor,
-  onOpenSettings
+  onOpenSettings,
+  uiPreferences
 }: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean) => void }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -284,20 +295,40 @@ export default function Dashboard({
     );
   }
 
+  // Apply UI Preferences
+  const fontFamilyClass = uiPreferences?.fontFamily === 'Roboto' ? 'font-roboto' : uiPreferences?.fontFamily === 'Montserrat' ? 'font-montserrat' : 'font-sans';
+  const densityClass = uiPreferences?.uiDensity === 'compact' ? 'px-4 sm:px-4 py-6' : uiPreferences?.uiDensity === 'spacious' ? 'px-4 sm:px-12 py-16' : 'px-4 sm:px-8 py-12';
+
   return (
-    <div className={`min-h-screen font-sans bg-black/90`}>
+    <div className={`min-h-screen ${fontFamilyClass} bg-black/90`}>
       {/* Header */}
       <header className={`h-20 border-b ${theme.border} bg-[#161618]/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-50`}>
         <div className="flex items-center gap-4">
-          <div className={`w-10 h-10 ${getThemeClass(themeColor, 'gradientIcon')} rounded-xl flex items-center justify-center ${getThemeClass(themeColor, 'shadowLg')} ring-1 ring-white/10`}>
-            <Layout className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="font-bold text-lg tracking-tight text-white block leading-none">Blockra</span>
-          </div>
+          {uiPreferences?.customLogo ? (
+            <img src={uiPreferences.customLogo} alt="Logo" className="h-8 object-contain" />
+          ) : (
+            <>
+              <div className={`w-10 h-10 ${getThemeClass(themeColor, 'gradientIcon')} rounded-xl flex items-center justify-center ${getThemeClass(themeColor, 'shadowLg')} ring-1 ring-white/10`}>
+                <Layout className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="font-bold text-lg tracking-tight text-white block leading-none">Blockra</span>
+              </div>
+            </>
+          )}
+          {isLoggedIn && userProfile.plan && (
+            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Agency' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+              {userProfile.plan === 'Pro' || userProfile.plan === 'Agency' ? '👑 ' : ''}{userProfile.plan}
+            </span>
+          )}
         </div>
         
         <div className="flex items-center gap-4">
+          {isLoggedIn && userProfile.plan !== 'Agency' && userProfile.plan !== 'Pro' && (
+            <button className={`hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
+              Upgrade Plan
+            </button>
+          )}
           <div className="relative">
             <button 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -371,7 +402,7 @@ export default function Dashboard({
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-12">
+      <main className={`max-w-7xl mx-auto ${densityClass}`}>
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-6">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-white tracking-tight">Your Projects</h2>
