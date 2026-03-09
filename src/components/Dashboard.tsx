@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown } from 'lucide-react';
 import { getThemeClass } from '../theme';
 
 export interface Project {
@@ -45,6 +45,7 @@ export default function Dashboard({
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -55,6 +56,8 @@ export default function Dashboard({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const categories = ['All', 'Blank Project', 'Landing Page', 'Portfolio', 'Corporate'];
+
+  const isGuest = userProfile.role === 'Guest User';
 
   const filteredProjects = projects.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -79,7 +82,7 @@ export default function Dashboard({
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name: email.split('@')[0] })
+        body: JSON.stringify({ email, username, password, name: email.split('@')[0] })
       });
 
       const data = await response.json();
@@ -175,15 +178,28 @@ export default function Dashboard({
                     {error}
                   </div>
                 )}
+                {isRegistering && (
+                  <div className="space-y-2 text-left">
+                    <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Username</label>
+                    <input
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className={`w-full px-4 py-3 rounded-xl ${theme.inputBg} text-white placeholder-white/30 outline-none transition-all`}
+                      placeholder="johndoe"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2 text-left">
-                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Email Address</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">{isRegistering ? 'Email Address' : 'Email or Username'}</label>
                   <input
-                    type="email"
+                    type={isRegistering ? "email" : "text"}
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={`w-full px-4 py-3 rounded-xl ${theme.inputBg} text-white placeholder-white/30 outline-none transition-all`}
-                    placeholder="name@example.com"
+                    placeholder={isRegistering ? "name@example.com" : "name@example.com or username"}
                   />
                 </div>
                 <div className="space-y-2 text-left">
@@ -363,10 +379,11 @@ export default function Dashboard({
           </div>
           <button 
             onClick={onCreateProject}
-            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-2xl font-bold transition-all ${getThemeClass(themeColor, 'shadowLg')} hover:scale-[1.02] active:scale-[0.98] ring-1 ring-white/20`}
+            disabled={isGuest}
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 ${isGuest ? 'bg-white/5 text-white/40 cursor-not-allowed' : `${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white hover:scale-[1.02] active:scale-[0.98] ${getThemeClass(themeColor, 'shadowLg')}`} rounded-2xl font-bold transition-all ring-1 ring-white/20`}
           >
-            <Plus className="w-5 h-5" />
-            New Project
+            {isGuest ? <Crown className="w-5 h-5 text-yellow-500/70" /> : <Plus className="w-5 h-5" />}
+            {isGuest ? 'New Project (Pro)' : 'New Project'}
           </button>
         </div>
 
@@ -489,13 +506,15 @@ export default function Dashboard({
                   )}
                   
                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 z-10">
-                    <button 
-                      onClick={(e) => onDeleteProject(project.name, e)}
-                      className="p-3 bg-black/40 hover:bg-red-500 text-white/60 hover:text-white rounded-xl backdrop-blur-md transition-colors border border-white/10"
-                      title="Delete Project"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {!isGuest && (
+                      <button 
+                        onClick={(e) => onDeleteProject(project.name, e)}
+                        className="p-3 bg-black/40 hover:bg-red-500 text-white/60 hover:text-white rounded-xl backdrop-blur-md transition-colors border border-white/10"
+                        title="Delete Project"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

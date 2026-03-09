@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle } from 'lucide-react';
+import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle, Shield } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import FileUpload from './FileUpload';
 
@@ -8,6 +8,7 @@ interface UserProfile {
   name: string;
   surname: string;
   email: string;
+  username?: string;
   role: string;
   avatar?: string;
 }
@@ -15,7 +16,7 @@ interface UserProfile {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeTab: 'profile' | 'appearance' | 'settings';
+  activeTab: 'profile' | 'appearance' | 'settings' | 'security';
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
   themeColor: string;
@@ -47,6 +48,15 @@ export default function SettingsModal({
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState(userProfile);
   
+  // Security State
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
+  const [resetUsername, setResetUsername] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [securityMessage, setSecurityMessage] = useState({ type: '', text: '' });
+  
   // Update state
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -64,6 +74,40 @@ export default function SettingsModal({
     e.preventDefault();
     onUpdateProfile(formData);
     // Optional: Show success message inside modal or close it
+  };
+
+  const handleSecuritySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecurityMessage({ type: '', text: '' });
+
+    if (newPassword !== confirmNewPassword) {
+      setSecurityMessage({ type: 'error', text: 'New passwords do not match' });
+      return;
+    }
+
+    try {
+      const endpoint = forgotPasswordMode ? '/api/auth/reset-password' : '/api/auth/change-password';
+      const payload = forgotPasswordMode 
+        ? { username: resetUsername, email: resetEmail, newPassword }
+        : { email: userProfile.email, oldPassword, newPassword };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setSecurityMessage({ type: 'success', text: data.message });
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      if (forgotPasswordMode) setForgotPasswordMode(false);
+    } catch (err: any) {
+      setSecurityMessage({ type: 'error', text: err.message || 'An error occurred' });
+    }
   };
 
   const checkForUpdates = async () => {
@@ -149,6 +193,13 @@ export default function SettingsModal({
                 Settings
               </button>
               <button
+                onClick={() => setActiveTab('security')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'security' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
+              >
+                <Shield className="w-4 h-4" />
+                Security
+              </button>
+              <button
                 onClick={() => setActiveTab('appearance')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'appearance' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
               >
@@ -165,6 +216,7 @@ export default function SettingsModal({
                 {activeTab === 'profile' && 'Edit Profile'}
                 {activeTab === 'appearance' && 'Customization'}
                 {activeTab === 'settings' && 'Settings'}
+                {activeTab === 'security' && 'Security'}
               </h3>
               <button onClick={onClose} className={`p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors`}>
                 <X className="w-5 h-5" />
@@ -230,15 +282,27 @@ export default function SettingsModal({
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Email Address</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
-                      placeholder="john@example.com"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Username</label>
+                      <input
+                        type="text"
+                        value={formData.username || ''}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                        placeholder="johndoe"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Email Address</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                        placeholder="john@example.com"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -259,6 +323,113 @@ export default function SettingsModal({
                     >
                       <Save className="w-4 h-4" />
                       Save Changes
+                    </button>
+                  </div>
+                </form>
+              )
+            )}
+
+            {activeTab === 'security' && (
+              isGuest ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Shield className={`w-16 h-16 ${theme.textMuted} mb-4 opacity-50`} />
+                  <h3 className="text-lg font-bold mb-2">Security Locked</h3>
+                  <p className={`${theme.textMuted} mb-6 max-w-xs`}>Sign in to manage your password and security settings.</p>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className={`px-6 py-2.5 rounded-xl text-white font-medium shadow-lg transition-all active:scale-95 ${getButtonColor(themeColor)}`}
+                  >
+                    Sign In
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSecuritySubmit} className="space-y-6">
+                  {securityMessage.text && (
+                    <div className={`p-3 rounded-xl text-sm font-medium text-center ${securityMessage.type === 'error' ? 'bg-red-500/20 text-red-200 border border-red-500/50' : 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/50'}`}>
+                      {securityMessage.text}
+                    </div>
+                  )}
+
+                  {!forgotPasswordMode ? (
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Current Password</label>
+                          <button type="button" onClick={() => setForgotPasswordMode(true)} className="text-xs text-blue-400 hover:text-blue-300 hover:underline">Forgot password?</button>
+                        </div>
+                        <input
+                          type="password"
+                          required
+                          value={oldPassword}
+                          onChange={(e) => setOldPassword(e.target.value)}
+                          className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 mb-4">
+                        <p className="text-sm text-blue-200">Enter your Username and Email to reset your password.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Username</label>
+                        <input
+                          type="text"
+                          required
+                          value={resetUsername}
+                          onChange={(e) => setResetUsername(e.target.value)}
+                          className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                          placeholder="johndoe"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                          placeholder="john@example.com"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>New Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Confirm New Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                      placeholder="••••••••"
+                    />
+                  </div>
+
+                  <div className="pt-4 flex justify-between items-center">
+                    {forgotPasswordMode ? (
+                      <button type="button" onClick={() => setForgotPasswordMode(false)} className="text-sm text-white/60 hover:text-white">Back to Change Password</button>
+                    ) : <div></div>}
+                    <button
+                      type="submit"
+                      className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-medium shadow-lg transition-all active:scale-95 ${getButtonColor(themeColor)}`}
+                    >
+                      <Save className="w-4 h-4" />
+                      {forgotPasswordMode ? 'Reset Password' : 'Update Password'}
                     </button>
                   </div>
                 </form>

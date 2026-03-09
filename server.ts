@@ -42,6 +42,7 @@ const connectDB = async () => {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255) UNIQUE,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255),
@@ -49,6 +50,16 @@ const connectDB = async () => {
         role VARCHAR(50) DEFAULT 'user'
       )
     `);
+
+    // Ensure username column exists if table was created before
+    try {
+      await connection.execute('ALTER TABLE users ADD COLUMN username VARCHAR(255) UNIQUE');
+      console.log('Added username column to users table');
+    } catch (e: any) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.log('Username column check:', e.message);
+      }
+    }
 
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS projects (
@@ -104,40 +115,43 @@ connectDB();
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password, name, surname } = req.body;
+  const { email, username, password, name, surname } = req.body;
   
   if (!dbReady || !db) {
-    return res.status(201).json({ message: 'User registered (Mock)', token: 'mock-token', user: { email, name, role: 'User' } });
+    return res.status(201).json({ message: 'User registered (Mock)', token: 'mock-token', user: { email, username, name, role: 'User' } });
   }
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await db.execute(
-      'INSERT INTO users (email, password, name, surname) VALUES (?, ?, ?, ?)',
-      [email, hashedPassword, name || 'User', surname || '']
+      'INSERT INTO users (email, username, password, name, surname) VALUES (?, ?, ?, ?, ?)',
+      [email, username || email.split('@')[0], hashedPassword, name || 'User', surname || '']
     );
     
-    const token = jwt.sign({ id: (result as any).insertId, email }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
-    res.status(201).json({ token, user: { email, name, surname, role: 'User' } });
-  } catch (error) {
+    const token = jwt.sign({ id: (result as any).insertId, email, username }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+    res.status(201).json({ token, user: { email, username, name, surname, role: 'User' } });
+  } catch (error: any) {
     console.error(error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: 'Email or Username already exists' });
+    }
     res.status(500).json({ message: 'Registration failed' });
   }
 });
 
 // Login
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body; // 'email' can be email or username
 
   if (!dbReady || !db) {
      if (email === 'admin@example.com' && password === 'admin') {
-        return res.json({ token: 'mock-admin-token', user: { email, name: 'Admin', role: 'Administrator' } });
+        return res.json({ token: 'mock-admin-token', user: { email, username: 'admin', name: 'Admin', role: 'Administrator' } });
      }
-     return res.json({ token: 'mock-user-token', user: { email, name: 'User', role: 'User' } });
+     return res.json({ token: 'mock-user-token', user: { email, username: email, name: 'User', role: 'User' } });
   }
 
   try {
-    const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await db.execute('SELECT * FROM users WHERE email = ? OR username = ?', [email, email]);
     const users = rows as any[];
 
     if (users.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
@@ -147,10 +161,50 @@ app.post('/api/auth/login', async (req, res) => {
 
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
-    res.json({ token, user: { email: user.email, name: user.name, surname: user.surname, role: user.role } });
+    const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+    res.json({ token, user: { email: user.email, username: user.username, name: user.name, surname: user.surname, role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Login failed' });
+  }
+});
+
+// Change Password
+app.post('/api/auth/change-password', async (req, res) => {
+  const { email, oldPassword, newPassword } = req.body;
+  if (!dbReady || !db) return res.json({ message: 'Password changed (Mock)' });
+
+  try {
+    const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+    const users = rows as any[];
+    if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+
+    const user = users[0];
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(401).json({ message: 'Incorrect old password' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.execute('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to change password' });
+  }
+});
+
+// Reset Password (Forgot Password)
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { username, email, newPassword } = req.body;
+  if (!dbReady || !db) return res.json({ message: 'Password reset (Mock)' });
+
+  try {
+    const [rows] = await db.execute('SELECT * FROM users WHERE username = ? AND email = ?', [username, email]);
+    const users = rows as any[];
+    if (users.length === 0) return res.status(401).json({ message: 'Invalid Username or Email combination' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, users[0].id]);
+    res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to reset password' });
   }
 });
 
@@ -393,6 +447,13 @@ app.post('/api/projects/:id/publish', async (req, res) => {
     
     const pagesToPublish = pages || [{ name: 'index', html, css }];
 
+    const blockraBadge = `
+      <a href="https://github.com/Angelo-builds/WebSite_Builder" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:8px 12px;border-radius:8px;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:6px;transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+        Built with Blockra
+      </a>
+    `;
+
     pagesToPublish.forEach((page: any) => {
       const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -404,6 +465,7 @@ app.post('/api/projects/:id/publish', async (req, res) => {
 </head>
 <body>
   ${page.html}
+  ${blockraBadge}
 </body>
 </html>`;
       

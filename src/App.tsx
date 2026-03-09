@@ -6,7 +6,7 @@ import gjsNavbar from 'grapesjs-navbar';
 import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
-import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical } from 'lucide-react';
+import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -109,13 +109,14 @@ export default function App() {
   
   // Settings State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings'>('profile');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security'>('profile');
   const [themeColor, setThemeColor] = useState('blue');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: 'Admin',
     surname: 'User',
     email: 'admin@example.com',
+    username: 'admin',
     role: 'Administrator'
   });
 
@@ -127,6 +128,7 @@ export default function App() {
         name: 'Guest',
         surname: '',
         email: '',
+        username: 'guest',
         role: 'Guest User'
       });
       // Reset theme to blue if not allowed
@@ -138,6 +140,7 @@ export default function App() {
         name: user.name || 'Admin',
         surname: user.surname || 'User',
         email: user.email || 'admin@example.com',
+        username: user.username || 'admin',
         role: user.role || 'Administrator'
       });
     } else {
@@ -145,6 +148,7 @@ export default function App() {
         name: 'Admin',
         surname: 'User',
         email: 'admin@example.com',
+        username: 'admin',
         role: 'Administrator'
       });
     }
@@ -1047,8 +1051,10 @@ export default function App() {
     gjsEditor.on('load', () => {
       updatePages();
       
+      const bm = gjsEditor.BlockManager;
+
       // Add Back to Top block
-      gjsEditor.BlockManager.add('back-to-top', {
+      bm.add('back-to-top', {
         label: 'Back to Top',
         category: 'Basic',
         attributes: { class: 'fa fa-arrow-up' },
@@ -1060,6 +1066,265 @@ export default function App() {
             html { scroll-behavior: smooth; }
             .back-to-top:hover { transform: translateY(-3px); box-shadow: 0 6px 8px rgba(0,0,0,0.15); }
           </style>
+        `,
+      });
+
+      // Hero Section with Video
+      bm.add('hero-video', {
+        label: 'Hero Video',
+        category: 'Sections',
+        attributes: { class: 'fa fa-video-camera' },
+        content: `
+          <header style="position: relative; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; text-align: center; color: white;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;">
+              <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
+              <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Background" />
+            </div>
+            <div style="z-index: 1; max-width: 800px; padding: 20px;">
+              <h1 style="font-size: 4rem; margin-bottom: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Build the Future</h1>
+              <p style="font-size: 1.5rem; margin-bottom: 30px; opacity: 0.9;">Create stunning websites without writing a single line of code.</p>
+              <a href="#" style="display: inline-block; padding: 15px 30px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; transition: background 0.3s;">Get Started</a>
+            </div>
+          </header>
+        `,
+      });
+
+      // Pricing Table
+      bm.add('pricing-table', {
+        label: 'Pricing Table',
+        category: 'Sections',
+        attributes: { class: 'fa fa-money' },
+        content: `
+          <section style="padding: 80px 20px; background-color: #f9fafb; font-family: sans-serif;">
+            <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
+              <h2 style="font-size: 2.5rem; margin-bottom: 10px; color: #111827;">Simple, transparent pricing</h2>
+              <p style="color: #6b7280; margin-bottom: 50px; font-size: 1.1rem;">No hidden fees. No surprise charges.</p>
+              <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 30px;">
+                
+                <!-- Basic Plan -->
+                <div style="flex: 1; min-width: 300px; max-width: 350px; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; text-align: left;">
+                  <h3 style="font-size: 1.5rem; color: #111827; margin-bottom: 15px;">Basic</h3>
+                  <div style="font-size: 3rem; font-weight: bold; color: #111827; margin-bottom: 20px;">$9<span style="font-size: 1rem; color: #6b7280; font-weight: normal;">/mo</span></div>
+                  <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; color: #4b5563; line-height: 2;">
+                    <li>✓ 1 Project</li>
+                    <li>✓ Basic Analytics</li>
+                    <li>✓ 24-hour support response time</li>
+                  </ul>
+                  <a href="#" style="display: block; text-align: center; padding: 12px; background-color: #f3f4f6; color: #111827; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background 0.3s;">Choose Basic</a>
+                </div>
+
+                <!-- Pro Plan -->
+                <div style="flex: 1; min-width: 300px; max-width: 350px; background: #111827; border-radius: 16px; padding: 40px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); text-align: left; position: relative; transform: scale(1.05);">
+                  <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Most Popular</div>
+                  <h3 style="font-size: 1.5rem; color: white; margin-bottom: 15px;">Pro</h3>
+                  <div style="font-size: 3rem; font-weight: bold; color: white; margin-bottom: 20px;">$29<span style="font-size: 1rem; color: #9ca3af; font-weight: normal;">/mo</span></div>
+                  <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; color: #d1d5db; line-height: 2;">
+                    <li>✓ Unlimited Projects</li>
+                    <li>✓ Advanced Analytics</li>
+                    <li>✓ 1-hour support response time</li>
+                    <li>✓ Custom Domains</li>
+                  </ul>
+                  <a href="#" style="display: block; text-align: center; padding: 12px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; transition: background 0.3s;">Choose Pro</a>
+                </div>
+
+              </div>
+            </div>
+          </section>
+        `,
+      });
+
+      // Feature Grid
+      bm.add('feature-grid', {
+        label: 'Feature Grid',
+        category: 'Sections',
+        attributes: { class: 'fa fa-th' },
+        content: `
+          <section style="padding: 80px 20px; background-color: white; font-family: sans-serif;">
+            <div style="max-width: 1200px; margin: 0 auto;">
+              <div style="text-align: center; margin-bottom: 60px;">
+                <h2 style="font-size: 2.5rem; color: #111827; margin-bottom: 15px;">Everything you need</h2>
+                <p style="color: #6b7280; font-size: 1.1rem; max-width: 600px; margin: 0 auto;">A complete toolkit for building modern applications.</p>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;">
+                
+                <div style="padding: 20px;">
+                  <div style="width: 50px; height: 50px; background: #eff6ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: #3b82f6;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </div>
+                  <h3 style="font-size: 1.25rem; color: #111827; margin-bottom: 10px;">Global Payments</h3>
+                  <p style="color: #6b7280; line-height: 1.6;">Accept payments from anywhere in the world with our secure infrastructure.</p>
+                </div>
+
+                <div style="padding: 20px;">
+                  <div style="width: 50px; height: 50px; background: #f0fdf4; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: #22c55e;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </div>
+                  <h3 style="font-size: 1.25rem; color: #111827; margin-bottom: 10px;">Bank-grade Security</h3>
+                  <p style="color: #6b7280; line-height: 1.6;">Your data is protected by industry-leading encryption and security protocols.</p>
+                </div>
+
+                <div style="padding: 20px;">
+                  <div style="width: 50px; height: 50px; background: #fef2f2; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: #ef4444;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  </div>
+                  <h3 style="font-size: 1.25rem; color: #111827; margin-bottom: 10px;">Lightning Fast</h3>
+                  <p style="color: #6b7280; line-height: 1.6;">Optimized for speed. Deliver content to your users in milliseconds.</p>
+                </div>
+
+              </div>
+            </div>
+          </section>
+        `,
+      });
+
+      // FAQ Accordion (CSS only)
+      bm.add('faq-accordion', {
+        label: 'FAQ Accordion',
+        category: 'Sections',
+        attributes: { class: 'fa fa-question-circle' },
+        content: `
+          <section style="padding: 80px 20px; background-color: #f9fafb; font-family: sans-serif;">
+            <div style="max-width: 800px; margin: 0 auto;">
+              <h2 style="font-size: 2.5rem; color: #111827; margin-bottom: 40px; text-align: center;">Frequently Asked Questions</h2>
+              <div class="faq-container">
+                <details style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">
+                  <summary style="font-weight: bold; font-size: 1.1rem; color: #111827; outline: none;">What is your refund policy?</summary>
+                  <p style="margin-top: 15px; color: #6b7280; line-height: 1.6;">If you're unhappy with your purchase for any reason, email us within 90 days and we'll refund you in full, no questions asked.</p>
+                </details>
+                <details style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">
+                  <summary style="font-weight: bold; font-size: 1.1rem; color: #111827; outline: none;">Do you offer technical support?</summary>
+                  <p style="margin-top: 15px; color: #6b7280; line-height: 1.6;">Yes, we offer 24/7 technical support for all our Pro and Enterprise customers via email and live chat.</p>
+                </details>
+                <details style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">
+                  <summary style="font-weight: bold; font-size: 1.1rem; color: #111827; outline: none;">Can I upgrade my plan later?</summary>
+                  <p style="margin-top: 15px; color: #6b7280; line-height: 1.6;">Absolutely! You can upgrade or downgrade your plan at any time from your account dashboard. Prorated charges will be applied automatically.</p>
+                </details>
+              </div>
+              <style>
+                details > summary { list-style: none; }
+                details > summary::-webkit-details-marker { display: none; }
+                details > summary::after { content: '+'; float: right; font-size: 1.5rem; line-height: 1; }
+                details[open] > summary::after { content: '-'; }
+              </style>
+            </div>
+          </section>
+        `,
+      });
+
+      // Testimonials
+      bm.add('testimonials', {
+        label: 'Testimonials',
+        category: 'Sections',
+        attributes: { class: 'fa fa-quote-left' },
+        content: `
+          <section style="padding: 80px 20px; background-color: #111827; color: white; font-family: sans-serif;">
+            <div style="max-width: 1200px; margin: 0 auto; text-align: center;">
+              <h2 style="font-size: 2.5rem; margin-bottom: 50px;">Loved by creators worldwide</h2>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                
+                <div style="background: #1f2937; padding: 30px; border-radius: 16px; text-align: left;">
+                  <div style="color: #fbbf24; margin-bottom: 15px;">★★★★★</div>
+                  <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px; color: #d1d5db;">"This platform completely transformed how we build landing pages. It's incredibly fast and intuitive."</p>
+                  <div style="display: flex; align-items: center; gap: 15px;">
+                    <img src="https://i.pravatar.cc/150?img=32" style="width: 50px; height: 50px; border-radius: 50%;" alt="User" />
+                    <div>
+                      <div style="font-weight: bold;">Sarah Jenkins</div>
+                      <div style="color: #9ca3af; font-size: 0.9rem;">Marketing Director</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="background: #1f2937; padding: 30px; border-radius: 16px; text-align: left;">
+                  <div style="color: #fbbf24; margin-bottom: 15px;">★★★★★</div>
+                  <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px; color: #d1d5db;">"The best tool I've used this year. The code export feature alone is worth the subscription price."</p>
+                  <div style="display: flex; align-items: center; gap: 15px;">
+                    <img src="https://i.pravatar.cc/150?img=11" style="width: 50px; height: 50px; border-radius: 50%;" alt="User" />
+                    <div>
+                      <div style="font-weight: bold;">David Chen</div>
+                      <div style="color: #9ca3af; font-size: 0.9rem;">Frontend Developer</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+        `,
+      });
+
+      // Newsletter
+      bm.add('newsletter', {
+        label: 'Newsletter',
+        category: 'Sections',
+        attributes: { class: 'fa fa-envelope' },
+        content: `
+          <section style="padding: 80px 20px; background-color: #3b82f6; color: white; font-family: sans-serif; text-align: center;">
+            <div style="max-width: 600px; margin: 0 auto;">
+              <h2 style="font-size: 2.5rem; margin-bottom: 15px; font-weight: bold;">Subscribe to our newsletter</h2>
+              <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.9;">Get the latest updates, articles, and resources sent straight to your inbox every week.</p>
+              <form style="display: flex; gap: 10px; max-width: 500px; margin: 0 auto;" onsubmit="event.preventDefault(); alert('Subscribed!');">
+                <input type="email" placeholder="Enter your email" required style="flex: 1; padding: 15px 20px; border-radius: 8px; border: none; outline: none; font-size: 1rem;" />
+                <button type="submit" style="padding: 15px 30px; background-color: #111827; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.3s;">Subscribe</button>
+              </form>
+              <p style="font-size: 0.8rem; margin-top: 15px; opacity: 0.7;">We care about your data. Read our Privacy Policy.</p>
+            </div>
+          </section>
+        `,
+      });
+
+      // Complex Footer
+      bm.add('complex-footer', {
+        label: 'Complex Footer',
+        category: 'Sections',
+        attributes: { class: 'fa fa-sitemap' },
+        content: `
+          <footer style="background-color: #111827; color: #9ca3af; padding: 80px 20px 40px; font-family: sans-serif;">
+            <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; border-bottom: 1px solid #374151; padding-bottom: 40px; margin-bottom: 40px;">
+              
+              <div>
+                <h3 style="color: white; font-size: 1.5rem; font-weight: bold; margin-bottom: 20px;">Blockra</h3>
+                <p style="line-height: 1.6; margin-bottom: 20px;">Making web development accessible to everyone, everywhere.</p>
+                <div style="display: flex; gap: 15px;">
+                  <a href="#" style="color: #9ca3af; text-decoration: none;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg></a>
+                  <a href="#" style="color: #9ca3af; text-decoration: none;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a>
+                </div>
+              </div>
+
+              <div>
+                <h4 style="color: white; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;">Solutions</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; line-height: 2.5;">
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Marketing</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Analytics</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Commerce</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Insights</a></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 style="color: white; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;">Support</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; line-height: 2.5;">
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Pricing</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Documentation</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Guides</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">API Status</a></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 style="color: white; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;">Company</h4>
+                <ul style="list-style: none; padding: 0; margin: 0; line-height: 2.5;">
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">About</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Blog</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Jobs</a></li>
+                  <li><a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">Press</a></li>
+                </ul>
+              </div>
+
+            </div>
+            <div style="max-width: 1200px; margin: 0 auto; text-align: center; font-size: 0.9rem;">
+              &copy; 2026 Blockra, Inc. All rights reserved.
+            </div>
+          </footer>
         `,
       });
     });
@@ -1199,6 +1464,11 @@ export default function App() {
   const handleSave = async (silent = false) => {
     if (!editor || !currentProject) return;
     
+    if (isGuest) {
+      if (!silent) showToast('Saving is restricted to Pro accounts.', 'warning');
+      return;
+    }
+    
     if (!silent) setIsSaving(true);
     else setIsSaving(true); // Always show saving state, just maybe not toast
 
@@ -1237,6 +1507,11 @@ export default function App() {
   };
 
   const handlePublish = async () => {
+    if (isGuest) {
+      showToast('Publishing is restricted to Pro accounts.', 'warning');
+      return;
+    }
+
     console.log('handlePublish: Starting...');
     setIsPublishing(true);
     const editorInstance = editorInstanceRef.current || editor;
@@ -1947,8 +2222,9 @@ export default function App() {
            {/* Publish Button - Prominent */}
            <button
              onClick={handlePublish}
-             disabled={!currentProject || isPublishing}
-             className={`hidden sm:flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wide shadow-lg ${getThemeClass(themeColor, 'shadow')} transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed`}
+             disabled={!currentProject || isPublishing || isGuest}
+             className={`hidden sm:flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:py-2 ${isGuest ? 'bg-white/5 text-white/40 cursor-not-allowed border border-white/10' : `${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white shadow-lg ${getThemeClass(themeColor, 'shadow')} hover:scale-105 active:scale-95`} rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-wide transition-all disabled:opacity-50`}
+             title={isGuest ? "Publishing is restricted to Pro accounts" : "Publish Project"}
            >
              {isPublishing ? (
                <>
@@ -1956,7 +2232,8 @@ export default function App() {
                </>
              ) : (
                <>
-                 <Globe className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Publish</span>
+                 {isGuest ? <Crown className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500/70" /> : <Globe className="w-3 h-3 sm:w-4 sm:h-4" />} 
+                 <span className="hidden sm:inline">{isGuest ? 'Publish (Pro)' : 'Publish'}</span>
                </>
              )}
            </button>
@@ -1983,11 +2260,11 @@ export default function App() {
               </button>
               <button 
                 onClick={(e) => { e.preventDefault(); handleSave(); }}
-                disabled={!currentProject || isSaving}
-                className={`p-1.5 sm:p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors`}
-                title="Save"
+                disabled={!currentProject || isSaving || isGuest}
+                className={`p-1.5 sm:p-2 rounded-lg ${isGuest ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10 text-white/60 hover:text-white'} transition-colors`}
+                title={isGuest ? "Save (Pro Only)" : "Save"}
               >
-                <Save className="w-4 h-4" />
+                {isGuest ? <Crown className="w-4 h-4 text-yellow-500/70" /> : <Save className="w-4 h-4" />}
               </button>
               <button 
                 onClick={() => toggleViewMode()}
@@ -2019,10 +2296,11 @@ export default function App() {
                    <div className="p-2 flex flex-col gap-1">
                      <button
                        onClick={() => { handlePublish(); setIsMoreMenuOpen(false); }}
-                       disabled={!currentProject || isPublishing}
-                       className={`w-full flex items-center justify-center gap-2 px-3 py-2 ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white rounded-lg font-bold text-xs uppercase tracking-wide shadow-lg mb-1 disabled:opacity-50`}
+                       disabled={!currentProject || isPublishing || isGuest}
+                       className={`w-full flex items-center justify-center gap-2 px-3 py-2 ${isGuest ? 'bg-white/5 text-white/40 cursor-not-allowed' : `${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white shadow-lg`} rounded-lg font-bold text-xs uppercase tracking-wide mb-1 disabled:opacity-50`}
                      >
-                       <Globe className="w-4 h-4" /> Publish
+                       {isGuest ? <Crown className="w-4 h-4 text-yellow-500/70" /> : <Globe className="w-4 h-4" />} 
+                       {isGuest ? 'Publish (Pro)' : 'Publish'}
                      </button>
                      <div className="flex justify-between px-2 py-1 mb-1 border-b border-white/10">
                        <button 
@@ -2044,10 +2322,11 @@ export default function App() {
                      </div>
                      <button 
                        onClick={(e) => { e.preventDefault(); handleSave(); setIsMoreMenuOpen(false); }}
-                       disabled={!currentProject || isSaving}
-                       className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                       disabled={!currentProject || isSaving || isGuest}
+                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${isGuest ? 'text-white/40 cursor-not-allowed' : 'text-white/80 hover:text-white hover:bg-white/10'} transition-colors`}
                      >
-                       <Save className="w-4 h-4" /> Save Project
+                       {isGuest ? <Crown className="w-4 h-4 text-yellow-500/70" /> : <Save className="w-4 h-4" />} 
+                       {isGuest ? 'Save Project (Pro)' : 'Save Project'}
                      </button>
                      <button 
                        onClick={() => { toggleViewMode(); setIsMoreMenuOpen(false); }}
