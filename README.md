@@ -45,6 +45,22 @@ If you prefer to install manually inside an existing Debian/Ubuntu LXC container
 *   **Self-Hosted**: Full control over your data.
 *   **Proxmox Integration**: Easy deployment on your home lab.
 
+## 💎 Subscription Plans
+
+Blockra offers different tiers to suit your needs, from personal projects to full agency white-labeling.
+
+| Feature | Free | Basic | Pro | Agency |
+| :--- | :---: | :---: | :---: | :---: |
+| **Projects** | 1 | 5 | Unlimited | Unlimited |
+| **Basic Templates** | ✅ | ✅ | ✅ | ✅ |
+| **Premium Templates** | ❌ | ❌ | ✅ | ✅ |
+| **Color Customization** | ✅ | ✅ | ✅ | ✅ |
+| **Advanced UI Customization** | ❌ | ❌ | ✅ | ✅ |
+| **Custom Fonts** | ❌ | ❌ | ✅ | ✅ |
+| **White-label (Custom Logo)** | ❌ | ❌ | ❌ | ✅ |
+| **Team Collaboration** | ❌ | ❌ | ❌ | ✅ |
+| **Support** | Community | Standard | Priority | Dedicated |
+
 ## 📦 Tech Stack
 
 *   **Frontend**: React, Tailwind CSS, GrapesJS

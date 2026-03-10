@@ -403,6 +403,32 @@ export default function Dashboard({
 
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto ${densityClass}`}>
+        {isLoggedIn && userProfile.plan && userProfile.plan !== 'Agency' && (
+          <div className="mb-8 p-4 sm:p-6 rounded-2xl border border-blue-500/20 bg-blue-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                Current Plan: <span className="text-blue-400">{userProfile.plan}</span>
+                {userProfile.plan === 'Pro' && <Crown className="w-4 h-4 text-amber-500" />}
+              </h3>
+              <p className={`text-sm ${theme.textMuted} mt-1`}>
+                {userProfile.plan === 'Free' && "You are on the Free plan. Upgrade to unlock advanced customization and unlimited projects."}
+                {userProfile.plan === 'Basic' && "You are on the Basic plan. Upgrade to Pro for premium templates and advanced UI settings."}
+                {userProfile.plan === 'Pro' && "You are on the Pro plan. Enjoy all premium features! Upgrade to Agency for white-labeling."}
+              </p>
+            </div>
+            {userProfile.plan !== 'Pro' && (
+              <button className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
+                Upgrade to {userProfile.plan === 'Free' ? 'Basic' : 'Pro'}
+              </button>
+            )}
+            {userProfile.plan === 'Pro' && (
+              <button className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all`}>
+                View Agency Plans
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-6">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-white tracking-tight">Your Projects</h2>
