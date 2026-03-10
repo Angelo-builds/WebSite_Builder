@@ -189,7 +189,7 @@ export default function addSmartComponents(editor: any) {
         const container = this.find('.feature-grid-container')[0];
         if (!container) return;
         
-        container.addStyle({ 'grid-template-columns': \`repeat(\${cols}, 1fr)\` });
+        container.addStyle({ 'grid-template-columns': `repeat(${cols}, 1fr)` });
         
         const currentCards = container.components().length;
         if (total > currentCards) {
@@ -280,7 +280,7 @@ export default function addSmartComponents(editor: any) {
         const container = this.find('.footer-grid-container')[0];
         if (!container) return;
         
-        container.addStyle({ 'grid-template-columns': \`repeat(\${cols}, 1fr)\` });
+        container.addStyle({ 'grid-template-columns': `repeat(${cols}, 1fr)` });
         
         const currentCards = container.components().length;
         if (cols > currentCards) {

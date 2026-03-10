@@ -11,6 +11,7 @@ interface UserProfile {
   username?: string;
   role: string;
   avatar?: string;
+  plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
 }
 
 interface UIPreferences {

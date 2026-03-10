@@ -51,7 +51,7 @@ export default function Dashboard({
   themeColor,
   onOpenSettings,
   uiPreferences
-}: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean) => void }) {
+}: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);

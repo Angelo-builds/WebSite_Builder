@@ -113,13 +113,21 @@ export default function App() {
   const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security'>('profile');
   const [themeColor, setThemeColor] = useState('blue');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState({
+  const [userProfile, setUserProfile] = useState<{
+    name: string;
+    surname: string;
+    email: string;
+    username?: string;
+    role: string;
+    avatar?: string;
+    plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
+  }>({
     name: 'Admin',
     surname: 'User',
     email: 'admin@example.com',
     username: 'admin',
     role: 'Administrator',
-    plan: 'Pro' as 'Free' | 'Basic' | 'Pro' | 'Agency'
+    plan: 'Pro'
   });
 
   const [uiPreferences, setUiPreferences] = useState({
