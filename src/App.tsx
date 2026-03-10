@@ -1856,31 +1856,37 @@ export default function App() {
 
   // Theme-based classes
   const themeClasses = {
-    bg: 'bg-transparent', // Handled by body background
-    sidebarBg: 'glass-panel',
-    sidebarBorder: 'border-white/10',
-    text: 'text-white',
-    textMuted: 'text-white/60',
-    textFaint: 'text-white/40',
-    hoverBg: 'hover:bg-white/10',
+    bg: isDarkMode ? 'bg-transparent' : 'bg-gray-50', // Handled by body background in dark mode
+    sidebarBg: isDarkMode ? 'glass-panel' : 'bg-white shadow-lg',
+    sidebarBorder: isDarkMode ? 'border-white/10' : 'border-gray-200',
+    text: isDarkMode ? 'text-white' : 'text-gray-900',
+    textMuted: isDarkMode ? 'text-white/60' : 'text-gray-500',
+    textFaint: isDarkMode ? 'text-white/40' : 'text-gray-400',
+    hoverBg: isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100',
     activeBg: getThemeClass(themeColor, 'activeBg'),
-    headerBg: 'glass-panel',
-    blockBg: 'bg-white/5',
-    blockHoverBg: 'bg-white/10',
-    blockText: 'text-white/90',
-    blockBorder: 'border-white/10',
-    codeBg: 'bg-black/50 backdrop-blur-md',
-    codeText: 'text-gray-300',
-    button: 'glass-button text-white',
+    headerBg: isDarkMode ? 'glass-panel' : 'bg-white shadow-sm',
+    blockBg: isDarkMode ? 'bg-white/5' : 'bg-gray-50',
+    blockHoverBg: isDarkMode ? 'bg-white/10' : 'bg-gray-100',
+    blockText: isDarkMode ? 'text-white/90' : 'text-gray-700',
+    blockBorder: isDarkMode ? 'border-white/10' : 'border-gray-200',
+    codeBg: isDarkMode ? 'bg-black/50 backdrop-blur-md' : 'bg-gray-100',
+    codeText: isDarkMode ? 'text-gray-300' : 'text-gray-800',
+    button: isDarkMode ? 'glass-button text-white' : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 shadow-sm',
     primaryButton: getThemeClass(themeColor, 'primaryButton'),
   };
 
+  const fontFamilyClass = uiPreferences?.fontFamily === 'Roboto' ? 'font-roboto' : uiPreferences?.fontFamily === 'Montserrat' ? 'font-montserrat' : 'font-sans';
+
   if (viewMode === 'dashboard') {
     return (
-      <div className="relative h-screen w-full overflow-hidden bg-black text-white font-sans selection:bg-blue-500/30">
+      <div className={`relative h-screen w-full overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'} ${fontFamilyClass} selection:bg-blue-500/30 transition-colors duration-300`}>
         {/* Animated Background Elements */}
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
+        {isDarkMode && (
+          <>
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
+          </>
+        )}
         
         <div className="relative z-10 h-full overflow-y-auto custom-scrollbar">
           <ProjectModal 
@@ -1960,7 +1966,10 @@ export default function App() {
             themeColor={themeColor}
             onUpdateThemeColor={setThemeColor}
             isDarkMode={isDarkMode}
+            onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
             isGuest={isGuest}
+            uiPreferences={uiPreferences}
+            onUpdateUiPreferences={setUiPreferences}
           />
         </div>
       </div>
@@ -1968,10 +1977,14 @@ export default function App() {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-black text-white font-sans selection:bg-blue-500/30">
+    <div className={`relative h-screen w-full overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'} ${fontFamilyClass} selection:bg-blue-500/30 transition-colors duration-300`}>
       {/* Animated Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
+      {isDarkMode && (
+        <>
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-float opacity-60 pointer-events-none" style={{ animationDelay: '2s' }}></div>
+        </>
+      )}
       
       {/* Custom Asset Manager Modal */}
       <CustomAssetManager

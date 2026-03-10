@@ -7,13 +7,15 @@ interface FileUploadProps {
   accept?: string;
   maxSize?: number; // in bytes
   label?: string;
+  isDarkMode?: boolean;
 }
 
 export default function FileUpload({ 
   onFileSelect, 
   accept = "image/*", 
   maxSize = 5 * 1024 * 1024, // 5MB default
-  label = "Drag & drop your file here, or click to browse"
+  label = "Drag & drop your file here, or click to browse",
+  isDarkMode = true
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -87,8 +89,8 @@ export default function FileUpload({
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         animate={{
-          borderColor: isDragging ? '#3b82f6' : error ? '#ef4444' : 'rgba(255,255,255,0.1)',
-          backgroundColor: isDragging ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.03)',
+          borderColor: isDragging ? '#3b82f6' : error ? '#ef4444' : isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+          backgroundColor: isDragging ? 'rgba(59, 130, 246, 0.1)' : isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
         }}
         className={`
           relative border-2 border-dashed rounded-xl p-8
@@ -113,14 +115,14 @@ export default function FileUpload({
               exit={{ opacity: 0, y: -10 }}
               className="flex flex-col items-center gap-3"
             >
-              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                <Upload className="w-6 h-6 text-white/60 group-hover:text-white transition-colors" />
+              <div className={`w-12 h-12 rounded-full ${isDarkMode ? 'bg-white/5 group-hover:bg-white/10' : 'bg-black/5 group-hover:bg-black/10'} flex items-center justify-center transition-colors`}>
+                <Upload className={`w-6 h-6 ${isDarkMode ? 'text-white/60 group-hover:text-white' : 'text-gray-500 group-hover:text-gray-800'} transition-colors`} />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-white/80">
+                <p className={`text-sm font-medium ${isDarkMode ? 'text-white/80' : 'text-gray-700'}`}>
                   {label}
                 </p>
-                <p className="text-xs text-white/40">
+                <p className={`text-xs ${isDarkMode ? 'text-white/40' : 'text-gray-500'}`}>
                   Max size: {maxSize / 1024 / 1024}MB
                 </p>
               </div>
@@ -131,22 +133,22 @@ export default function FileUpload({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="flex items-center gap-4 w-full max-w-xs bg-white/5 p-3 rounded-lg border border-white/10"
+              className={`flex items-center gap-4 w-full max-w-xs ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'} p-3 rounded-lg border`}
             >
               <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
                 <File className="w-5 h-5 text-blue-400" />
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium text-white truncate">
+                <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                   {file.name}
                 </p>
-                <p className="text-xs text-white/40">
+                <p className={`text-xs ${isDarkMode ? 'text-white/40' : 'text-gray-500'}`}>
                   {(file.size / 1024).toFixed(1)} KB
                 </p>
               </div>
               <button
                 onClick={removeFile}
-                className="p-1.5 hover:bg-white/10 rounded-md text-white/40 hover:text-white transition-colors"
+                className={`p-1.5 rounded-md transition-colors ${isDarkMode ? 'hover:bg-white/10 text-white/40 hover:text-white' : 'hover:bg-black/10 text-gray-400 hover:text-gray-800'}`}
               >
                 <X className="w-4 h-4" />
               </button>

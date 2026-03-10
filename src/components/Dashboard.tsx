@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check } from 'lucide-react';
 import { getThemeClass } from '../theme';
 
 export interface Project {
@@ -15,6 +15,7 @@ interface UserProfile {
   name: string;
   surname: string;
   email: string;
+  username?: string;
   role: string;
   plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
 }
@@ -65,6 +66,8 @@ export default function Dashboard({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [isBannerVisible, setIsBannerVisible] = useState(true);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const categories = ['All', 'Blank Project', 'Landing Page', 'Portfolio', 'Corporate'];
 
@@ -93,7 +96,7 @@ export default function Dashboard({
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, username, password, name: email.split('@')[0] })
+        body: JSON.stringify({ email, username, password, name: '', surname: '' })
       });
 
       const data = await response.json();
@@ -117,14 +120,16 @@ export default function Dashboard({
 
   // Theme classes - Enhanced for Liquid Glass
   const theme = {
-    bg: 'bg-transparent',
-    cardBg: 'bg-[#1c1c1e]/80 backdrop-blur-3xl border border-white/10 shadow-2xl', // Darker, more blur
-    text: 'text-white',
-    textMuted: 'text-white/60',
-    textFaint: 'text-white/40',
-    border: 'border-white/10',
-    hoverBg: 'hover:bg-white/10',
-    inputBg: 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20',
+    bg: isDarkMode ? 'bg-black/90' : 'bg-gray-50',
+    headerBg: isDarkMode ? 'bg-[#161618]/80' : 'bg-white/80',
+    cardBg: isDarkMode ? 'bg-[#1c1c1e]/60' : 'bg-white/60',
+    text: isDarkMode ? 'text-white' : 'text-gray-900',
+    textMuted: isDarkMode ? 'text-white/60' : 'text-gray-500',
+    textFaint: isDarkMode ? 'text-white/40' : 'text-gray-400',
+    border: isDarkMode ? 'border-white/10' : 'border-gray-200',
+    hoverBg: isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100',
+    inputBg: isDarkMode ? 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20' : 'bg-gray-100 focus:bg-white border-gray-200 focus:border-gray-300',
+    dropdownBg: isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white',
   };
 
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -300,9 +305,9 @@ export default function Dashboard({
   const densityClass = uiPreferences?.uiDensity === 'compact' ? 'px-4 sm:px-4 py-6' : uiPreferences?.uiDensity === 'spacious' ? 'px-4 sm:px-12 py-16' : 'px-4 sm:px-8 py-12';
 
   return (
-    <div className={`min-h-screen ${fontFamilyClass} bg-black/90`}>
+    <div className={`min-h-screen ${fontFamilyClass} ${theme.bg} transition-colors duration-300`}>
       {/* Header */}
-      <header className={`h-20 border-b ${theme.border} bg-[#161618]/80 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-50`}>
+      <header className={`h-20 border-b ${theme.border} ${theme.headerBg} backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-50 transition-colors duration-300`}>
         <div className="flex items-center gap-4">
           {uiPreferences?.customLogo ? (
             <img src={uiPreferences.customLogo} alt="Logo" className="h-8 object-contain" />
@@ -312,7 +317,7 @@ export default function Dashboard({
                 <Layout className="w-5 h-5 text-white" />
               </div>
               <div>
-                <span className="font-bold text-lg tracking-tight text-white block leading-none">Blockra</span>
+                <span className={`font-bold text-lg tracking-tight ${theme.text} block leading-none`}>Blockra</span>
               </div>
             </>
           )}
@@ -324,21 +329,16 @@ export default function Dashboard({
         </div>
         
         <div className="flex items-center gap-4">
-          {isLoggedIn && userProfile.plan !== 'Agency' && userProfile.plan !== 'Pro' && (
-            <button className={`hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
-              Upgrade Plan
-            </button>
-          )}
           <div className="relative">
             <button 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`flex items-center gap-3 px-4 py-2 rounded-full border ${theme.border} bg-white/5 hover:bg-white/10 transition-all hover:scale-105 active:scale-95`}
+              className={`flex items-center gap-3 px-4 py-2 rounded-full border ${theme.border} ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200'} transition-all hover:scale-105 active:scale-95`}
             >
-              <div className={`w-6 h-6 rounded-full ${getThemeClass(themeColor, 'gradientAvatar')} flex items-center justify-center text-[10px] font-bold`}>
-                {userProfile.name.charAt(0)}
+              <div className={`w-6 h-6 rounded-full ${getThemeClass(themeColor, 'gradientAvatar')} flex items-center justify-center text-[10px] font-bold text-white`}>
+                {(userProfile.username || userProfile.name || userProfile.email || 'U').charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-white">Hi, {userProfile.name}</span>
-              <ChevronDown className={`w-3 h-3 text-white/40 transition-transform ${isSettingsOpen ? 'rotate-180' : ''}`} />
+              <span className={`text-sm font-medium ${theme.text}`}>Hi, {userProfile.username || userProfile.name || userProfile.email.split('@')[0]}</span>
+              <ChevronDown className={`w-3 h-3 ${theme.textFaint} transition-transform ${isSettingsOpen ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -348,11 +348,13 @@ export default function Dashboard({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className={`absolute top-full right-0 mt-3 w-64 rounded-2xl border ${theme.border} bg-[#1c1c1e] shadow-2xl overflow-hidden z-50 ring-1 ring-white/10`}
+                  className={`absolute top-full right-0 mt-3 w-64 rounded-2xl border ${theme.border} ${theme.dropdownBg} shadow-2xl overflow-hidden z-50 ring-1 ${isDarkMode ? 'ring-white/10' : 'ring-black/5'}`}
                 >
-                  <div className="p-4 border-b border-white/5">
-                     <p className="text-sm font-bold text-white">{userProfile.name} {userProfile.surname}</p>
-                     <p className="text-xs text-white/40">{userProfile.email}</p>
+                  <div className={`p-4 border-b ${theme.border}`}>
+                     <p className={`text-sm font-bold ${theme.text}`}>
+                       {userProfile.name || userProfile.surname ? `${userProfile.name} ${userProfile.surname}`.trim() : userProfile.username || userProfile.email.split('@')[0]}
+                     </p>
+                     <p className={`text-xs ${theme.textFaint}`}>{userProfile.email}</p>
                   </div>
                   <div className="p-2 space-y-1">
                     <button 
@@ -360,7 +362,7 @@ export default function Dashboard({
                         onOpenSettings('profile');
                         setIsSettingsOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors ${theme.textMuted} hover:${theme.text}`}
                     >
                       <User className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
                       Account
@@ -370,7 +372,7 @@ export default function Dashboard({
                         onOpenSettings('settings');
                         setIsSettingsOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors ${theme.textMuted} hover:${theme.text}`}
                     >
                       <Settings className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
                       Settings
@@ -380,7 +382,7 @@ export default function Dashboard({
                         onOpenSettings('appearance');
                         setIsSettingsOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors text-white/80 hover:text-white`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors ${theme.textMuted} hover:${theme.text}`}
                     >
                       <Layout className={`w-4 h-4 text-${themeColor}-500`} />
                       Customization
@@ -388,7 +390,7 @@ export default function Dashboard({
                     <div className={`h-px ${theme.border} my-1 mx-2`}></div>
                     <button 
                       onClick={() => onLogin(false)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-colors`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-red-500/10 text-red-500 transition-colors`}
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -403,11 +405,17 @@ export default function Dashboard({
 
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto ${densityClass}`}>
-        {isLoggedIn && userProfile.plan && userProfile.plan !== 'Agency' && (
-          <div className="mb-8 p-4 sm:p-6 rounded-2xl border border-blue-500/20 bg-blue-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                Current Plan: <span className="text-blue-400">{userProfile.plan}</span>
+        {isLoggedIn && userProfile.plan && userProfile.plan !== 'Agency' && isBannerVisible && (
+          <div className={`mb-8 p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'border-blue-500/20 bg-blue-500/5' : 'border-blue-200 bg-blue-50'} flex flex-col sm:flex-row items-start sm:items-center justify-start gap-6 relative`}>
+            <button 
+              onClick={() => setIsBannerVisible(false)}
+              className={`absolute top-2 right-2 p-1.5 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-white/40 hover:text-white' : 'hover:bg-blue-100 text-blue-400 hover:text-blue-600'} transition-colors`}
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="pr-6 flex-1">
+              <h3 className={`text-lg font-bold ${theme.text} flex items-center gap-2`}>
+                Current Plan: <span className="text-blue-500">{userProfile.plan}</span>
                 {userProfile.plan === 'Pro' && <Crown className="w-4 h-4 text-amber-500" />}
               </h3>
               <p className={`text-sm ${theme.textMuted} mt-1`}>
@@ -417,12 +425,18 @@ export default function Dashboard({
               </p>
             </div>
             {userProfile.plan !== 'Pro' && (
-              <button className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
+              <button 
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8`}
+              >
                 Upgrade to {userProfile.plan === 'Free' ? 'Basic' : 'Pro'}
               </button>
             )}
             {userProfile.plan === 'Pro' && (
-              <button className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-white/10 text-white hover:bg-white/20 border border-white/10 transition-all`}>
+              <button 
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20 border border-white/10' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'} transition-all mt-4 sm:mt-0 mr-8`}
+              >
                 View Agency Plans
               </button>
             )}
@@ -431,7 +445,7 @@ export default function Dashboard({
 
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-6">
           <div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-3 text-white tracking-tight">Your Projects</h2>
+            <h2 className={`text-3xl sm:text-4xl font-bold mb-3 ${theme.text} tracking-tight`}>Your Projects</h2>
             <p className={theme.textMuted}>Manage and publish your websites with ease.</p>
           </div>
           <button 
@@ -453,49 +467,49 @@ export default function Dashboard({
                 placeholder="Search projects..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full bg-[#1c1c1e]/60 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all`}
+                className={`w-full ${theme.cardBg} border ${theme.border} rounded-2xl pl-12 pr-4 py-3 ${theme.text} placeholder-${theme.textMuted} focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all`}
               />
             </div>
             <div className="relative min-w-[200px]">
-              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <Filter className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${theme.textFaint}`} />
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className={`w-full bg-[#1c1c1e]/60 border border-white/10 rounded-2xl pl-12 pr-10 py-3 text-white focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all appearance-none`}
+                className={`w-full ${theme.cardBg} border ${theme.border} rounded-2xl pl-12 pr-10 py-3 ${theme.text} focus:outline-none focus:ring-2 ${getThemeClass(themeColor, 'focusRing')} ${getThemeClass(themeColor, 'focusBorder')} transition-all appearance-none`}
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat} className="bg-[#1c1c1e] text-white">{cat}</option>
+                  <option key={cat} value={cat} className={`${theme.dropdownBg} ${theme.text}`}>{cat}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+              <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 ${theme.textFaint} pointer-events-none`} />
             </div>
           </div>
         )}
 
         {projects.length === 0 ? (
-          <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] bg-white/5 backdrop-blur-sm`}>
-            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
-              <FolderOpen className="w-10 h-10 opacity-30 text-white" />
+          <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'} backdrop-blur-sm`}>
+            <div className={`w-24 h-24 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'} rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ${isDarkMode ? 'ring-white/10' : 'ring-gray-200'}`}>
+              <FolderOpen className={`w-10 h-10 opacity-30 ${theme.text}`} />
             </div>
-            <h3 className="text-2xl font-bold mb-3 text-white">No projects found</h3>
+            <h3 className={`text-2xl font-bold mb-3 ${theme.text}`}>No projects found</h3>
             <p className={`${theme.textMuted} mb-10 max-w-md mx-auto text-lg`}>Get started by creating your first website project. It only takes a few seconds.</p>
             <button 
               onClick={onCreateProject}
-              className={`px-8 py-3 bg-white/10 text-white hover:bg-white/20 rounded-xl font-medium transition-colors border border-white/10`}
+              className={`px-8 py-3 ${isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-200 hover:bg-gray-300'} ${theme.text} rounded-xl font-medium transition-colors border ${theme.border}`}
             >
               Create Project
             </button>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] bg-white/5 backdrop-blur-sm`}>
-            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10">
-              <Search className="w-10 h-10 opacity-30 text-white" />
+          <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'} backdrop-blur-sm`}>
+            <div className={`w-24 h-24 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'} rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ${isDarkMode ? 'ring-white/10' : 'ring-gray-200'}`}>
+              <Search className={`w-10 h-10 opacity-30 ${theme.text}`} />
             </div>
-            <h3 className="text-2xl font-bold mb-3 text-white">No matching projects</h3>
+            <h3 className={`text-2xl font-bold mb-3 ${theme.text}`}>No matching projects</h3>
             <p className={`${theme.textMuted} mb-10 max-w-md mx-auto text-lg`}>Try adjusting your search or filter criteria.</p>
             <button 
               onClick={() => { setSearchQuery(''); setSelectedCategory('All'); }}
-              className={`px-8 py-3 bg-white/10 text-white hover:bg-white/20 rounded-xl font-medium transition-colors border border-white/10`}
+              className={`px-8 py-3 ${isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-200 hover:bg-gray-300'} ${theme.text} rounded-xl font-medium transition-colors border ${theme.border}`}
             >
               Clear Filters
             </button>
@@ -509,32 +523,32 @@ export default function Dashboard({
                 animate={{ opacity: 1, scale: 1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
                 onClick={() => onSelectProject(project.name)}
-                className={`group relative cursor-pointer rounded-[2rem] border ${theme.border} bg-[#1c1c1e]/60 overflow-hidden transition-all hover:shadow-2xl ${getThemeClass(themeColor, 'cardHoverShadow')} ${getThemeClass(themeColor, 'cardHoverBorder')} backdrop-blur-md flex flex-col`}
+                className={`group relative cursor-pointer rounded-[2rem] border ${theme.border} ${theme.cardBg} overflow-hidden transition-all hover:shadow-2xl ${getThemeClass(themeColor, 'cardHoverShadow')} ${getThemeClass(themeColor, 'cardHoverBorder')} backdrop-blur-md flex flex-col`}
               >
                 {/* Preview Area (Mock) */}
-                <div className={`h-48 w-full bg-gradient-to-br from-white/5 to-white/10 relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors shrink-0 overflow-hidden`}>
+                <div className={`h-48 w-full ${isDarkMode ? 'bg-gradient-to-br from-white/5 to-white/10' : 'bg-gradient-to-br from-gray-100 to-gray-200'} relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors shrink-0 overflow-hidden`}>
                   <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
                   
                   {project.category === 'Blank Project' ? (
-                    <div className="absolute inset-4 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className={`absolute inset-4 border-2 border-dashed ${isDarkMode ? 'border-white/20' : 'border-gray-300'} rounded-lg flex items-center justify-center shadow-xl opacity-80 group-hover:opacity-100 transition-opacity`}>
                       <Layout className={`w-12 h-12 ${theme.textMuted} opacity-20`} />
                     </div>
                   ) : project.category === 'Landing Page' ? (
-                    <div className="absolute inset-4 bg-white/5 rounded-lg border border-white/10 p-2 flex flex-col gap-2 shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
-                      <div className="h-4 w-full bg-blue-500/50 rounded flex items-center justify-center"><div className="w-1/3 h-1 bg-white/50 rounded"></div></div>
-                      <div className="flex-1 bg-white/5 rounded flex flex-col items-center justify-center gap-2">
-                        <div className="w-1/2 h-2 bg-white/40 rounded"></div>
-                        <div className="w-3/4 h-1 bg-white/20 rounded"></div>
+                    <div className={`absolute inset-4 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'} rounded-lg border p-2 flex flex-col gap-2 shadow-xl opacity-80 group-hover:opacity-100 transition-opacity`}>
+                      <div className="h-4 w-full bg-blue-500/50 rounded flex items-center justify-center"><div className={`w-1/3 h-1 ${isDarkMode ? 'bg-white/50' : 'bg-gray-300'} rounded`}></div></div>
+                      <div className={`flex-1 ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'} rounded flex flex-col items-center justify-center gap-2`}>
+                        <div className={`w-1/2 h-2 ${isDarkMode ? 'bg-white/40' : 'bg-gray-300'} rounded`}></div>
+                        <div className={`w-3/4 h-1 ${isDarkMode ? 'bg-white/20' : 'bg-gray-200'} rounded`}></div>
                         <div className="w-1/4 h-3 bg-blue-500/80 rounded-full mt-1"></div>
                       </div>
                       <div className="h-8 w-full flex gap-2">
-                        <div className="flex-1 bg-white/5 rounded"></div>
-                        <div className="flex-1 bg-white/5 rounded"></div>
-                        <div className="flex-1 bg-white/5 rounded"></div>
+                        <div className={`flex-1 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'} rounded`}></div>
+                        <div className={`flex-1 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'} rounded`}></div>
+                        <div className={`flex-1 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'} rounded`}></div>
                       </div>
                     </div>
                   ) : project.category === 'Portfolio' ? (
-                    <div className="absolute inset-4 bg-zinc-900/80 rounded-lg border border-white/10 p-4 flex flex-col items-center justify-center gap-3 shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className={`absolute inset-4 ${isDarkMode ? 'bg-zinc-900/80 border-white/10' : 'bg-zinc-800 border-gray-700'} rounded-lg border p-4 flex flex-col items-center justify-center gap-3 shadow-xl opacity-80 group-hover:opacity-100 transition-opacity`}>
                       <div className="w-12 h-12 rounded-full bg-white/20"></div>
                       <div className="w-1/2 h-2 bg-white/60 rounded"></div>
                       <div className="w-3/4 h-1 bg-white/30 rounded"></div>
@@ -544,7 +558,7 @@ export default function Dashboard({
                       </div>
                     </div>
                   ) : project.category === 'Corporate' ? (
-                    <div className="absolute inset-4 bg-slate-50/90 rounded-lg border border-white/10 flex flex-col shadow-xl opacity-80 group-hover:opacity-100 transition-opacity">
+                    <div className={`absolute inset-4 ${isDarkMode ? 'bg-slate-50/90 border-white/10' : 'bg-white border-gray-200'} rounded-lg border flex flex-col shadow-xl opacity-80 group-hover:opacity-100 transition-opacity`}>
                       <div className="h-4 w-full border-b border-black/10 flex justify-between items-center px-2">
                         <div className="w-8 h-1.5 bg-slate-800 rounded"></div>
                         <div className="flex gap-1">
@@ -566,7 +580,7 @@ export default function Dashboard({
                     {!isGuest && (
                       <button 
                         onClick={(e) => onDeleteProject(project.name, e)}
-                        className="p-3 bg-black/40 hover:bg-red-500 text-white/60 hover:text-white rounded-xl backdrop-blur-md transition-colors border border-white/10"
+                        className={`p-3 ${isDarkMode ? 'bg-black/40 text-white/60 hover:text-white border-white/10' : 'bg-white/80 text-gray-500 hover:text-red-500 border-gray-200'} hover:bg-red-500 rounded-xl backdrop-blur-md transition-colors border`}
                         title="Delete Project"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -578,7 +592,7 @@ export default function Dashboard({
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-1">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className={`font-bold text-xl truncate pr-4 text-white ${getThemeClass(themeColor, 'cardTitleHover')} transition-colors`}>{project.name}</h3>
+                    <h3 className={`font-bold text-xl truncate pr-4 ${theme.text} ${getThemeClass(themeColor, 'cardTitleHover')} transition-colors`}>{project.name}</h3>
                     <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-lg ${getThemeClass(themeColor, 'badgeBg')} ${getThemeClass(themeColor, 'badgeText')} border ${getThemeClass(themeColor, 'badgeBorder')} shrink-0`}>
                       {project.category || 'Blank Project'}
                     </span>
@@ -595,18 +609,18 @@ export default function Dashboard({
                     {project.updatedAt ? `Updated ${new Date(project.updatedAt).toLocaleDateString()}` : 'Last edited recently'}
                   </p>
                   
-                  <div className="flex items-center gap-3 pt-5 border-t border-white/5">
+                  <div className={`flex items-center gap-3 pt-5 border-t ${theme.border}`}>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         window.open(`${window.location.origin}/sites/${project.name}/dist/index.html`, '_blank');
                       }}
-                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border border-white/5 transition-colors text-white hover:text-${themeColor}-400`}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold ${isDarkMode ? 'bg-white/5 hover:bg-white/10 border-white/5 text-white' : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-800'} border transition-colors hover:text-${themeColor}-500`}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       View Live
                     </button>
-                    <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold bg-white text-black hover:bg-gray-200 transition-colors shadow-lg shadow-white/5`}>
+                    <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold ${isDarkMode ? 'bg-white text-black hover:bg-gray-200 shadow-white/5' : 'bg-gray-900 text-white hover:bg-gray-800 shadow-black/5'} transition-colors shadow-lg`}>
                       Edit Site <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -616,6 +630,80 @@ export default function Dashboard({
           </div>
         )}
       </main>
+
+      {/* Upgrade Modal */}
+      <AnimatePresence>
+        {isUpgradeModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setIsUpgradeModalOpen(false)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col ${isDarkMode ? 'bg-[#161618]' : 'bg-white'}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={`p-6 border-b ${theme.border} flex justify-between items-center`}>
+                <h2 className={`text-2xl font-bold ${theme.text}`}>Upgrade Your Plan</h2>
+                <button onClick={() => setIsUpgradeModalOpen(false)} className={`p-2 rounded-full ${theme.hoverBg} ${theme.textMuted} hover:${theme.text} transition-colors`}>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Basic Plan */}
+                  <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
+                    <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Basic</h3>
+                    <p className={`${theme.textMuted} text-sm mb-4`}>Perfect for small projects and personal sites.</p>
+                    <div className="text-3xl font-bold mb-6 ${theme.text}">$9<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                    <ul className="space-y-3 mb-8 flex-1">
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 5 Projects</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Basic Templates</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Color Customization</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.textMuted} opacity-50`}><X className="w-4 h-4" /> Premium Templates</li>
+                    </ul>
+                    <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
+                      Select Basic
+                    </button>
+                  </div>
+
+                  {/* Pro Plan */}
+                  <div className={`p-6 rounded-2xl border-2 border-amber-500 relative flex flex-col ${isDarkMode ? 'bg-amber-500/5' : 'bg-amber-50'}`}>
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-full">Most Popular</div>
+                    <h3 className={`text-xl font-bold ${theme.text} mb-2 flex items-center gap-2`}><Crown className="w-5 h-5 text-amber-500" /> Pro</h3>
+                    <p className={`${theme.textMuted} text-sm mb-4`}>For professionals who need more power.</p>
+                    <div className="text-3xl font-bold mb-6 ${theme.text}">$29<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                    <ul className="space-y-3 mb-8 flex-1">
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Unlimited Projects</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Premium Templates</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Advanced UI Customization</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Custom Fonts</li>
+                    </ul>
+                    <button className={`w-full py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
+                      Select Pro
+                    </button>
+                  </div>
+
+                  {/* Agency Plan */}
+                  <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
+                    <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Agency</h3>
+                    <p className={`${theme.textMuted} text-sm mb-4`}>White-labeling and team collaboration.</p>
+                    <div className="text-3xl font-bold mb-6 ${theme.text}">$99<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                    <ul className="space-y-3 mb-8 flex-1">
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Everything in Pro</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> White-label (Custom Logo)</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Team Collaboration</li>
+                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Dedicated Support</li>
+                    </ul>
+                    <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
+                      Select Agency
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

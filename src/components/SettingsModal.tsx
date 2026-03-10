@@ -69,6 +69,12 @@ export default function SettingsModal({
     customLogo: '',
     customCss: ''
   });
+
+  useEffect(() => {
+    if (uiPreferences) {
+      setUiPrefs(uiPreferences);
+    }
+  }, [uiPreferences]);
   
   // Security State
   const [oldPassword, setOldPassword] = useState('');
@@ -173,12 +179,15 @@ export default function SettingsModal({
 
   // Liquid Glass Theme
   const theme = {
-    bg: 'glass-panel',
-    text: 'text-white',
-    textMuted: 'text-white/60',
-    border: 'border-white/10',
-    inputBg: 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20',
-    hoverBg: 'hover:bg-white/5',
+    bg: isDarkMode ? 'bg-[#1c1c1e]/90' : 'bg-white/90',
+    text: isDarkMode ? 'text-white' : 'text-gray-900',
+    textMuted: isDarkMode ? 'text-white/60' : 'text-gray-500',
+    border: isDarkMode ? 'border-white/10' : 'border-gray-200',
+    inputBg: isDarkMode ? 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20' : 'bg-gray-50 focus:bg-white border-gray-200 focus:border-gray-300',
+    hoverBg: isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-100',
+    sidebarBg: isDarkMode ? 'bg-white/5' : 'bg-gray-50',
+    activeTabBg: isDarkMode ? 'bg-white/10 text-white ring-white/10' : 'bg-white text-gray-900 ring-gray-200 shadow-sm',
+    cardBg: isDarkMode ? 'bg-white/5' : 'bg-gray-50',
   };
 
   // Dynamic color classes based on selection (for the save button)
@@ -200,33 +209,33 @@ export default function SettingsModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Sidebar */}
-          <div className={`w-full md:w-64 p-6 border-b md:border-b-0 md:border-r ${theme.border} bg-white/5`}>
-            <h2 className="text-lg font-bold mb-6 px-2 text-white tracking-tight">Settings</h2>
+          <div className={`w-full md:w-64 p-6 border-b md:border-b-0 md:border-r ${theme.border} ${theme.sidebarBg}`}>
+            <h2 className={`text-lg font-bold mb-6 px-2 ${theme.text} tracking-tight`}>Settings</h2>
             <nav className="space-y-1">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'profile' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'profile' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
               >
                 <User className="w-4 h-4" />
                 Account
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'settings' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'settings' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
               >
                 <SettingsIcon className="w-4 h-4" />
                 Settings
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'security' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'security' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
               >
                 <Shield className="w-4 h-4" />
                 Security
               </button>
               <button
                 onClick={() => setActiveTab('appearance')}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'appearance' ? `bg-white/10 text-white shadow-sm ring-1 ring-white/10` : `${theme.textMuted} ${theme.hoverBg} hover:text-white`}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'appearance' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
               >
                 <Palette className="w-4 h-4" />
                 Customization
@@ -237,13 +246,13 @@ export default function SettingsModal({
           {/* Content */}
           <div className="flex-1 p-6 md:p-8 overflow-y-auto max-h-[80vh] custom-scrollbar">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold text-white tracking-tight">
+              <h3 className={`text-2xl font-bold ${theme.text} tracking-tight`}>
                 {activeTab === 'profile' && 'Edit Profile'}
                 {activeTab === 'appearance' && 'Customization'}
                 {activeTab === 'settings' && 'Settings'}
                 {activeTab === 'security' && 'Security'}
               </h3>
-              <button onClick={onClose} className={`p-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors`}>
+              <button onClick={onClose} className={`p-2 rounded-full ${theme.hoverBg} ${theme.textMuted} hover:${theme.text} transition-colors`}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -264,17 +273,18 @@ export default function SettingsModal({
               ) : (
                 <form onSubmit={handleSaveProfile} className="space-y-6">
                   <div className="flex flex-col items-center mb-6">
-                    <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4 overflow-hidden relative group">
+                    <div className={`w-24 h-24 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-100'} flex items-center justify-center mb-4 overflow-hidden relative group`}>
                       {formData.avatar ? (
                         <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
                       ) : (
-                        <User className="w-10 h-10 text-white/40" />
+                        <User className={`w-10 h-10 ${isDarkMode ? 'text-white/40' : 'text-gray-400'}`} />
                       )}
                     </div>
                     <div className="w-full max-w-xs">
                       <FileUpload 
                         label="Upload Profile Picture" 
                         accept="image/*"
+                        isDarkMode={isDarkMode}
                         onFileSelect={(file) => {
                           // Create a fake URL for preview
                           const url = URL.createObjectURL(file);
@@ -504,15 +514,15 @@ export default function SettingsModal({
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-white/10">
-                  <h4 className="font-medium text-white">Interface Theme</h4>
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5">
+                <div className={`space-y-4 pt-4 border-t ${theme.border}`}>
+                  <h4 className={`font-medium ${theme.text}`}>Interface Theme</h4>
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${theme.border} ${theme.cardBg}`}>
                     <div>
-                      <h4 className="font-medium text-sm">Dark Mode</h4>
+                      <h4 className={`font-medium text-sm ${theme.text}`}>Dark Mode</h4>
                       <p className={`text-xs ${theme.textMuted}`}>Toggle dark and light interface</p>
                     </div>
                     <div 
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors ${isDarkMode ? 'bg-blue-500' : 'bg-gray-600'}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors ${isDarkMode ? 'bg-blue-500' : 'bg-gray-300'}`}
                       onClick={onToggleDarkMode}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -520,16 +530,16 @@ export default function SettingsModal({
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4 border-t border-white/10">
-                  <h4 className="font-medium text-white flex items-center gap-2">
+                <div className={`space-y-4 pt-4 border-t ${theme.border}`}>
+                  <h4 className={`font-medium ${theme.text} flex items-center gap-2`}>
                     Advanced Customization 
                     {(!userProfile.plan || userProfile.plan === 'Free') && <span className="px-2 py-0.5 text-[10px] uppercase font-bold bg-amber-500/20 text-amber-500 rounded-full border border-amber-500/30">Pro</span>}
                   </h4>
                   
                   <div className={`space-y-4 ${(!userProfile.plan || userProfile.plan === 'Free') ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5">
+                    <div className={`flex items-center justify-between p-4 rounded-xl border ${theme.border} ${theme.cardBg}`}>
                       <div>
-                        <h4 className="font-medium text-sm">UI Density</h4>
+                        <h4 className={`font-medium text-sm ${theme.text}`}>UI Density</h4>
                         <p className={`text-xs ${theme.textMuted}`}>Adjust spacing in the dashboard</p>
                       </div>
                       <select 
@@ -539,17 +549,17 @@ export default function SettingsModal({
                           setUiPrefs(newPrefs);
                           if (onUpdateUiPreferences) onUpdateUiPreferences(newPrefs);
                         }}
-                        className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} text-sm focus:outline-none`}
+                        className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none`}
                       >
-                        <option value="compact">Compact</option>
-                        <option value="normal">Normal</option>
-                        <option value="spacious">Spacious</option>
+                        <option value="compact" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Compact</option>
+                        <option value="normal" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Normal</option>
+                        <option value="spacious" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Spacious</option>
                       </select>
                     </div>
 
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5">
+                    <div className={`flex items-center justify-between p-4 rounded-xl border ${theme.border} ${theme.cardBg}`}>
                       <div>
-                        <h4 className="font-medium text-sm">Dashboard Font</h4>
+                        <h4 className={`font-medium text-sm ${theme.text}`}>Dashboard Font</h4>
                         <p className={`text-xs ${theme.textMuted}`}>Change the primary typeface</p>
                       </div>
                       <select 
@@ -559,11 +569,11 @@ export default function SettingsModal({
                           setUiPrefs(newPrefs);
                           if (onUpdateUiPreferences) onUpdateUiPreferences(newPrefs);
                         }}
-                        className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} text-sm focus:outline-none`}
+                        className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none`}
                       >
-                        <option value="Inter">Inter (Sans)</option>
-                        <option value="Roboto">Roboto</option>
-                        <option value="Montserrat">Montserrat</option>
+                        <option value="Inter" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Inter (Sans)</option>
+                        <option value="Roboto" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Roboto</option>
+                        <option value="Montserrat" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Montserrat</option>
                       </select>
                     </div>
 

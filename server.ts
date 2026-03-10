@@ -125,11 +125,11 @@ app.post('/api/auth/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await db.execute(
       'INSERT INTO users (email, username, password, name, surname) VALUES (?, ?, ?, ?, ?)',
-      [email, username || email.split('@')[0], hashedPassword, name || 'User', surname || '']
+      [email, username || email.split('@')[0], hashedPassword, name || '', surname || '']
     );
     
     const token = jwt.sign({ id: (result as any).insertId, email, username }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
-    res.status(201).json({ token, user: { email, username, name, surname, role: 'User' } });
+    res.status(201).json({ token, user: { email, username, name: name || '', surname: surname || '', role: 'User' } });
   } catch (error: any) {
     console.error(error);
     if (error.code === 'ER_DUP_ENTRY') {
