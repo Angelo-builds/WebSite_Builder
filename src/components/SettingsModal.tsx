@@ -36,6 +36,7 @@ interface SettingsModalProps {
   isGuest?: boolean;
   uiPreferences?: UIPreferences;
   onUpdateUiPreferences?: (prefs: UIPreferences) => void;
+  updateAvailable?: boolean;
 }
 
 const COLORS = [
@@ -59,7 +60,8 @@ export default function SettingsModal({
   onToggleDarkMode,
   isGuest = false,
   uiPreferences,
-  onUpdateUiPreferences
+  onUpdateUiPreferences,
+  updateAvailable = false
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState(userProfile);
@@ -89,11 +91,19 @@ export default function SettingsModal({
   // Update state
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState<{available: boolean, message: string} | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<{available: boolean, message: string} | null>(
+    updateAvailable ? { available: true, message: 'An update is available.' } : null
+  );
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab, isOpen]);
+
+  useEffect(() => {
+    if (updateAvailable) {
+      setUpdateStatus({ available: true, message: 'An update is available.' });
+    }
+  }, [updateAvailable]);
 
   useEffect(() => {
     setFormData(userProfile);

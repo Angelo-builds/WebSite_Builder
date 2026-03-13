@@ -233,11 +233,22 @@ export default function App() {
     };
     checkSession();
 
-    // Auto-check for updates on mount
+    // Auto-check for updates on mount (once a day)
     const checkUpdate = async () => {
       try {
+        const lastCheck = localStorage.getItem('lastUpdateCheck');
+        const now = new Date().getTime();
+        
+        // 86400000 ms = 24 hours
+        if (lastCheck && (now - parseInt(lastCheck, 10)) < 86400000) {
+          return; // Skip check if done within last 24 hours
+        }
+        
         const res = await fetch('/api/system/check-update');
         const data = await res.json();
+        
+        localStorage.setItem('lastUpdateCheck', now.toString());
+        
         if (data.isUpdateAvailable) {
           setUpdateAvailable(true);
         }
@@ -1917,33 +1928,6 @@ export default function App() {
             themeColor={themeColor}
           />
 
-          {/* Update Banner */}
-          {updateAvailable && (
-            <motion.div 
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="fixed bottom-6 right-6 z-[150] bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-indigo-500/50"
-            >
-              <div className="flex flex-col">
-                <span className="font-bold text-sm">Update Available</span>
-                <span className="text-xs text-indigo-200">A new version of Web Builder is ready.</span>
-              </div>
-              <button 
-                onClick={() => {
-                  setActiveSettingsTab('settings');
-                  setIsSettingsModalOpen(true);
-                  setUpdateAvailable(false);
-                }}
-                className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-50 transition shadow-sm"
-              >
-                View Details
-              </button>
-              <button onClick={() => setUpdateAvailable(false)} className="text-indigo-200 hover:text-white p-1">
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
           <Dashboard 
             projects={projects}
             onSelectProject={loadProject}
@@ -1959,6 +1943,30 @@ export default function App() {
               setIsSettingsModalOpen(true);
             }}
             uiPreferences={uiPreferences}
+            updateAvailable={updateAvailable}
+            onUpdateAction={async (action) => {
+              if (action === 'update') {
+                if (!isLoggedIn) {
+                  setToast({ isVisible: true, message: 'Applying update...', type: 'info' });
+                  try {
+                    const res = await fetch('/api/system/apply-update', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                      setToast({ isVisible: true, message: 'Update successful! Reloading...', type: 'success' });
+                      setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                      setToast({ isVisible: true, message: 'Update failed.', type: 'error' });
+                    }
+                  } catch (e) {
+                    setToast({ isVisible: true, message: 'Update failed.', type: 'error' });
+                  }
+                } else {
+                  setActiveSettingsTab('settings');
+                  setIsSettingsModalOpen(true);
+                }
+              }
+              setUpdateAvailable(false);
+            }}
           />
           
           <ConfirmModal
@@ -1991,6 +1999,7 @@ export default function App() {
             isGuest={isGuest}
             uiPreferences={uiPreferences}
             onUpdateUiPreferences={setUiPreferences}
+            updateAvailable={updateAvailable}
           />
         </div>
       </div>
@@ -2022,33 +2031,6 @@ export default function App() {
         editor={editor}
         themeColor={themeColor}
       />
-
-      {/* Update Banner */}
-      {updateAvailable && (
-        <motion.div 
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 right-6 z-[150] bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-indigo-500/50"
-        >
-          <div className="flex flex-col">
-            <span className="font-bold text-sm">Update Available</span>
-            <span className="text-xs text-indigo-200">A new version of Web Builder is ready.</span>
-          </div>
-          <button 
-            onClick={() => {
-              setActiveSettingsTab('settings');
-              setIsSettingsModalOpen(true);
-              setUpdateAvailable(false);
-            }}
-            className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-50 transition shadow-sm"
-          >
-            View Details
-          </button>
-          <button onClick={() => setUpdateAvailable(false)} className="text-indigo-200 hover:text-white p-1">
-            <X className="w-4 h-4" />
-          </button>
-        </motion.div>
-      )}
 
       <ProjectModal 
         isOpen={isModalOpen} 
@@ -2782,6 +2764,7 @@ export default function App() {
         onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         uiPreferences={uiPreferences}
         onUpdateUiPreferences={setUiPreferences}
+        updateAvailable={updateAvailable}
       />
       
       <ConfirmModal

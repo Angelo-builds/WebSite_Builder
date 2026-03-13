@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import { account } from '../lib/appwrite';
 import { ID } from 'appwrite';
@@ -40,6 +40,8 @@ interface DashboardProps {
   themeColor: string;
   onOpenSettings: (tab: 'profile' | 'appearance' | 'settings') => void;
   uiPreferences: UIPreferences;
+  updateAvailable?: boolean;
+  onUpdateAction?: (action: 'update' | 'not_now') => void;
 }
 
 export default function Dashboard({ 
@@ -53,7 +55,9 @@ export default function Dashboard({
   userProfile,
   themeColor,
   onOpenSettings,
-  uiPreferences
+  uiPreferences,
+  updateAvailable,
+  onUpdateAction
 }: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -329,6 +333,31 @@ export default function Dashboard({
             Blockra
           </p>
         </motion.div>
+
+        {updateAvailable && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed bottom-6 right-6 z-[150] bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-indigo-500/50"
+          >
+            <div className="flex flex-col">
+              <span className="font-bold text-sm">Update Available</span>
+              <span className="text-xs text-indigo-200">A new version of Web Builder is ready.</span>
+            </div>
+            <button 
+              onClick={() => onUpdateAction?.('update')}
+              className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-50 transition shadow-sm"
+            >
+              Update
+            </button>
+            <button 
+              onClick={() => onUpdateAction?.('not_now')} 
+              className="text-indigo-200 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition"
+            >
+              Not Now
+            </button>
+          </motion.div>
+        )}
       </div>
     );
   }
@@ -365,8 +394,11 @@ export default function Dashboard({
           <div className="relative">
             <button 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`flex items-center gap-3 px-4 py-2 rounded-full border ${theme.border} ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200'} transition-all hover:scale-105 active:scale-95`}
+              className={`flex items-center gap-3 px-4 py-2 rounded-full border ${theme.border} ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200'} transition-all hover:scale-105 active:scale-95 relative`}
             >
+              {updateAvailable && (
+                <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white dark:border-gray-900 rounded-full"></span>
+              )}
               <div className={`w-6 h-6 rounded-full ${getThemeClass(themeColor, 'gradientAvatar')} flex items-center justify-center text-[10px] font-bold text-white`}>
                 {(userProfile.username || userProfile.name || userProfile.email || 'U').charAt(0).toUpperCase()}
               </div>
@@ -390,6 +422,18 @@ export default function Dashboard({
                      <p className={`text-xs ${theme.textFaint}`}>{userProfile.email}</p>
                   </div>
                   <div className="p-2 space-y-1">
+                    {updateAvailable && (
+                      <button 
+                        onClick={() => {
+                          onOpenSettings('settings');
+                          setIsSettingsOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors font-medium`}
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                        Update Available
+                      </button>
+                    )}
                     <button 
                       onClick={() => {
                         onOpenSettings('profile');
@@ -405,10 +449,13 @@ export default function Dashboard({
                         onOpenSettings('settings');
                         setIsSettingsOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors ${theme.textMuted} hover:${theme.text}`}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${theme.hoverBg} transition-colors ${theme.textMuted} hover:${theme.text} relative`}
                     >
                       <Settings className={`w-4 h-4 ${getThemeClass(themeColor, 'iconColor')}`} />
                       Settings
+                      {updateAvailable && (
+                        <span className="absolute right-3 w-2 h-2 bg-red-500 rounded-full"></span>
+                      )}
                     </button>
                     <button 
                       onClick={() => {
