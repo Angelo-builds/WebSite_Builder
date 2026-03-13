@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle, Shield } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import FileUpload from './FileUpload';
+import { account } from '../lib/appwrite';
 
 interface UserProfile {
   name: string;
@@ -98,13 +99,24 @@ export default function SettingsModal({
     setFormData(userProfile);
   }, [userProfile]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateProfile(formData);
-    if (onUpdateUiPreferences) {
-      onUpdateUiPreferences(uiPrefs);
+    try {
+      if (userProfile.role !== 'Guest User') {
+        await account.updateName(`${formData.name} ${formData.surname}`.trim());
+        await account.updatePrefs({
+          username: formData.username,
+          role: formData.role,
+          plan: formData.plan
+        });
+      }
+      onUpdateProfile(formData);
+      if (onUpdateUiPreferences) {
+        onUpdateUiPreferences(uiPrefs);
+      }
+    } catch (err: any) {
+      console.error('Failed to update profile:', err);
     }
-    // Optional: Show success message inside modal or close it
   };
 
   const handleSecuritySubmit = async (e: React.FormEvent) => {
@@ -117,21 +129,15 @@ export default function SettingsModal({
     }
 
     try {
-      const endpoint = forgotPasswordMode ? '/api/auth/reset-password' : '/api/auth/change-password';
-      const payload = forgotPasswordMode 
-        ? { username: resetUsername, email: resetEmail, newPassword }
-        : { email: userProfile.email, oldPassword, newPassword };
+      if (forgotPasswordMode) {
+        // In a real app, you'd provide a URL to your reset password page
+        await account.createRecovery(resetEmail, `${window.location.origin}/reset-password`);
+        setSecurityMessage({ type: 'success', text: 'Password recovery email sent.' });
+      } else {
+        await account.updatePassword(newPassword, oldPassword);
+        setSecurityMessage({ type: 'success', text: 'Password updated successfully.' });
+      }
 
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      setSecurityMessage({ type: 'success', text: data.message });
       setOldPassword('');
       setNewPassword('');
       setConfirmNewPassword('');

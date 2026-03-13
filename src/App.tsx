@@ -10,6 +10,7 @@ import addSmartComponents from './grapesjs-smart-components';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
+import { account } from './lib/appwrite';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import * as prettier from 'prettier/standalone';
@@ -212,6 +213,26 @@ export default function App() {
   useEffect(() => {
     fetchProjects();
     
+    // Check Appwrite session
+    const checkSession = async () => {
+      try {
+        const user = await account.get();
+        if (user) {
+          handleLogin(true, false, {
+            name: user.name.split(' ')[0] || 'User',
+            surname: user.name.split(' ').slice(1).join(' ') || '',
+            email: user.email,
+            username: user.prefs?.username || user.name.toLowerCase().replace(/\s+/g, ''),
+            role: user.prefs?.role || 'User',
+            plan: user.prefs?.plan || 'Free'
+          });
+        }
+      } catch (e) {
+        console.log('No active session');
+      }
+    };
+    checkSession();
+
     // Auto-check for updates on mount
     const checkUpdate = async () => {
       try {

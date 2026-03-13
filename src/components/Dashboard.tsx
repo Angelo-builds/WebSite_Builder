@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check } from 'lucide-react';
 import { getThemeClass } from '../theme';
+import { account } from '../lib/appwrite';
+import { ID } from 'appwrite';
 
 export interface Project {
   id?: string;
@@ -92,30 +94,61 @@ export default function Dashboard({
     setIsLoading(true);
 
     try {
-      const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, username, password, name: '', surname: '' })
-      });
+      if (isRegistering) {
+        // Create user in Appwrite
+        const user = await account.create(
+          ID.unique(),
+          email,
+          password,
+          username || email.split('@')[0]
+        );
+        
+        // Log them in immediately after registration
+        await account.createEmailPasswordSession(email, password);
+        
+        // Update prefs with default role and plan
+        await account.updatePrefs({
+          username: username || email.split('@')[0],
+          role: 'User',
+          plan: 'Free'
+        });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed');
+        onLogin(true, false, {
+          name: user.name,
+          email: user.email,
+          username: username || email.split('@')[0],
+          role: 'User',
+          plan: 'Free'
+        });
+      } else {
+        // Login with Appwrite
+        await account.createEmailPasswordSession(email, password);
+        const user = await account.get();
+        
+        onLogin(true, false, {
+          name: user.name.split(' ')[0] || 'User',
+          surname: user.name.split(' ').slice(1).join(' ') || '',
+          email: user.email,
+          username: user.prefs?.username || user.name.toLowerCase().replace(/\s+/g, ''),
+          role: user.prefs?.role || 'User',
+          plan: user.prefs?.plan || 'Free'
+        });
       }
-
-      // Store token if needed
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-      }
-
-      onLogin(true, false, data.user);
     } catch (err: any) {
+      console.error('Auth error:', err);
       setError(err.message || 'An error occurred during authentication');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await account.deleteSession('current');
+    } catch (e) {
+      console.error('Logout error', e);
+    }
+    onLogin(false);
   };
 
   // Theme classes - Enhanced for Liquid Glass
@@ -389,7 +422,7 @@ export default function Dashboard({
                     </button>
                     <div className={`h-px ${theme.border} my-1 mx-2`}></div>
                     <button 
-                      onClick={() => onLogin(false)}
+                      onClick={handleLogout}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm hover:bg-red-500/10 text-red-500 transition-colors`}
                     >
                       <LogOut className="w-4 h-4" />
