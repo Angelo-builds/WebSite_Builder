@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2 } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import { account } from '../lib/appwrite';
 import { ID } from 'appwrite';
+import { ShareModal } from './ShareModal';
 
 export interface Project {
   id?: string;
@@ -11,6 +12,8 @@ export interface Project {
   description?: string;
   category?: string;
   updatedAt?: string;
+  sharedWith?: { email: string, role: 'creator' | 'modifier' | 'contributor' | 'editor' }[];
+  owner?: string;
 }
 
 interface UserProfile {
@@ -19,7 +22,7 @@ interface UserProfile {
   email: string;
   username?: string;
   role: string;
-  plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
+  plan?: 'Free' | 'Basic' | 'Pro' | 'Team';
 }
 
 interface UIPreferences {
@@ -42,6 +45,8 @@ interface DashboardProps {
   uiPreferences: UIPreferences;
   updateAvailable?: boolean;
   onUpdateAction?: (action: 'update' | 'not_now') => void;
+  onUpdateSharing?: (projectName: string, sharedWith: any[]) => void;
+  onUpgrade: () => void;
 }
 
 export default function Dashboard({ 
@@ -57,7 +62,9 @@ export default function Dashboard({
   onOpenSettings,
   uiPreferences,
   updateAvailable,
-  onUpdateAction
+  onUpdateAction,
+  onUpdateSharing,
+  onUpgrade
 }: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -73,7 +80,7 @@ export default function Dashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isBannerVisible, setIsBannerVisible] = useState(true);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [shareModalProject, setShareModalProject] = useState<string | null>(null);
 
   const categories = ['All', 'Blank Project', 'Landing Page', 'Portfolio', 'Corporate'];
 
@@ -143,6 +150,12 @@ export default function Dashboard({
       setError(err.message || 'An error occurred during authentication');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdateSharing = (projectName: string, newSharedWith: any[]) => {
+    if (onUpdateSharing) {
+      onUpdateSharing(projectName, newSharedWith);
     }
   };
 
@@ -384,8 +397,8 @@ export default function Dashboard({
             </>
           )}
           {isLoggedIn && userProfile.plan && (
-            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Agency' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
-              {userProfile.plan === 'Pro' || userProfile.plan === 'Agency' ? '👑 ' : ''}{userProfile.plan}
+            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+              {userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? '👑 ' : ''}{userProfile.plan}
             </span>
           )}
         </div>
@@ -485,7 +498,7 @@ export default function Dashboard({
 
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto ${densityClass}`}>
-        {isLoggedIn && userProfile.plan && userProfile.plan !== 'Agency' && isBannerVisible && (
+        {isLoggedIn && userProfile.plan && userProfile.plan !== 'Team' && isBannerVisible && (
           <div className={`mb-8 p-4 sm:p-6 rounded-2xl border ${isDarkMode ? 'border-blue-500/20 bg-blue-500/5' : 'border-blue-200 bg-blue-50'} flex flex-col sm:flex-row items-start sm:items-center justify-start gap-6 relative`}>
             <button 
               onClick={() => setIsBannerVisible(false)}
@@ -501,12 +514,12 @@ export default function Dashboard({
               <p className={`text-sm ${theme.textMuted} mt-1`}>
                 {userProfile.plan === 'Free' && "You are on the Free plan. Upgrade to unlock advanced customization and unlimited projects."}
                 {userProfile.plan === 'Basic' && "You are on the Basic plan. Upgrade to Pro for premium templates and advanced UI settings."}
-                {userProfile.plan === 'Pro' && "You are on the Pro plan. Enjoy all premium features! Upgrade to Agency for white-labeling."}
+                {userProfile.plan === 'Pro' && "You are on the Pro plan. Enjoy all premium features! Upgrade to Team for collaboration."}
               </p>
             </div>
             {userProfile.plan !== 'Pro' && (
               <button 
-                onClick={() => setIsUpgradeModalOpen(true)}
+                onClick={onUpgrade}
                 className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8`}
               >
                 Upgrade to {userProfile.plan === 'Free' ? 'Basic' : 'Pro'}
@@ -514,10 +527,10 @@ export default function Dashboard({
             )}
             {userProfile.plan === 'Pro' && (
               <button 
-                onClick={() => setIsUpgradeModalOpen(true)}
+                onClick={onUpgrade}
                 className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20 border border-white/10' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'} transition-all mt-4 sm:mt-0 mr-8`}
               >
-                View Agency Plans
+                View Team Plans
               </button>
             )}
           </div>
@@ -529,9 +542,14 @@ export default function Dashboard({
             <p className={theme.textMuted}>Manage and publish your websites with ease.</p>
           </div>
           <button 
-            onClick={onCreateProject}
-            disabled={isGuest}
-            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 ${isGuest ? 'bg-white/5 text-white/40 cursor-not-allowed' : `${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white hover:scale-[1.02] active:scale-[0.98] ${getThemeClass(themeColor, 'shadowLg')}`} rounded-2xl font-bold transition-all ring-1 ring-white/20`}
+            onClick={() => {
+              if (isGuest) {
+                onUpgrade();
+              } else {
+                onCreateProject();
+              }
+            }}
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 ${isGuest ? 'bg-white/5 text-white/40 hover:bg-white/10' : `${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white hover:scale-[1.02] active:scale-[0.98] ${getThemeClass(themeColor, 'shadowLg')}`} rounded-2xl font-bold transition-all ring-1 ring-white/20`}
           >
             {isGuest ? <Crown className="w-5 h-5 text-yellow-500/70" /> : <Plus className="w-5 h-5" />}
             {isGuest ? 'New Project (Pro)' : 'New Project'}
@@ -574,7 +592,13 @@ export default function Dashboard({
             <h3 className={`text-2xl font-bold mb-3 ${theme.text}`}>No projects found</h3>
             <p className={`${theme.textMuted} mb-10 max-w-md mx-auto text-lg`}>Get started by creating your first website project. It only takes a few seconds.</p>
             <button 
-              onClick={onCreateProject}
+              onClick={() => {
+                if (isGuest) {
+                  onUpgrade();
+                } else {
+                  onCreateProject();
+                }
+              }}
               className={`px-8 py-3 ${isDarkMode ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-200 hover:bg-gray-300'} ${theme.text} rounded-xl font-medium transition-colors border ${theme.border}`}
             >
               Create Project
@@ -658,13 +682,25 @@ export default function Dashboard({
                   
                   <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 z-10">
                     {!isGuest && (
-                      <button 
-                        onClick={(e) => onDeleteProject(project.name, e)}
-                        className={`p-3 ${isDarkMode ? 'bg-black/40 text-white/60 hover:text-white border-white/10' : 'bg-white/80 text-gray-500 hover:text-red-500 border-gray-200'} hover:bg-red-500 rounded-xl backdrop-blur-md transition-colors border`}
-                        title="Delete Project"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShareModalProject(project.name);
+                          }}
+                          className={`p-3 ${isDarkMode ? 'bg-black/40 text-white/60 hover:text-white border-white/10' : 'bg-white/80 text-gray-500 hover:text-blue-500 border-gray-200'} hover:bg-blue-500 rounded-xl backdrop-blur-md transition-colors border`}
+                          title="Share Project"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => onDeleteProject(project.name, e)}
+                          className={`p-3 ${isDarkMode ? 'bg-black/40 text-white/60 hover:text-white border-white/10' : 'bg-white/80 text-gray-500 hover:text-red-500 border-gray-200'} hover:bg-red-500 rounded-xl backdrop-blur-md transition-colors border`}
+                          title="Delete Project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -711,79 +747,23 @@ export default function Dashboard({
         )}
       </main>
 
-      {/* Upgrade Modal */}
-      <AnimatePresence>
-        {isUpgradeModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={() => setIsUpgradeModalOpen(false)}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col ${isDarkMode ? 'bg-[#161618]' : 'bg-white'}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className={`p-6 border-b ${theme.border} flex justify-between items-center`}>
-                <h2 className={`text-2xl font-bold ${theme.text}`}>Upgrade Your Plan</h2>
-                <button onClick={() => setIsUpgradeModalOpen(false)} className={`p-2 rounded-full ${theme.hoverBg} ${theme.textMuted} hover:${theme.text} transition-colors`}>
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Basic Plan */}
-                  <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
-                    <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Basic</h3>
-                    <p className={`${theme.textMuted} text-sm mb-4`}>Perfect for small projects and personal sites.</p>
-                    <div className="text-3xl font-bold mb-6 ${theme.text}">$9<span className="text-sm font-normal text-gray-500">/mo</span></div>
-                    <ul className="space-y-3 mb-8 flex-1">
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 5 Projects</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Basic Templates</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Color Customization</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.textMuted} opacity-50`}><X className="w-4 h-4" /> Premium Templates</li>
-                    </ul>
-                    <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
-                      Select Basic
-                    </button>
-                  </div>
-
-                  {/* Pro Plan */}
-                  <div className={`p-6 rounded-2xl border-2 border-amber-500 relative flex flex-col ${isDarkMode ? 'bg-amber-500/5' : 'bg-amber-50'}`}>
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-full">Most Popular</div>
-                    <h3 className={`text-xl font-bold ${theme.text} mb-2 flex items-center gap-2`}><Crown className="w-5 h-5 text-amber-500" /> Pro</h3>
-                    <p className={`${theme.textMuted} text-sm mb-4`}>For professionals who need more power.</p>
-                    <div className="text-3xl font-bold mb-6 ${theme.text}">$29<span className="text-sm font-normal text-gray-500">/mo</span></div>
-                    <ul className="space-y-3 mb-8 flex-1">
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Unlimited Projects</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Premium Templates</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Advanced UI Customization</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Custom Fonts</li>
-                    </ul>
-                    <button className={`w-full py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
-                      Select Pro
-                    </button>
-                  </div>
-
-                  {/* Agency Plan */}
-                  <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
-                    <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Agency</h3>
-                    <p className={`${theme.textMuted} text-sm mb-4`}>White-labeling and team collaboration.</p>
-                    <div className="text-3xl font-bold mb-6 ${theme.text}">$99<span className="text-sm font-normal text-gray-500">/mo</span></div>
-                    <ul className="space-y-3 mb-8 flex-1">
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Everything in Pro</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> White-label (Custom Logo)</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Team Collaboration</li>
-                      <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Dedicated Support</li>
-                    </ul>
-                    <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
-                      Select Agency
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Share Modal */}
+      {shareModalProject && (
+        <ShareModal
+          isOpen={true}
+          onClose={() => setShareModalProject(null)}
+          projectName={shareModalProject}
+          sharedWith={projects.find(p => p.name === shareModalProject)?.sharedWith || []}
+          onUpdateSharing={handleUpdateSharing}
+          isDarkMode={isDarkMode}
+          themeColor={themeColor}
+          userPlan={userProfile.plan}
+          onUpgrade={() => {
+            setShareModalProject(null);
+            onUpgrade();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -312,7 +312,8 @@ app.get('/api/projects', async (req, res) => {
       name,
       description: data.metadata?.description || '',
       category: data.metadata?.category || 'Blank Project',
-      updatedAt: data.metadata?.updatedAt || new Date().toISOString()
+      updatedAt: data.metadata?.updatedAt || new Date().toISOString(),
+      sharedWith: data.metadata?.sharedWith || []
     }));
     
     return res.json(projectsList);
@@ -321,7 +322,7 @@ app.get('/api/projects', async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT id, name, data FROM projects');
     const projects = (rows as any[]).map(row => {
-      let metadata = { description: '', category: 'Other', updatedAt: new Date().toISOString() };
+      let metadata = { description: '', category: 'Other', updatedAt: new Date().toISOString(), sharedWith: [] };
       try {
         if (row.data) {
           const parsed = JSON.parse(row.data);

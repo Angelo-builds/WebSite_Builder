@@ -24,6 +24,7 @@ import Dashboard, { Project } from './components/Dashboard';
 import ConfirmModal from './components/ConfirmModal';
 import Toast, { ToastType } from './components/Toast';
 import SettingsModal from './components/SettingsModal';
+import { UpgradeModal } from './components/UpgradeModal';
 
 const TEMPLATES = [
   {
@@ -106,6 +107,7 @@ export default function App() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   
@@ -121,7 +123,7 @@ export default function App() {
     username?: string;
     role: string;
     avatar?: string;
-    plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
+    plan?: 'Free' | 'Basic' | 'Pro' | 'Team';
   }>({
     name: 'Admin',
     surname: 'User',
@@ -1535,7 +1537,8 @@ export default function App() {
       data.metadata = {
         description: currentProjectObj.description || '',
         category: currentProjectObj.category || 'Other',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        sharedWith: currentProjectObj.sharedWith || []
       };
     }
 
@@ -1563,7 +1566,7 @@ export default function App() {
 
   const handlePublish = async () => {
     if (isGuest) {
-      showToast('Publishing is restricted to Pro accounts.', 'warning');
+      setIsUpgradeModalOpen(true);
       return;
     }
 
@@ -1672,6 +1675,27 @@ export default function App() {
     }
   };
 
+  const updateProjectSharing = async (projectName: string, sharedWith: any[]) => {
+    try {
+      const response = await fetch(`/api/projects?name=${encodeURIComponent(projectName)}`);
+      if (response.ok) {
+        const data = await response.json();
+        data.metadata = data.metadata || {};
+        data.metadata.sharedWith = sharedWith;
+        
+        await fetch(`/api/projects/${encodeURIComponent(projectName)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        fetchProjects();
+      }
+    } catch (err) {
+      console.error('Failed to update project sharing', err);
+    }
+  };
+
   const deleteProject = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -1771,7 +1795,7 @@ export default function App() {
 
     // Create a minimal valid project structure
     let initialProjectData: any = {
-      metadata: { description, category, templateHtml, updatedAt: new Date().toISOString() },
+      metadata: { description, category, templateHtml, updatedAt: new Date().toISOString(), sharedWith: [] },
       assets: [],
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
@@ -1933,6 +1957,8 @@ export default function App() {
             onSelectProject={loadProject}
             onCreateProject={() => setIsModalOpen(true)}
             onDeleteProject={deleteProject}
+            onUpdateSharing={updateProjectSharing}
+            onUpgrade={() => setIsUpgradeModalOpen(true)}
             isDarkMode={isDarkMode}
             isLoggedIn={isLoggedIn}
             onLogin={handleLogin}
@@ -2000,6 +2026,12 @@ export default function App() {
             uiPreferences={uiPreferences}
             onUpdateUiPreferences={setUiPreferences}
             updateAvailable={updateAvailable}
+          />
+          
+          <UpgradeModal
+            isOpen={isUpgradeModalOpen}
+            onClose={() => setIsUpgradeModalOpen(false)}
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>
@@ -2767,6 +2799,12 @@ export default function App() {
         updateAvailable={updateAvailable}
       />
       
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        isDarkMode={isDarkMode}
+      />
+
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}

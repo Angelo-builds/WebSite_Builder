@@ -12,7 +12,7 @@ interface UserProfile {
   username?: string;
   role: string;
   avatar?: string;
-  plan?: 'Free' | 'Basic' | 'Pro' | 'Agency';
+  plan?: 'Free' | 'Basic' | 'Pro' | 'Team';
 }
 
 interface UIPreferences {
@@ -381,7 +381,7 @@ export default function SettingsModal({
                       <option value="Free">Free</option>
                       <option value="Basic">Basic</option>
                       <option value="Pro">Pro</option>
-                      <option value="Agency">Agency</option>
+                      <option value="Team">Team</option>
                     </select>
                   </div>
 
