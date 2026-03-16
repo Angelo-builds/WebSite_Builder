@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json());
 
 // Database Connection
-let db: mysql.Connection | null = null;
+let db: mysql.Pool | null = null;
 let dbReady = false;
 
 const connectDB = async () => {
@@ -30,16 +30,19 @@ const connectDB = async () => {
       console.warn('DB_HOST not set. Running in mock mode (no DB).');
       return;
     }
-    const connection = await mysql.createConnection({
+    const pool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'root',
       password: process.env.DB_PASSWORD || '',
       database: process.env.DB_NAME || 'sitebuilder',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
     });
-    console.log('Connected to MySQL/MariaDB Database');
+    console.log('Connected to MySQL/MariaDB Database via Pool');
 
     // Create tables if they don't exist
-    await connection.execute(`
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(255) UNIQUE,
@@ -53,7 +56,7 @@ const connectDB = async () => {
 
     // Ensure username column exists if table was created before
     try {
-      await connection.execute('ALTER TABLE users ADD COLUMN username VARCHAR(255) UNIQUE');
+      await pool.execute('ALTER TABLE users ADD COLUMN username VARCHAR(255) UNIQUE');
       console.log('Added username column to users table');
     } catch (e: any) {
       if (e.code !== 'ER_DUP_FIELDNAME') {
@@ -61,7 +64,7 @@ const connectDB = async () => {
       }
     }
 
-    await connection.execute(`
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS projects (
         id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) UNIQUE NOT NULL,
@@ -71,7 +74,7 @@ const connectDB = async () => {
     
     // Ensure data column exists if table was created by schema.sql
     try {
-      await connection.execute('ALTER TABLE projects ADD COLUMN data LONGTEXT');
+      await pool.execute('ALTER TABLE projects ADD COLUMN data LONGTEXT');
       console.log('Added data column to projects table');
     } catch (e: any) {
       // Ignore error if column already exists (ER_DUP_FIELDNAME)
@@ -81,7 +84,7 @@ const connectDB = async () => {
     }
     
     console.log('Database tables verified');
-    db = connection;
+    db = pool;
     dbReady = true;
 
     // Check if we need to create an Example Project

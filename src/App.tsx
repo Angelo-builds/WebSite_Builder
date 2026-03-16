@@ -1975,9 +1975,9 @@ export default function App() {
                 if (!isLoggedIn) {
                   setToast({ isVisible: true, message: 'Applying update...', type: 'info' });
                   try {
-                    const res = await fetch('/api/system/apply-update', { method: 'POST' });
+                    const res = await fetch('/api/system/update', { method: 'POST' });
                     const data = await res.json();
-                    if (data.success) {
+                    if (res.ok) {
                       setToast({ isVisible: true, message: 'Update successful! Reloading...', type: 'success' });
                       setTimeout(() => window.location.reload(), 2000);
                     } else {

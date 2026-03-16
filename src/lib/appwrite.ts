@@ -5,11 +5,11 @@ import { Client, Account, Databases, Storage, Avatars, Permission, Role } from '
 // In questo modo non dipendiamo dal file .env per la distribuzione del frontend.
 export const appwriteConfig = {
   endpoint: 'https://api.angihomelab.com/v1',
-  projectId: 'YOUR_PROJECT_ID', // Sostituisci con il tuo vero Project ID
-  databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID || '',
-  usersCollectionId: import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID || '',
-  licensesCollectionId: import.meta.env.VITE_APPWRITE_LICENSES_COLLECTION_ID || '',
-  sitesCollectionId: import.meta.env.VITE_APPWRITE_SITES_COLLECTION_ID || '',
+  projectId: '69b3402700309dc6660c', // Incolla qui il tuo Project ID reale
+  databaseId: '69b4036d001f9322929d', // Incolla qui l'ID del database (quello oscurato in rosso nello screenshot)
+  usersCollectionId: '69b40b450023d774f727', // ID della tabella utenti
+  licensesCollectionId: '69b40b5d000ce0bf77eb', // ID della tabella licenze
+  sitesCollectionId: '69b7b49e002e8aebabf6', // ID della tabella siti/progetti
 };
 
 const client = new Client();
