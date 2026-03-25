@@ -10,7 +10,7 @@ import addSmartComponents from './grapesjs-smart-components';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
-import { account } from './lib/appwrite';
+import { account, databases, storage, appwriteConfig, Query, ID, getOwnerPermissions } from './lib/appwrite';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import * as prettier from 'prettier/standalone';
@@ -77,7 +77,10 @@ const TEMPLATES = [
   }
 ];
 
+import SetupWizard from './components/SetupWizard';
+
 export default function App() {
+  const [isActivated, setIsActivated] = useState<boolean>(false);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -213,8 +216,18 @@ export default function App() {
   const editorInstanceRef = useRef<Editor | null>(null);
 
   useEffect(() => {
-    fetchProjects();
-    
+    if (isLoggedIn && !isGuest) {
+      fetchProjects();
+    }
+  }, [isLoggedIn, isGuest]);
+
+  useEffect(() => {
+    // Check for license key
+    const licenseKey = localStorage.getItem('builder_license_key');
+    if (licenseKey) {
+      setIsActivated(true);
+    }
+
     // Check Appwrite session
     const checkSession = async () => {
       try {
@@ -229,8 +242,11 @@ export default function App() {
             plan: user.prefs?.plan || 'Free'
           });
         }
-      } catch (e) {
+      } catch (e: any) {
         console.log('No active session');
+        if (e.message === 'Failed to fetch') {
+          showToast('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.', 'error');
+        }
       }
     };
     checkSession();
@@ -1040,19 +1056,38 @@ export default function App() {
     });
 
     // Fetch assets on load
-    fetch('/api/assets')
-      .then(res => res.json())
-      .then(assets => {
+    const loadAssets = async () => {
+      try {
+        const response = await storage.listFiles(appwriteConfig.assetsBucketId);
+        const assets = response.files.map(file => {
+          const fileUrl = storage.getFileView(appwriteConfig.assetsBucketId, file.$id).toString();
+          const ext = file.name.split('.').pop()?.toLowerCase() || '';
+          let type = 'image';
+          if (['mp4', 'webm', 'ogg'].includes(ext)) type = 'video';
+          if (['mp3', 'wav', 'ogg'].includes(ext)) type = 'audio';
+          if (['pdf', 'doc', 'docx'].includes(ext)) type = 'document';
+          if (['ttf', 'woff', 'woff2', 'eot'].includes(ext)) type = 'font';
+          
+          return {
+            type,
+            src: fileUrl,
+            name: file.name,
+            fileId: file.$id
+          };
+        });
+        
         const editor = editorInstanceRef.current;
         if (editor) {
-          // Try both AssetManager (older) and Assets (newer)
           const assetManager = editor.AssetManager || editor.Assets;
           if (assetManager) {
             assetManager.add(assets);
           }
         }
-      })
-      .catch(err => console.error('Failed to load assets:', err));
+      } catch (err) {
+        console.error('Failed to load assets from Appwrite:', err);
+      }
+    };
+    loadAssets();
 
     // Track selection
     gjsEditor.on('component:selected', () => {
@@ -1420,9 +1455,14 @@ export default function App() {
     
     const loadCurrentProject = async () => {
       try {
-        const res = await fetch(`/api/projects/${encodeURIComponent(currentProject)}`);
-        if (res.ok) {
-          const data = await res.json();
+        const doc = await databases.getDocument(
+          appwriteConfig.databaseId,
+          appwriteConfig.sitesCollectionId,
+          currentProject
+        );
+        
+        if (doc && doc.data) {
+          const data = JSON.parse(doc.data);
           if (!data || Object.keys(data).length === 0 || (data.pages && data.pages.length === 0)) {
              editor.setComponents('');
              editor.setStyle([]);
@@ -1502,18 +1542,34 @@ export default function App() {
     }
   };
 
-  const fetchProjects = async () => {
+  async function fetchProjects() {
     try {
-      const res = await fetch('/api/projects');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setProjects(data);
-      } else {
-        console.error('Failed to fetch projects:', data);
-        setProjects([]);
+      const user = await account.get();
+      if (!user) return;
+
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        [
+          Query.equal('ownerId', user.$id)
+        ]
+      );
+      
+      const formattedProjects = response.documents.map(doc => ({
+        id: doc.$id,
+        name: doc.name,
+        description: doc.description || '',
+        category: doc.category || 'Other',
+        updatedAt: doc.$updatedAt,
+        sharedWith: doc.sharedWith || []
+      }));
+      
+      setProjects(formattedProjects);
+    } catch (err: any) {
+      console.error('Failed to fetch projects from Appwrite', err);
+      if (err.message === 'Failed to fetch') {
+        showToast('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.', 'error');
       }
-    } catch (err) {
-      console.error('Failed to fetch projects', err);
       setProjects([]);
     }
   };
@@ -1532,7 +1588,7 @@ export default function App() {
     const data = editor.getProjectData();
     
     // Inject metadata
-    const currentProjectObj = projects.find(p => p.name === currentProject);
+    const currentProjectObj = projects.find(p => p.id === currentProject || p.name === currentProject);
     if (currentProjectObj) {
       data.metadata = {
         description: currentProjectObj.description || '',
@@ -1543,17 +1599,22 @@ export default function App() {
     }
 
     try {
-      await fetch(`/api/projects/${currentProject}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        currentProject,
+        {
+          data: JSON.stringify(data),
+          updatedAt: new Date().toISOString()
+        }
+      );
+
       if (!silent) showToast('Project saved successfully!', 'success');
       
       // Update local state to reflect new updatedAt
       if (currentProjectObj) {
         setProjects(prev => prev.map(p => 
-          p.name === currentProject ? { ...p, updatedAt: data.metadata.updatedAt } : p
+          (p.id === currentProject || p.name === currentProject) ? { ...p, updatedAt: new Date().toISOString() } : p
         ));
       }
     } catch (err) {
@@ -1641,9 +1702,14 @@ export default function App() {
     }
     
     try {
-      const res = await fetch(`/api/projects/${id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const doc = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        id
+      );
+      
+      if (doc && doc.data) {
+        const data = JSON.parse(doc.data);
         editor.loadProjectData(data);
         
         const component = data.pages?.[0]?.frames?.[0]?.component;
@@ -1668,31 +1734,26 @@ export default function App() {
         setCurrentProject(id);
         setViewMode('editor');
       } else {
-        console.error('Project not found');
+        console.error('Project data is empty');
       }
     } catch (err) {
-      console.error('Failed to load project', err);
+      console.error('Failed to load project from Appwrite', err);
     }
   };
 
-  const updateProjectSharing = async (projectName: string, sharedWith: any[]) => {
+  const updateProjectSharing = async (projectId: string, sharedWith: any[]) => {
     try {
-      const response = await fetch(`/api/projects?name=${encodeURIComponent(projectName)}`);
-      if (response.ok) {
-        const data = await response.json();
-        data.metadata = data.metadata || {};
-        data.metadata.sharedWith = sharedWith;
-        
-        await fetch(`/api/projects/${encodeURIComponent(projectName)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        fetchProjects();
-      }
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        projectId,
+        {
+          sharedWith: sharedWith
+        }
+      );
+      fetchProjects();
     } catch (err) {
-      console.error('Failed to update project sharing', err);
+      console.error('Failed to update project sharing in Appwrite', err);
     }
   };
 
@@ -1709,8 +1770,11 @@ export default function App() {
       isDestructive: true,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Failed to delete');
+          await databases.deleteDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.sitesCollectionId,
+            id
+          );
           
           setProjects(prev => prev.filter(p => (p.id || p.name) !== id));
           if (currentProject === id) {
@@ -1720,7 +1784,7 @@ export default function App() {
           console.log('deleteProject: Deleted successfully');
           showToast('Project deleted successfully', 'success');
         } catch (err) {
-          console.error('Failed to delete project', err);
+          console.error('Failed to delete project from Appwrite', err);
           showToast('Failed to delete project', 'error');
         }
       },
@@ -1802,19 +1866,27 @@ export default function App() {
     };
 
     try {
-      // Create project in backend
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, category, data: initialProjectData }),
-      });
+      const user = await account.get();
       
-      if (!res.ok) {
-        throw new Error('Server returned ' + res.status);
-      }
+      const documentId = ID.unique();
+      const permissions = getOwnerPermissions(user.$id);
       
-      const createdProject = await res.json();
-      const projectId = createdProject.id || name; // Fallback to name if id is missing
+      const createdProject = await databases.createDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        documentId,
+        {
+          name,
+          description,
+          category,
+          data: JSON.stringify(initialProjectData),
+          ownerId: user.$id,
+          updatedAt: new Date().toISOString()
+        },
+        permissions
+      );
+      
+      const projectId = createdProject.$id;
 
       setCurrentProject(projectId);
       setProjects(prev => [...prev, { id: projectId, name, description, category, updatedAt: new Date().toISOString() }]);
@@ -1841,7 +1913,7 @@ export default function App() {
         }, 150);
       }
     } catch (err) {
-      console.error('Failed to create project', err);
+      console.error('Failed to create project in Appwrite', err);
       showToast('Failed to create project', 'error');
     }
   };
@@ -1932,6 +2004,31 @@ export default function App() {
   };
 
   const fontFamilyClass = uiPreferences?.fontFamily === 'Roboto' ? 'font-roboto' : uiPreferences?.fontFamily === 'Montserrat' ? 'font-montserrat' : 'font-sans';
+
+  if (!isActivated) {
+    return <SetupWizard onActivated={(key) => {
+      setIsActivated(true);
+      // We can also trigger a session check here if needed, but SetupWizard handles login
+      const checkSession = async () => {
+        try {
+          const user = await account.get();
+          if (user) {
+            handleLogin(true, false, {
+              name: user.name.split(' ')[0] || 'User',
+              surname: user.name.split(' ').slice(1).join(' ') || '',
+              email: user.email,
+              username: user.prefs?.username || user.name.toLowerCase().replace(/\s+/g, ''),
+              role: user.prefs?.role || 'User',
+              plan: user.prefs?.plan || 'Free'
+            });
+          }
+        } catch (e) {
+          console.log('No active session after activation');
+        }
+      };
+      checkSession();
+    }} isDarkMode={isDarkMode} />;
+  }
 
   if (viewMode === 'dashboard') {
     return (

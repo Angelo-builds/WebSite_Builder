@@ -357,33 +357,36 @@ export default function SettingsModal({
                   </div>
 
                   <div className="space-y-2">
-                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Role / Job Title</label>
+                    <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Account Role</label>
                     <input
                       type="text"
                       value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
-                      placeholder="Administrator"
+                      readOnly
+                      className={`w-full px-4 py-2.5 rounded-xl border ${theme.border} ${theme.bg} opacity-70 cursor-not-allowed focus:outline-none transition-all`}
+                      placeholder="User"
                     />
+                    <p className={`text-[10px] ${theme.textMuted}`}>Your account role determines your access level. Contact an administrator to change this.</p>
                   </div>
 
-                  <div className="space-y-2 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
-                    <label className={`text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2`}>
-                      <Shield className="w-4 h-4" />
-                      Current Plan (Dev/Test Tool)
-                    </label>
-                    <p className="text-xs text-amber-200/70 mb-2">Change your plan here to test different features.</p>
-                    <select
-                      value={formData.plan || 'Free'}
-                      onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
-                      className={`w-full px-4 py-2.5 rounded-xl border border-amber-500/30 bg-black/40 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all`}
-                    >
-                      <option value="Free">Free</option>
-                      <option value="Basic">Basic</option>
-                      <option value="Pro">Pro</option>
-                      <option value="Team">Team</option>
-                    </select>
-                  </div>
+                  {(userProfile.role === 'Beta Tester' || userProfile.role === 'Admin' || userProfile.role === 'Administrator') && (
+                    <div className="space-y-2 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                      <label className={`text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2`}>
+                        <Shield className="w-4 h-4" />
+                        Beta Tester Tools: Change Plan
+                      </label>
+                      <p className="text-xs text-amber-200/70 mb-2">As a Beta Tester, you can change your plan here to test different features.</p>
+                      <select
+                        value={formData.plan || 'Free'}
+                        onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
+                        className={`w-full px-4 py-2.5 rounded-xl border border-amber-500/30 bg-black/40 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all`}
+                      >
+                        <option value="Free">Free</option>
+                        <option value="Basic">Basic</option>
+                        <option value="Pro">Pro</option>
+                        <option value="Team">Team</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div className="pt-4 flex justify-end">
                     <button

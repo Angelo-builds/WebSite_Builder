@@ -16,12 +16,12 @@ NC='\033[0m'
 echo -e "${BLUE}Starting Installation inside LXC...${NC}"
 
 # 1. Install Basic Dependencies
-echo -e "${GREEN}[1/6] Installing dependencies...${NC}"
+echo -e "${GREEN}[1/4] Installing dependencies...${NC}"
 apt-get update >/dev/null 2>&1
 apt-get install -y curl git build-essential gnupg >/dev/null 2>&1
 
 # 2. Install Node.js (LTS)
-echo -e "${GREEN}[2/6] Installing Node.js...${NC}"
+echo -e "${GREEN}[2/4] Installing Node.js...${NC}"
 if ! command -v node &> /dev/null; then
     mkdir -p /etc/apt/keyrings
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg >/dev/null 2>&1
@@ -30,55 +30,30 @@ if ! command -v node &> /dev/null; then
     apt-get install -y nodejs >/dev/null 2>&1
 fi
 
-# 3. Install MariaDB
-echo -e "${GREEN}[3/6] Installing MariaDB...${NC}"
-apt-get install -y mariadb-server >/dev/null 2>&1
-service mariadb start >/dev/null 2>&1
-
-# 4. Configure Database
-echo -e "${GREEN}[4/6] Configuring Database...${NC}"
-DB_NAME="sitebuilder"
-DB_USER="sitebuilder"
-DB_PASS="proxmox_sitebuilder_secret" # Fixed password for auto-install
-
-# Allow external connections to MariaDB
-sed -i 's/bind-address.*/bind-address = 0.0.0.0/' /etc/mysql/mariadb.conf.d/50-server.cnf >/dev/null 2>&1
-service mariadb restart >/dev/null 2>&1
-
-# Secure MariaDB installation (basic)
-mysql -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME};" >/dev/null 2>&1
-mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';" >/dev/null 2>&1
-mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';" >/dev/null 2>&1
-mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
-
-# Import Schema
-if [ -f "schema.sql" ]; then
-    mysql ${DB_NAME} < schema.sql >/dev/null 2>&1
-    echo "Schema imported."
-fi
-
-# 5. Application Setup
-echo -e "${GREEN}[5/6] Building Application...${NC}"
+# 3. Application Setup
+echo -e "${GREEN}[3/4] Building Application...${NC}"
 npm install -g npm@latest >/dev/null 2>&1
 npm install >/dev/null 2>&1
 npm run build >/dev/null 2>&1
 
 # Create .env
 cat <<EOF > .env
-DB_HOST=localhost
-DB_USER=${DB_USER}
-DB_PASSWORD=${DB_PASS}
-DB_NAME=${DB_NAME}
-JWT_SECRET=$(openssl rand -hex 32)
 PORT=3000
+VITE_APPWRITE_ENDPOINT=https://api.angihomelab.com/v1
+VITE_APPWRITE_PROJECT_ID=69b3402700309dc6660c
+VITE_APPWRITE_DATABASE_ID=69b4036d001f9322929d
+VITE_APPWRITE_USERS_COLLECTION_ID=69b40b450023d774f727
+VITE_APPWRITE_LICENSES_COLLECTION_ID=69b40b5d000ce0bf77eb
+VITE_APPWRITE_SITES_COLLECTION_ID=69b7b49e002e8aebabf6
+VITE_APPWRITE_ASSETS_BUCKET_ID=assets
 EOF
 
-# 6. Systemd Service
-echo -e "${GREEN}[6/6] Creating Service...${NC}"
+# 4. Systemd Service
+echo -e "${GREEN}[4/4] Creating Service...${NC}"
 cat <<EOF > /etc/systemd/system/sitebuilder.service
 [Unit]
 Description=Blockra
-After=network.target mariadb.service
+After=network.target
 
 [Service]
 Type=simple

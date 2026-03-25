@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Upload, Search, Filter, Image as ImageIcon, Video, FileAudio, FileText, Type, Trash2, Check } from 'lucide-react';
 import { getThemeClass } from '../theme';
+import { storage, appwriteConfig, ID } from '../lib/appwrite';
 
 interface CustomAssetManagerProps {
   isOpen: boolean;
@@ -26,35 +27,64 @@ export default function CustomAssetManager({ isOpen, onClose, onSelect, editor, 
     }
   }, [isOpen, editor]);
 
+  const getAssetType = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    if (['mp4', 'webm', 'ogg'].includes(ext)) return 'video';
+    if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+    if (['pdf', 'doc', 'docx'].includes(ext)) return 'document';
+    if (['ttf', 'woff', 'woff2', 'eot'].includes(ext)) return 'font';
+    return 'image';
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     setIsUploading(true);
-    const formData = new FormData();
-    Array.from(e.target.files).forEach((file: File) => {
-      formData.append('files', file);
-    });
+    const files = Array.from(e.target.files);
 
     try {
-      const res = await fetch('/api/assets/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.data) {
-        editor.AssetManager.add(data.data);
-        setAssets(editor.AssetManager.getAll().models);
-      }
+      const uploadedAssets = await Promise.all(
+        files.map(async (file) => {
+          const response = await storage.createFile(
+            appwriteConfig.assetsBucketId,
+            ID.unique(),
+            file
+          );
+          
+          const fileUrl = storage.getFileView(appwriteConfig.assetsBucketId, response.$id).toString();
+          
+          return {
+            type: getAssetType(file.name),
+            src: fileUrl,
+            name: file.name,
+            fileId: response.$id
+          };
+        })
+      );
+
+      editor.AssetManager.add(uploadedAssets);
+      setAssets(editor.AssetManager.getAll().models);
     } catch (err) {
       console.error('Upload failed', err);
+      alert('Failed to upload assets. Please check if the assets bucket exists in Appwrite.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  const handleDelete = (asset: any, e: React.MouseEvent) => {
+  const handleDelete = async (asset: any, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    const fileId = asset.get('fileId');
+    if (fileId) {
+      try {
+        await storage.deleteFile(appwriteConfig.assetsBucketId, fileId);
+      } catch (err) {
+        console.error('Failed to delete from Appwrite storage', err);
+      }
+    }
+    
     editor.AssetManager.remove(asset);
     setAssets(editor.AssetManager.getAll().models);
   };

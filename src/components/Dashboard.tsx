@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2 } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2, FlaskConical } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import { account } from '../lib/appwrite';
 import { ID } from 'appwrite';
@@ -147,7 +147,11 @@ export default function Dashboard({
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      setError(err.message || 'An error occurred during authentication');
+      if (err.message === 'Failed to fetch') {
+        setError('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.');
+      } else {
+        setError(err.message || 'An error occurred during authentication');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -397,9 +401,16 @@ export default function Dashboard({
             </>
           )}
           {isLoggedIn && userProfile.plan && (
-            <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
-              {userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? '👑 ' : ''}{userProfile.plan}
-            </span>
+            <div className="flex items-center gap-2 ml-2">
+              <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                {userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? '👑 ' : ''}{userProfile.plan}
+              </span>
+              {userProfile.role === 'Beta Tester' && (
+                <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-1">
+                  <FlaskConical className="w-3 h-3" /> Beta Tester
+                </span>
+              )}
+            </div>
           )}
         </div>
         
@@ -512,26 +523,46 @@ export default function Dashboard({
                 {userProfile.plan === 'Pro' && <Crown className="w-4 h-4 text-amber-500" />}
               </h3>
               <p className={`text-sm ${theme.textMuted} mt-1`}>
-                {userProfile.plan === 'Free' && "You are on the Free plan. Upgrade to unlock advanced customization and unlimited projects."}
-                {userProfile.plan === 'Basic' && "You are on the Basic plan. Upgrade to Pro for premium templates and advanced UI settings."}
-                {userProfile.plan === 'Pro' && "You are on the Pro plan. Enjoy all premium features! Upgrade to Team for collaboration."}
+                {userProfile.role === 'Beta Tester' ? (
+                  "You are a Beta Tester! You can switch between different plans in your Account Settings to test features."
+                ) : (
+                  <>
+                    {userProfile.plan === 'Free' && "You are on the Free plan. Upgrade to unlock advanced customization and unlimited projects."}
+                    {userProfile.plan === 'Basic' && "You are on the Basic plan. Upgrade to Pro for premium templates and advanced UI settings."}
+                    {userProfile.plan === 'Pro' && "You are on the Pro plan. Enjoy all premium features! Upgrade to Team for collaboration."}
+                  </>
+                )}
               </p>
             </div>
-            {userProfile.plan !== 'Pro' && (
+            {userProfile.role === 'Beta Tester' ? (
               <button 
-                onClick={onUpgrade}
-                className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8`}
+                onClick={() => {
+                  onOpenSettings('profile');
+                  setIsSettingsOpen(false);
+                }}
+                className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8 flex items-center gap-2`}
               >
-                Upgrade to {userProfile.plan === 'Free' ? 'Basic' : 'Pro'}
+                <FlaskConical className="w-4 h-4" /> Change Plan
               </button>
-            )}
-            {userProfile.plan === 'Pro' && (
-              <button 
-                onClick={onUpgrade}
-                className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20 border border-white/10' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'} transition-all mt-4 sm:mt-0 mr-8`}
-              >
-                View Team Plans
-              </button>
+            ) : (
+              <>
+                {userProfile.plan !== 'Pro' && (
+                  <button 
+                    onClick={onUpgrade}
+                    className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8`}
+                  >
+                    Upgrade to {userProfile.plan === 'Free' ? 'Basic' : 'Pro'}
+                  </button>
+                )}
+                {userProfile.plan === 'Pro' && (
+                  <button 
+                    onClick={onUpgrade}
+                    className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20 border border-white/10' : 'bg-white text-gray-900 hover:bg-gray-50 border border-gray-200 shadow-sm'} transition-all mt-4 sm:mt-0 mr-8`}
+                  >
+                    View Team Plans
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
