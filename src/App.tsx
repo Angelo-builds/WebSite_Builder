@@ -231,21 +231,28 @@ export default function App() {
     // Check Appwrite session
     const checkSession = async () => {
       try {
+        // Tentativo di recupero sessione
         const user = await account.get();
+        
         if (user) {
           handleLogin(true, false, {
-            name: user.name.split(' ')[0] || 'User',
-            surname: user.name.split(' ').slice(1).join(' ') || '',
+            name: user.name?.split(' ')[0] || 'User',
+            surname: user.name?.split(' ').slice(1).join(' ') || '',
             email: user.email,
-            username: user.prefs?.username || user.name.toLowerCase().replace(/\s+/g, ''),
+            username: user.prefs?.username || user.name?.toLowerCase().replace(/\s+/g, ''),
             role: user.prefs?.role || 'User',
             plan: user.prefs?.plan || 'Free'
           });
         }
       } catch (e: any) {
-        console.log('No active session');
-        if (e.message === 'Failed to fetch') {
-          showToast('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.', 'error');
+        // Gestione silenziosa del 401 (Utente non loggato)
+        if (e.code === 401) {
+          console.log('User not logged in - showing dashboard/login');
+          setIsLoggedIn(false);
+        } else if (e.message === 'Failed to fetch') {
+          showToast('Cannot connect to Appwrite server. Check your endpoint.', 'error');
+        } else {
+          console.error('Appwrite checkSession error:', e.message);
         }
       }
     };
