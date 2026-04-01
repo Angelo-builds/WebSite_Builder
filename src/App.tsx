@@ -147,6 +147,19 @@ export default function App() {
   const handleLogin = (status: boolean, guest: boolean = false, user?: any) => {
     setIsLoggedIn(status);
     setIsGuest(guest);
+    
+    if (!status) {
+      setUserProfile({
+        name: '',
+        surname: '',
+        email: '',
+        username: '',
+        role: '',
+        plan: ''
+      });
+      return;
+    }
+
     if (guest) {
       setUserProfile({
         name: 'Guest',
@@ -154,7 +167,7 @@ export default function App() {
         email: '',
         username: 'guest',
         role: 'Guest User',
-        plan: 'Free'
+        plan: 'Guest'
       });
       // Reset theme to blue if not allowed
       if (!['blue', 'emerald'].includes(themeColor)) {
@@ -1640,103 +1653,77 @@ export default function App() {
       return;
     }
 
-    console.log('handlePublish: Starting...');
+    if (!editor || !currentProject) return;
+
     setIsPublishing(true);
-    const editorInstance = editorInstanceRef.current || editor;
-    if (!editorInstance) {
-      console.error('handlePublish: Editor instance missing');
-      showToast('Editor not initialized. Please try reloading.', 'error');
-      setIsPublishing(false);
-      return;
-    }
-    if (!currentProject) {
-      console.error('handlePublish: No current project');
-      showToast('No project selected.', 'warning');
-      setIsPublishing(false);
-      return;
-    }
-
-    console.log('handlePublish: Getting HTML/CSS for main page...');
-    const pages = editorInstance.Pages.getAll();
-    const indexPage = pages.find((p: any) => {
-      const name = p.getName()?.toLowerCase();
-      return name === 'index' || name === 'main' || name === 'page';
-    }) || pages[0];
-
-    const component = indexPage.getMainComponent();
-    const html = editorInstance.getHtml({ component });
-    const css = editorInstance.getCss({ component });
-
-    const blockraBadge = `
-      <a href="https://github.com/Angelo-builds/WebSite_Builder" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:8px 12px;border-radius:8px;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:6px;transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-        Built with Blockra
-      </a>
-    `;
-
-    const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Published Site</title>
-  <style>${css}</style>
-</head>
-<body>
-  ${html}
-  ${blockraBadge}
-</body>
-</html>`;
-
     try {
-      console.log('handlePublish: Creating Blob and uploading to Appwrite...');
-      const blob = new Blob([fullHtml], { type: 'text/html; charset=utf-8' });
-      const file = new File([blob], `index-${currentProject}-${Date.now()}.html`, { type: 'text/html' });
+      // 1. Estraiamo il codice dall'editor
+      const html = editor.getHtml();
+      const css = editor.getCss();
+      
+      // 2. Creiamo la pagina HTML completa (con CSS e Badge)
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html lang="it">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Published with Blockra</title>
+            <style>${css}</style>
+            <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body>
+            ${html}
+            <div style="position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 10px 20px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: sans-serif; display: flex; align-items: center; gap: 10px; z-index: 9999;">
+               <span style="font-weight: bold; color: #3b82f6;">Built with Blockra</span>
+            </div>
+        </body>
+        </html>
+      `;
 
-      // Upload to Appwrite Storage
+      // 3. Trasformiamo in un File (Blob)
+      const blob = new Blob([fullHtml], { type: 'text/html' });
+      const file = new File([blob], "index.html", { type: 'text/html' });
+
+      // 4. Carichiamo nel Bucket
+      // Nota: Usiamo l'ID del progetto come ID file per sovrascrivere se esiste già
+      try {
+          await storage.deleteFile(appwriteConfig.publishedSitesBucketId, currentProject);
+      } catch(e) { /* Il file non esisteva ancora, ignoriamo l'errore */ }
+
       const uploadedFile = await storage.createFile(
-        appwriteConfig.publishedSitesBucketId,
-        ID.unique(),
+        appwriteConfig.publishedSitesBucketId, 
+        currentProject, // ID fisso per questo progetto
         file
       );
 
-      // Get public URL
-      const fileUrl = storage.getFileView(
-        appwriteConfig.publishedSitesBucketId,
-        uploadedFile.$id
-      ).toString();
+      // 5. Otteniamo l'URL pubblico (View)
+      const publicUrl = storage.getFileView(appwriteConfig.publishedSitesBucketId, uploadedFile.$id);
 
-      console.log('handlePublish: Success! URL:', fileUrl);
-
-      // Update project document in database
+      // 6. Aggiorniamo il Database (Collezione sites/projects)
       await databases.updateDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.sitesCollectionId,
-        currentProject,
+        appwriteConfig.databaseId, 
+        appwriteConfig.sitesCollectionId, 
+        currentProject, 
         {
-          publishedUrl: fileUrl,
+          publishedUrl: publicUrl.href,
           status: 'published'
         }
       );
 
-      // Update local projects state
+      // Aggiorniamo lo stato locale dei progetti
       setProjects(prev => prev.map(p => 
         (p.id || p.name) === currentProject 
-          ? { ...p, publishedUrl: fileUrl, status: 'published' } 
+          ? { ...p, publishedUrl: publicUrl.href, status: 'published' } 
           : p
       ));
 
-      setConfirmModal({
-        isOpen: true,
-        title: 'Project Published',
-        message: `Your project has been published successfully!\n\nView live site at:\n${fileUrl}\n\nOpen in new tab?`,
-        confirmText: 'Open Site',
-        cancelText: 'Close',
-        onConfirm: () => window.open(fileUrl, '_blank'),
-      });
-    } catch (err: any) {
-      console.error('handlePublish: Error:', err);
-      showToast(`Failed to publish project: ${err.message || err}`, 'error');
+      showToast("Sito pubblicato con successo! 🎉", "success");
+      window.open(publicUrl.href, '_blank'); // Apriamo il sito appena creato
+
+    } catch (error: any) {
+      console.error("Publishing error:", error);
+      showToast("Errore durante la pubblicazione: " + error.message, "error");
     } finally {
       setIsPublishing(false);
     }

@@ -221,13 +221,13 @@ export default function SettingsModal({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className={`w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row ${theme.bg}`}
+          className={`w-[95vw] max-w-6xl min-h-[600px] max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row ${theme.bg}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Sidebar */}
-          <div className={`w-full md:w-64 p-6 border-b md:border-b-0 md:border-r ${theme.border} ${theme.sidebarBg}`}>
-            <h2 className={`text-lg font-bold mb-6 px-2 ${theme.text} tracking-tight`}>Settings</h2>
-            <nav className="space-y-1">
+          <div className={`w-full md:w-64 p-6 md:p-8 border-b md:border-b-0 md:border-r ${theme.border} ${theme.sidebarBg} flex flex-col shrink-0`}>
+            <h2 className={`text-xl font-bold mb-8 px-2 ${theme.text} tracking-tight`}>Settings</h2>
+            <nav className="space-y-1.5 flex-1">
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'profile' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
@@ -256,7 +256,7 @@ export default function SettingsModal({
                 <Palette className="w-4 h-4" />
                 Customization
               </button>
-              {(userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester') && (
+              {(userProfile.role?.toLowerCase() === 'beta tester' || userProfile.plan?.toLowerCase() === 'beta tester') && (
                 <button
                   onClick={() => setActiveTab('plan')}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'plan' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
@@ -269,9 +269,9 @@ export default function SettingsModal({
           </div>
 
           {/* Content */}
-          <div className="flex-1 p-6 md:p-8 overflow-y-auto max-h-[80vh] custom-scrollbar">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className={`text-2xl font-bold ${theme.text} tracking-tight`}>
+          <div className="flex-1 p-6 md:p-12 overflow-y-auto custom-scrollbar relative">
+            <div className="flex justify-between items-center mb-10 sticky top-0 bg-inherit z-10 pb-4 border-b border-transparent">
+              <h3 className={`text-3xl font-bold ${theme.text} tracking-tight`}>
                 {activeTab === 'profile' && 'Edit Profile'}
                 {activeTab === 'appearance' && 'Customization'}
                 {activeTab === 'settings' && 'Settings'}
@@ -320,7 +320,7 @@ export default function SettingsModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>First Name</label>
                       <input
@@ -343,7 +343,7 @@ export default function SettingsModal({
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Username</label>
                       <input
@@ -378,13 +378,13 @@ export default function SettingsModal({
                     <p className={`text-[10px] ${theme.textMuted}`}>Your account role determines your access level. Contact an administrator to change this.</p>
                   </div>
 
-                  {(userProfile.role === 'Beta Tester' || userProfile.role === 'Admin' || userProfile.role === 'Administrator') && (
-                    <div className="space-y-2 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                  {(userProfile.role?.toLowerCase() === 'beta tester' || userProfile.role?.toLowerCase() === 'admin' || userProfile.role?.toLowerCase() === 'administrator') && (
+                    <div className="space-y-3 p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5">
                       <label className={`text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-2`}>
                         <Shield className="w-4 h-4" />
                         Beta Tester Tools: Change Plan
                       </label>
-                      <p className="text-xs text-amber-200/70 mb-2">As a Beta Tester, you can change your plan here to test different features.</p>
+                      <p className="text-xs text-amber-200/70">As a Beta Tester, you can change your plan here to test different features.</p>
                       <select
                         value={formData.plan || 'Free'}
                         onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
@@ -451,7 +451,7 @@ export default function SettingsModal({
                     </>
                   ) : (
                     <>
-                      <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 mb-4">
+                      <div className="p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 mb-4">
                         <p className="text-sm text-blue-200">Enter your Username and Email to reset your password.</p>
                       </div>
                       <div className="space-y-2">
@@ -545,16 +545,16 @@ export default function SettingsModal({
 
                 <div className={`space-y-4 pt-4 border-t ${theme.border}`}>
                   <h4 className={`font-medium ${theme.text}`}>Interface Theme</h4>
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${theme.border} ${theme.cardBg}`}>
+                  <div className={`flex items-center justify-between p-5 rounded-2xl border ${theme.border} ${theme.cardBg}`}>
                     <div>
                       <h4 className={`font-medium text-sm ${theme.text}`}>Dark Mode</h4>
-                      <p className={`text-xs ${theme.textMuted}`}>Toggle dark and light interface</p>
+                      <p className={`text-xs ${theme.textMuted} mt-1`}>Toggle dark and light interface</p>
                     </div>
                     <div 
                       className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors ${isDarkMode ? 'bg-blue-500' : 'bg-gray-300'}`}
                       onClick={onToggleDarkMode}
                     >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${isDarkMode ? 'translate-x-6' : 'translate-x-1'}`} />
                     </div>
                   </div>
                 </div>
@@ -566,10 +566,10 @@ export default function SettingsModal({
                   </h4>
                   
                   <div className={`space-y-4 ${(!userProfile.plan || userProfile.plan === 'Free') ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <div className={`flex items-center justify-between p-4 rounded-xl border ${theme.border} ${theme.cardBg}`}>
+                    <div className={`flex items-center justify-between p-5 rounded-2xl border ${theme.border} ${theme.cardBg}`}>
                       <div>
                         <h4 className={`font-medium text-sm ${theme.text}`}>UI Density</h4>
-                        <p className={`text-xs ${theme.textMuted}`}>Adjust spacing in the dashboard</p>
+                        <p className={`text-xs ${theme.textMuted} mt-1`}>Adjust spacing in the dashboard</p>
                       </div>
                       <select 
                         value={uiPrefs.uiDensity}
@@ -578,7 +578,7 @@ export default function SettingsModal({
                           setUiPrefs(newPrefs);
                           if (onUpdateUiPreferences) onUpdateUiPreferences(newPrefs);
                         }}
-                        className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none`}
+                        className={`px-4 py-2 rounded-xl border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
                       >
                         <option value="compact" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Compact</option>
                         <option value="normal" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Normal</option>
@@ -586,10 +586,10 @@ export default function SettingsModal({
                       </select>
                     </div>
 
-                    <div className={`flex items-center justify-between p-4 rounded-xl border ${theme.border} ${theme.cardBg}`}>
+                    <div className={`flex items-center justify-between p-5 rounded-2xl border ${theme.border} ${theme.cardBg}`}>
                       <div>
                         <h4 className={`font-medium text-sm ${theme.text}`}>Dashboard Font</h4>
-                        <p className={`text-xs ${theme.textMuted}`}>Change the primary typeface</p>
+                        <p className={`text-xs ${theme.textMuted} mt-1`}>Change the primary typeface</p>
                       </div>
                       <select 
                         value={uiPrefs.fontFamily}
@@ -598,7 +598,7 @@ export default function SettingsModal({
                           setUiPrefs(newPrefs);
                           if (onUpdateUiPreferences) onUpdateUiPreferences(newPrefs);
                         }}
-                        className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none`}
+                        className={`px-4 py-2 rounded-xl border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}
                       >
                         <option value="Inter" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Inter (Sans)</option>
                         <option value="Roboto" className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Roboto</option>
@@ -606,8 +606,11 @@ export default function SettingsModal({
                       </select>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className={`text-xs font-medium uppercase tracking-wider ${theme.textMuted}`}>Custom Logo URL (White-label)</label>
+                    <div className={`p-5 rounded-2xl border ${theme.border} ${theme.cardBg} space-y-3`}>
+                      <div>
+                        <h4 className={`font-medium text-sm ${theme.text}`}>Custom Logo URL (White-label)</h4>
+                        <p className={`text-xs ${theme.textMuted} mt-1`}>Replace the default app logo</p>
+                      </div>
                       <input
                         type="text"
                         value={uiPrefs.customLogo}
@@ -641,29 +644,29 @@ export default function SettingsModal({
               ) : (
                 <div className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-gray-500/10 bg-gray-500/5">
+                  <div className={`flex items-center justify-between p-5 rounded-2xl border ${theme.border} ${theme.cardBg}`}>
                     <div>
-                      <h4 className="font-medium">Language</h4>
-                      <p className={`text-xs ${theme.textMuted}`}>Select your preferred language</p>
+                      <h4 className={`font-medium ${theme.text}`}>Language</h4>
+                      <p className={`text-xs ${theme.textMuted} mt-1`}>Select your preferred language</p>
                     </div>
-                    <select className={`px-3 py-1.5 rounded-lg border ${theme.border} ${theme.inputBg} text-sm focus:outline-none`}>
-                      <option>English</option>
-                      <option>Italiano</option>
-                      <option>Español</option>
+                    <select className={`px-4 py-2 rounded-xl border ${theme.border} ${theme.inputBg} ${theme.text} text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all`}>
+                      <option className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>English</option>
+                      <option className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Italiano</option>
+                      <option className={isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white'}>Español</option>
                     </select>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-gray-500/10 bg-gray-500/5">
+                  <div className={`flex items-center justify-between p-5 rounded-2xl border ${theme.border} ${theme.cardBg}`}>
                     <div>
-                      <h4 className="font-medium">Notifications</h4>
-                      <p className={`text-xs ${theme.textMuted}`}>Receive email updates</p>
+                      <h4 className={`font-medium ${theme.text}`}>Notifications</h4>
+                      <p className={`text-xs ${theme.textMuted} mt-1`}>Receive email updates</p>
                     </div>
-                    <div className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-gray-700 cursor-pointer">
-                      <span className="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition" />
+                    <div className={`relative inline-flex h-6 w-11 items-center rounded-full ${isDarkMode ? 'bg-white/20' : 'bg-gray-300'} cursor-pointer transition-colors`}>
+                      <span className="translate-x-1 inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm" />
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-6 border-t border-white/10">
+                  <div className={`mt-8 pt-8 border-t ${theme.border}`}>
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="font-bold text-lg flex items-center gap-2">
                         <RefreshCw className="w-5 h-5" />
@@ -673,7 +676,7 @@ export default function SettingsModal({
                         Version 2.4.0
                       </span>
                     </div>
-                    <div className="p-5 rounded-xl border border-blue-500/30 bg-blue-500/5 flex flex-col gap-4">
+                    <div className="p-5 rounded-2xl border border-blue-500/30 bg-blue-500/5 flex flex-col gap-4">
                       <p className={`text-sm ${theme.textMuted}`}>
                         Check for new features and bug fixes. Updating will <strong>NOT</strong> delete your existing projects or database.
                       </p>
@@ -711,7 +714,7 @@ export default function SettingsModal({
               </div>
               )
             )}
-            {activeTab === 'plan' && (userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester') && (
+            {activeTab === 'plan' && (userProfile.role?.toLowerCase() === 'beta tester' || userProfile.plan?.toLowerCase() === 'beta tester') && (
               <div className="space-y-6">
                 <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
                   <div className="flex items-center gap-3 mb-4">
@@ -732,7 +735,7 @@ export default function SettingsModal({
                             onUpdateProfile({ ...userProfile, plan: planOption as any });
                             onClose();
                           }}
-                          className={`p-4 rounded-xl border text-left transition-all ${userProfile.plan === planOption ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-inner' : `${theme.cardBg} ${theme.border} ${theme.hoverBg} ${theme.textMuted} hover:${theme.text}`}`}
+                          className={`p-5 rounded-2xl border text-left transition-all ${userProfile.plan === planOption ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-inner' : `${theme.cardBg} ${theme.border} ${theme.hoverBg} ${theme.textMuted} hover:${theme.text}`}`}
                         >
                           <div className="font-bold mb-1">{planOption}</div>
                           <div className="text-xs opacity-70">Switch to {planOption} features</div>

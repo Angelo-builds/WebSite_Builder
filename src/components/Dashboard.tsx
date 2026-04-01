@@ -181,11 +181,15 @@ export default function Dashboard({
 
   const handleLogout = async () => {
     try {
-      await account.deleteSession('current');
-    } catch (e) {
-      console.error('Logout error', e);
+        // Proviamo a chiudere la sessione
+        await account.deleteSession('current');
+    } catch (error) {
+        // Se fallisce (es. sessione già scaduta), non mostrare errori brutti
+        console.log("Sessione già chiusa o inesistente.");
+    } finally {
+        // In ogni caso, puliamo lo stato del frontend
+        onLogin(false);
     }
-    onLogin(false);
   };
 
   // Theme classes - Enhanced for Liquid Glass
@@ -421,7 +425,7 @@ export default function Dashboard({
               <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                 {userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? '👑 ' : ''}{userProfile.plan}
               </span>
-              {userProfile.role === 'Beta Tester' && (
+              {userProfile.role?.toLowerCase() === 'beta tester' && (
                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-1">
                   <FlaskConical className="w-3 h-3" /> Beta Tester
                 </span>
@@ -539,7 +543,9 @@ export default function Dashboard({
                 {userProfile.plan === 'Pro' && <Crown className="w-4 h-4 text-amber-500" />}
               </h3>
               <p className={`text-sm ${theme.textMuted} mt-1`}>
-                {userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester' ? (
+                {isGuest ? (
+                  "You are exploring as a Guest. Create an account to save projects and unlock features."
+                ) : userProfile.role?.toLowerCase() === 'beta tester' || userProfile.plan?.toLowerCase() === 'beta tester' ? (
                   "You are a Beta Tester! You can switch between different plans in your Account Settings to test features."
                 ) : (
                   <>
@@ -550,7 +556,14 @@ export default function Dashboard({
                 )}
               </p>
             </div>
-            {userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester' ? (
+            {isGuest ? (
+              <button 
+                onClick={onUpgrade}
+                className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8 flex items-center gap-2`}
+              >
+                Create Account
+              </button>
+            ) : userProfile.role?.toLowerCase() === 'beta tester' || userProfile.plan?.toLowerCase() === 'beta tester' ? (
               <button 
                 onClick={() => {
                   onOpenSettings('plan');
