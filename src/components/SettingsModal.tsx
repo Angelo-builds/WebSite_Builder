@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle, Shield } from 'lucide-react';
+import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle, Shield, FlaskConical } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import FileUpload from './FileUpload';
 import { account } from '../lib/appwrite';
@@ -26,7 +26,7 @@ interface UIPreferences {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeTab: 'profile' | 'appearance' | 'settings' | 'security';
+  activeTab: 'profile' | 'appearance' | 'settings' | 'security' | 'plan';
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
   themeColor: string;
@@ -256,6 +256,15 @@ export default function SettingsModal({
                 <Palette className="w-4 h-4" />
                 Customization
               </button>
+              {(userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester') && (
+                <button
+                  onClick={() => setActiveTab('plan')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'plan' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md' : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
+                >
+                  <FlaskConical className="w-4 h-4" />
+                  Beta Testing
+                </button>
+              )}
             </nav>
           </div>
 
@@ -267,6 +276,7 @@ export default function SettingsModal({
                 {activeTab === 'appearance' && 'Customization'}
                 {activeTab === 'settings' && 'Settings'}
                 {activeTab === 'security' && 'Security'}
+                {activeTab === 'plan' && 'Beta Testing Features'}
               </h3>
               <button onClick={onClose} className={`p-2 rounded-full ${theme.hoverBg} ${theme.textMuted} hover:${theme.text} transition-colors`}>
                 <X className="w-5 h-5" />
@@ -700,6 +710,38 @@ export default function SettingsModal({
                 </div>
               </div>
               )
+            )}
+            {activeTab === 'plan' && (userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester') && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    <FlaskConical className="w-6 h-6 text-purple-500" />
+                    <h3 className="text-xl font-bold text-purple-500">Beta Testing Environment</h3>
+                  </div>
+                  <p className={`${theme.textMuted} mb-6`}>
+                    As a Beta Tester, you have the unique ability to switch between different subscription plans to test features and verify UI states. This change only affects your current session.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <label className={`text-sm font-medium ${theme.text}`}>Simulate Plan</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {['Free', 'Basic', 'Pro'].map((planOption) => (
+                        <button
+                          key={planOption}
+                          onClick={() => {
+                            onUpdateProfile({ ...userProfile, plan: planOption as any });
+                            onClose();
+                          }}
+                          className={`p-4 rounded-xl border text-left transition-all ${userProfile.plan === planOption ? 'bg-purple-500/20 border-purple-500 text-purple-400 shadow-inner' : `${theme.cardBg} ${theme.border} ${theme.hoverBg} ${theme.textMuted} hover:${theme.text}`}`}
+                        >
+                          <div className="font-bold mb-1">{planOption}</div>
+                          <div className="text-xs opacity-70">Switch to {planOption} features</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </motion.div>

@@ -104,7 +104,13 @@ export default function SetupWizard({ onActivated, isDarkMode }: SetupWizardProp
       const user = await account.get();
       await checkLicense(user.$id);
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      if (err.type === 'user_invalid_credentials') {
+        setError('Invalid email or password. Please try again.');
+      } else if (err.type === 'user_blocked') {
+        setError('This account has been blocked. Please contact support.');
+      } else {
+        setError(err.message || 'Login failed. Please check your credentials.');
+      }
       setIsLoading(false);
     }
   };
@@ -125,7 +131,19 @@ export default function SetupWizard({ onActivated, isDarkMode }: SetupWizardProp
       }
       await checkLicense(user.$id);
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      if (err.type === 'user_already_exists') {
+        setError('An account with this email already exists. Redirecting to login...');
+        setTimeout(() => {
+          setMode('login');
+          setError('');
+          setIsLoading(false);
+        }, 2500);
+        return; // Prevent setting isLoading to false immediately
+      } else if (err.type === 'password_recently_used' || err.type === 'password_personal_data') {
+        setError('Please choose a stronger password.');
+      } else {
+        setError(err.message || 'Registration failed. Please try again.');
+      }
       setIsLoading(false);
     }
   };
@@ -134,8 +152,7 @@ export default function SetupWizard({ onActivated, isDarkMode }: SetupWizardProp
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-black font-sans">
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-screen" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
       </div>
 
       <motion.div 

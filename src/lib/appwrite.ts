@@ -8,6 +8,7 @@ export const appwriteConfig = {
   licensesCollectionId: import.meta.env.VITE_APPWRITE_LICENSES_COLLECTION_ID || '69b40b5d000ce0bf77eb',
   sitesCollectionId: import.meta.env.VITE_APPWRITE_SITES_COLLECTION_ID || '69b7b49e002e8aebabf6',
   assetsBucketId: import.meta.env.VITE_APPWRITE_ASSETS_BUCKET_ID || '69b9088300022cef1a0d',
+  publishedSitesBucketId: import.meta.env.VITE_APPWRITE_PUBLISHED_SITES_BUCKET_ID || '69cb98690016a44f6d57',
 };
 
 const client = new Client();

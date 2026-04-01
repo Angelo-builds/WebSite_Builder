@@ -14,6 +14,8 @@ export interface Project {
   updatedAt?: string;
   sharedWith?: { email: string, role: 'creator' | 'modifier' | 'contributor' | 'editor' }[];
   owner?: string;
+  publishedUrl?: string;
+  status?: string;
 }
 
 interface UserProfile {
@@ -41,7 +43,7 @@ interface DashboardProps {
   isDarkMode: boolean;
   userProfile: UserProfile;
   themeColor: string;
-  onOpenSettings: (tab: 'profile' | 'appearance' | 'settings') => void;
+  onOpenSettings: (tab: 'profile' | 'appearance' | 'settings' | 'plan') => void;
   uiPreferences: UIPreferences;
   updateAvailable?: boolean;
   onUpdateAction?: (action: 'update' | 'not_now') => void;
@@ -147,7 +149,21 @@ export default function Dashboard({
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      if (err.message === 'Failed to fetch') {
+      if (err.type === 'user_invalid_credentials') {
+        setError('Invalid email or password. Please try again.');
+      } else if (err.type === 'user_already_exists') {
+        setError('An account with this email already exists. Redirecting to login...');
+        setTimeout(() => {
+          setIsRegistering(false);
+          setError('');
+          setIsLoading(false);
+        }, 2500);
+        return; // Prevent setting isLoading to false immediately
+      } else if (err.type === 'password_recently_used' || err.type === 'password_personal_data') {
+        setError('Please choose a stronger password.');
+      } else if (err.type === 'user_blocked') {
+        setError('This account has been blocked. Please contact support.');
+      } else if (err.message === 'Failed to fetch') {
         setError('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.');
       } else {
         setError(err.message || 'An error occurred during authentication');
@@ -203,14 +219,14 @@ export default function Dashboard({
         {/* Mouse Following Light */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
            <motion.div 
-             className="absolute w-[800px] h-[800px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-screen"
+             className="absolute w-[800px] h-[800px] bg-blue-500/20 rounded-full blur-[120px] mix-blend-screen animate-pulse"
+             style={{ animationDuration: '4s' }}
              animate={{ 
                x: mousePosition.x - 400, 
                y: mousePosition.y - 400 
              }}
              transition={{ type: "spring", damping: 30, stiffness: 50, mass: 0.5 }}
            />
-           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
         </div>
 
         <motion.div 
@@ -523,7 +539,7 @@ export default function Dashboard({
                 {userProfile.plan === 'Pro' && <Crown className="w-4 h-4 text-amber-500" />}
               </h3>
               <p className={`text-sm ${theme.textMuted} mt-1`}>
-                {userProfile.role === 'Beta Tester' ? (
+                {userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester' ? (
                   "You are a Beta Tester! You can switch between different plans in your Account Settings to test features."
                 ) : (
                   <>
@@ -534,10 +550,10 @@ export default function Dashboard({
                 )}
               </p>
             </div>
-            {userProfile.role === 'Beta Tester' ? (
+            {userProfile.role === 'Beta Tester' || userProfile.plan === 'Beta Tester' ? (
               <button 
                 onClick={() => {
-                  onOpenSettings('profile');
+                  onOpenSettings('plan');
                   setIsSettingsOpen(false);
                 }}
                 className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8 flex items-center gap-2`}
@@ -662,7 +678,6 @@ export default function Dashboard({
               >
                 {/* Preview Area (Mock) */}
                 <div className={`h-48 w-full ${isDarkMode ? 'bg-gradient-to-br from-white/5 to-white/10' : 'bg-gradient-to-br from-gray-100 to-gray-200'} relative flex items-center justify-center border-b ${theme.border} ${getThemeClass(themeColor, 'cardPreviewGradient')} transition-colors shrink-0 overflow-hidden`}>
-                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay"></div>
                   
                   {project.category === 'Blank Project' ? (
                     <div className={`absolute inset-4 border-2 border-dashed ${isDarkMode ? 'border-white/20' : 'border-gray-300'} rounded-lg flex items-center justify-center shadow-xl opacity-80 group-hover:opacity-100 transition-opacity`}>
@@ -760,7 +775,11 @@ export default function Dashboard({
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open(`${window.location.origin}/sites/${project.name}/dist/index.html`, '_blank');
+                        if (project.publishedUrl) {
+                          window.open(project.publishedUrl, '_blank');
+                        } else {
+                          window.open(`${window.location.origin}/sites/${project.name}/dist/index.html`, '_blank');
+                        }
                       }}
                       className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold ${isDarkMode ? 'bg-white/5 hover:bg-white/10 border-white/5 text-white' : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-800'} border transition-colors hover:text-${themeColor}-500`}
                     >

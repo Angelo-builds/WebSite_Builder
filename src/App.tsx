@@ -116,7 +116,7 @@ export default function App() {
   
   // Settings State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security'>('profile');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security' | 'plan'>('profile');
   const [themeColor, setThemeColor] = useState('blue');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{
@@ -1568,7 +1568,9 @@ export default function App() {
         description: doc.description || '',
         category: doc.category || 'Other',
         updatedAt: doc.$updatedAt,
-        sharedWith: doc.sharedWith || []
+        sharedWith: doc.sharedWith || [],
+        publishedUrl: doc.publishedUrl || '',
+        status: doc.status || 'draft'
       }));
       
       setProjects(formattedProjects);
@@ -1654,46 +1656,87 @@ export default function App() {
       return;
     }
 
-    console.log('handlePublish: Getting HTML/CSS for all pages...');
-    const pagesData = editorInstance.Pages.getAll().map((page: any) => {
-      const component = page.getMainComponent();
-      const html = editorInstance.getHtml({ component });
-      const css = editorInstance.getCss({ component });
-      // Use 'index' for the first page or if name is empty/Main
-      let name = page.getName() || 'index';
-      name = name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      if (name === 'main' || name === 'page') name = 'index';
-      return { name, html, css };
-    });
+    console.log('handlePublish: Getting HTML/CSS for main page...');
+    const pages = editorInstance.Pages.getAll();
+    const indexPage = pages.find((p: any) => {
+      const name = p.getName()?.toLowerCase();
+      return name === 'index' || name === 'main' || name === 'page';
+    }) || pages[0];
+
+    const component = indexPage.getMainComponent();
+    const html = editorInstance.getHtml({ component });
+    const css = editorInstance.getCss({ component });
+
+    const blockraBadge = `
+      <a href="https://github.com/Angelo-builds/WebSite_Builder" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:8px 12px;border-radius:8px;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:6px;transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+        Built with Blockra
+      </a>
+    `;
+
+    const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Published Site</title>
+  <style>${css}</style>
+</head>
+<body>
+  ${html}
+  ${blockraBadge}
+</body>
+</html>`;
 
     try {
-      console.log('handlePublish: Sending fetch request...');
-      const response = await fetch(`/api/projects/${currentProject}/publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pages: pagesData }),
-      });
-      
-      console.log('handlePublish: Fetch response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
+      console.log('handlePublish: Creating Blob and uploading to Appwrite...');
+      const blob = new Blob([fullHtml], { type: 'text/html; charset=utf-8' });
+      const file = new File([blob], `index-${currentProject}-${Date.now()}.html`, { type: 'text/html' });
 
-      const url = `${window.location.origin}/sites/${currentProject}/dist/index.html`;
-      console.log('handlePublish: Success! URL:', url);
-      
+      // Upload to Appwrite Storage
+      const uploadedFile = await storage.createFile(
+        appwriteConfig.publishedSitesBucketId,
+        ID.unique(),
+        file
+      );
+
+      // Get public URL
+      const fileUrl = storage.getFileView(
+        appwriteConfig.publishedSitesBucketId,
+        uploadedFile.$id
+      ).toString();
+
+      console.log('handlePublish: Success! URL:', fileUrl);
+
+      // Update project document in database
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        currentProject,
+        {
+          publishedUrl: fileUrl,
+          status: 'published'
+        }
+      );
+
+      // Update local projects state
+      setProjects(prev => prev.map(p => 
+        (p.id || p.name) === currentProject 
+          ? { ...p, publishedUrl: fileUrl, status: 'published' } 
+          : p
+      ));
+
       setConfirmModal({
         isOpen: true,
         title: 'Project Published',
-        message: `Your project has been published successfully!\n\nView live site at:\n${url}\n\nOpen in new tab?`,
+        message: `Your project has been published successfully!\n\nView live site at:\n${fileUrl}\n\nOpen in new tab?`,
         confirmText: 'Open Site',
         cancelText: 'Close',
-        onConfirm: () => window.open(url, '_blank'),
+        onConfirm: () => window.open(fileUrl, '_blank'),
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('handlePublish: Error:', err);
-      showToast(`Failed to publish project: ${err}`, 'error');
+      showToast(`Failed to publish project: ${err.message || err}`, 'error');
     } finally {
       setIsPublishing(false);
     }
