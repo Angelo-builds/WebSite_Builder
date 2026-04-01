@@ -46,7 +46,6 @@ interface DashboardProps {
   onOpenSettings: (tab: 'profile' | 'appearance' | 'settings' | 'plan') => void;
   uiPreferences: UIPreferences;
   updateAvailable?: boolean;
-  onUpdateAction?: (action: 'update' | 'not_now') => void;
   onUpdateSharing?: (projectName: string, sharedWith: any[]) => void;
   onUpgrade: () => void;
 }
@@ -64,7 +63,6 @@ export default function Dashboard({
   onOpenSettings,
   uiPreferences,
   updateAvailable,
-  onUpdateAction,
   onUpdateSharing,
   onUpgrade
 }: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void }) {
@@ -370,31 +368,6 @@ export default function Dashboard({
             Blockra
           </p>
         </motion.div>
-
-        {updateAvailable && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-6 right-6 z-[150] bg-indigo-600 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-indigo-500/50"
-          >
-            <div className="flex flex-col">
-              <span className="font-bold text-sm">Update Available</span>
-              <span className="text-xs text-indigo-200">A new version of Web Builder is ready.</span>
-            </div>
-            <button 
-              onClick={() => onUpdateAction?.('update')}
-              className="bg-white text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-50 transition shadow-sm"
-            >
-              Update
-            </button>
-            <button 
-              onClick={() => onUpdateAction?.('not_now')} 
-              className="text-indigo-200 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition"
-            >
-              Not Now
-            </button>
-          </motion.div>
-        )}
       </div>
     );
   }

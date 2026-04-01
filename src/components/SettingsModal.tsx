@@ -37,6 +37,7 @@ interface SettingsModalProps {
   uiPreferences?: UIPreferences;
   onUpdateUiPreferences?: (prefs: UIPreferences) => void;
   updateAvailable?: boolean;
+  onDismissUpdate?: () => void;
 }
 
 const COLORS = [
@@ -61,7 +62,8 @@ export default function SettingsModal({
   isGuest = false,
   uiPreferences,
   onUpdateUiPreferences,
-  updateAvailable = false
+  updateAvailable = false,
+  onDismissUpdate
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState(userProfile);
@@ -699,13 +701,24 @@ export default function SettingsModal({
                         </button>
                         
                         {updateStatus?.available && !isUpdating && updateStatus.message !== 'Update successful! Reloading application...' && (
-                          <button 
-                            onClick={applyUpdate}
-                            disabled={isUpdating}
-                            className={`px-4 py-2 ${getButtonColor(themeColor)} text-white rounded-lg text-sm font-bold shadow-lg transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-2`}
-                          >
-                            Apply Update Now
-                          </button>
+                          <>
+                            <button 
+                              onClick={applyUpdate}
+                              disabled={isUpdating}
+                              className={`px-4 py-2 ${getButtonColor(themeColor)} text-white rounded-lg text-sm font-bold shadow-lg transition-transform active:scale-95 disabled:opacity-50 flex items-center gap-2`}
+                            >
+                              Update Now
+                            </button>
+                            <button 
+                              onClick={() => {
+                                if (onDismissUpdate) onDismissUpdate();
+                                onClose();
+                              }}
+                              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Update Later
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>

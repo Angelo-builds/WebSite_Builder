@@ -2104,29 +2104,6 @@ export default function App() {
             }}
             uiPreferences={uiPreferences}
             updateAvailable={updateAvailable}
-            onUpdateAction={async (action) => {
-              if (action === 'update') {
-                if (!isLoggedIn) {
-                  setToast({ isVisible: true, message: 'Applying update...', type: 'info' });
-                  try {
-                    const res = await fetch('/api/system/update', { method: 'POST' });
-                    const data = await res.json();
-                    if (res.ok) {
-                      setToast({ isVisible: true, message: 'Update successful! Reloading...', type: 'success' });
-                      setTimeout(() => window.location.reload(), 2000);
-                    } else {
-                      setToast({ isVisible: true, message: 'Update failed.', type: 'error' });
-                    }
-                  } catch (e) {
-                    setToast({ isVisible: true, message: 'Update failed.', type: 'error' });
-                  }
-                } else {
-                  setActiveSettingsTab('settings');
-                  setIsSettingsModalOpen(true);
-                }
-              }
-              setUpdateAvailable(false);
-            }}
           />
           
           <ConfirmModal
@@ -2160,6 +2137,7 @@ export default function App() {
             uiPreferences={uiPreferences}
             onUpdateUiPreferences={setUiPreferences}
             updateAvailable={updateAvailable}
+            onDismissUpdate={() => setUpdateAvailable(false)}
           />
           
           <UpgradeModal
@@ -2931,6 +2909,7 @@ export default function App() {
         uiPreferences={uiPreferences}
         onUpdateUiPreferences={setUiPreferences}
         updateAvailable={updateAvailable}
+        onDismissUpdate={() => setUpdateAvailable(false)}
       />
       
       <UpgradeModal
