@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from './contexts/AuthContext';
 import grapesjs, { Editor } from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
 import gjsBlocksBasic from 'grapesjs-blocks-basic';
@@ -10,7 +11,7 @@ import addSmartComponents from './grapesjs-smart-components';
 import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
-import { account, databases, storage, appwriteConfig, Query, ID, getOwnerPermissions } from './lib/appwrite';
+import { account, databases, storage, appwriteConfig, Query, ID, getOwnerPermissions, client } from './lib/appwrite';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import * as prettier from 'prettier/standalone';
@@ -20,11 +21,13 @@ import prettierPluginBabel from 'prettier/plugins/babel';
 import prettierPluginEstree from 'prettier/plugins/estree';
 import ProjectModal from './components/ProjectModal';
 import CustomAssetManager from './components/CustomAssetManager';
+import PageManager from './components/PageManager';
 import Dashboard, { Project } from './components/Dashboard';
 import ConfirmModal from './components/ConfirmModal';
 import Toast, { ToastType } from './components/Toast';
 import SettingsModal from './components/SettingsModal';
 import { UpgradeModal } from './components/UpgradeModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const TEMPLATES = [
   {
@@ -85,6 +88,7 @@ export default function App() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [currentProject, setCurrentProject] = useState<string | null>(null);
   const [device, setDevice] = useState('Desktop');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -98,11 +102,14 @@ export default function App() {
   const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css' | 'js'>('html');
   const [copied, setCopied] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
+  const { isLoggedIn, isGuest, userProfile, login, updateUserProfile, checkSession } = useAuth();
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
-  const [pages, setPages] = useState<{ id: string, name: string }[]>([]);
-  const [currentPage, setCurrentPage] = useState<string>('');
+  const [pages, setPages] = useState<{ id: string, name: string, html?: string, css?: string }[]>([{ id: 'index', name: 'index' }]);
+  const [currentPageId, setCurrentPageId] = useState<string>('index');
+
+  useEffect(() => {
+    (window as any).__BLOCKRA_PAGES__ = pages;
+  }, [pages]);
   const [linkHref, setLinkHref] = useState('');
   const [linkTarget, setLinkTarget] = useState('_self');
   const [formAction, setFormAction] = useState('');
@@ -119,22 +126,6 @@ export default function App() {
   const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security' | 'plan'>('profile');
   const [themeColor, setThemeColor] = useState('blue');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<{
-    name: string;
-    surname: string;
-    email: string;
-    username?: string;
-    role: string;
-    avatar?: string;
-    plan?: 'Free' | 'Basic' | 'Pro' | 'Team';
-  }>({
-    name: 'Admin',
-    surname: 'User',
-    email: 'admin@example.com',
-    username: 'admin',
-    role: 'Administrator',
-    plan: 'Pro'
-  });
 
   const [uiPreferences, setUiPreferences] = useState({
     sidebarLayout: 'left',
@@ -143,56 +134,6 @@ export default function App() {
     customLogo: '',
     customCss: ''
   });
-
-  const handleLogin = (status: boolean, guest: boolean = false, user?: any) => {
-    setIsLoggedIn(status);
-    setIsGuest(guest);
-    
-    if (!status) {
-      setUserProfile({
-        name: '',
-        surname: '',
-        email: '',
-        username: '',
-        role: '',
-        plan: ''
-      });
-      return;
-    }
-
-    if (guest) {
-      setUserProfile({
-        name: 'Guest',
-        surname: '',
-        email: '',
-        username: 'guest',
-        role: 'Guest User',
-        plan: 'Guest'
-      });
-      // Reset theme to blue if not allowed
-      if (!['blue', 'emerald'].includes(themeColor)) {
-        setThemeColor('blue');
-      }
-    } else if (user) {
-      setUserProfile({
-        name: user.name || 'Admin',
-        surname: user.surname || 'User',
-        email: user.email || 'admin@example.com',
-        username: user.username || 'admin',
-        role: user.role || 'Administrator',
-        plan: user.plan || 'Pro'
-      });
-    } else {
-      setUserProfile({
-        name: 'Admin',
-        surname: 'User',
-        email: 'admin@example.com',
-        username: 'admin',
-        role: 'Administrator',
-        plan: 'Pro'
-      });
-    }
-  };
 
   // Modal & Toast State
   const [confirmModal, setConfirmModal] = useState<{
@@ -231,6 +172,48 @@ export default function App() {
   useEffect(() => {
     if (isLoggedIn && !isGuest) {
       fetchProjects();
+
+      // Subscribe to realtime changes for projects
+      const unsubscribe = client.subscribe(
+        `databases.${appwriteConfig.databaseId}.collections.${appwriteConfig.sitesCollectionId}.documents`,
+        (response) => {
+          if (response.events.includes('databases.*.collections.*.documents.*.create')) {
+            const newDoc = response.payload as any;
+            setProjects(prev => {
+              if (prev.some(p => p.id === newDoc.$id)) return prev;
+              return [...prev, {
+                id: newDoc.$id,
+                name: newDoc.name,
+                description: newDoc.description || '',
+                category: newDoc.category || 'Other',
+                updatedAt: newDoc.$updatedAt,
+                sharedWith: newDoc.sharedWith || [],
+                publishedUrl: newDoc.publishedUrl || '',
+                status: newDoc.status || 'draft'
+              }];
+            });
+          } else if (response.events.includes('databases.*.collections.*.documents.*.update')) {
+            const updatedDoc = response.payload as any;
+            setProjects(prev => prev.map(p => p.id === updatedDoc.$id ? {
+              ...p,
+              name: updatedDoc.name,
+              description: updatedDoc.description || '',
+              category: updatedDoc.category || 'Other',
+              updatedAt: updatedDoc.$updatedAt,
+              sharedWith: updatedDoc.sharedWith || [],
+              publishedUrl: updatedDoc.publishedUrl || '',
+              status: updatedDoc.status || 'draft'
+            } : p));
+          } else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {
+            const deletedDoc = response.payload as any;
+            setProjects(prev => prev.filter(p => p.id !== deletedDoc.$id));
+          }
+        }
+      );
+
+      return () => {
+        unsubscribe();
+      };
     }
   }, [isLoggedIn, isGuest]);
 
@@ -240,36 +223,6 @@ export default function App() {
     if (licenseKey) {
       setIsActivated(true);
     }
-
-    // Check Appwrite session
-    const checkSession = async () => {
-      try {
-        // Tentativo di recupero sessione
-        const user = await account.get();
-        
-        if (user) {
-          handleLogin(true, false, {
-            name: user.name?.split(' ')[0] || 'User',
-            surname: user.name?.split(' ').slice(1).join(' ') || '',
-            email: user.email,
-            username: user.prefs?.username || user.name?.toLowerCase().replace(/\s+/g, ''),
-            role: user.prefs?.role || 'User',
-            plan: user.prefs?.plan || 'Free'
-          });
-        }
-      } catch (e: any) {
-        // Gestione silenziosa del 401 (Utente non loggato)
-        if (e.code === 401) {
-          console.log('User not logged in - showing dashboard/login');
-          setIsLoggedIn(false);
-        } else if (e.message === 'Failed to fetch') {
-          showToast('Cannot connect to Appwrite server. Check your endpoint.', 'error');
-        } else {
-          console.error('Appwrite checkSession error:', e.message);
-        }
-      }
-    };
-    checkSession();
 
     // Auto-check for updates on mount (once a day)
     const checkUpdate = async () => {
@@ -393,10 +346,26 @@ export default function App() {
             buildProps: ['display', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'align-content', 'gap'],
             properties: [
               { name: 'Display', property: 'display', type: 'select', defaults: 'block', list: [{ value: 'block', id: 'block' }, { value: 'inline-block', id: 'inline-block' }, { value: 'flex', id: 'flex' }, { value: 'grid', id: 'grid' }, { value: 'none', id: 'none' }] },
-              { name: 'Direction', property: 'flex-direction', type: 'select', defaults: 'row', list: [{ value: 'row', id: 'row' }, { value: 'row-reverse', id: 'row-reverse' }, { value: 'column', id: 'column' }, { value: 'column-reverse', id: 'column-reverse' }] },
-              { name: 'Wrap', property: 'flex-wrap', type: 'select', defaults: 'nowrap', list: [{ value: 'nowrap', id: 'nowrap' }, { value: 'wrap', id: 'wrap' }, { value: 'wrap-reverse', id: 'wrap-reverse' }] },
-              { name: 'Justify', property: 'justify-content', type: 'select', defaults: 'flex-start', list: [{ value: 'flex-start', id: 'flex-start' }, { value: 'flex-end', id: 'flex-end' }, { value: 'center', id: 'center' }, { value: 'space-between', id: 'space-between' }, { value: 'space-around', id: 'space-around' }, { value: 'space-evenly', id: 'space-evenly' }] },
-              { name: 'Align Items', property: 'align-items', type: 'select', defaults: 'stretch', list: [{ value: 'stretch', id: 'stretch' }, { value: 'flex-start', id: 'flex-start' }, { value: 'flex-end', id: 'flex-end' }, { value: 'center', id: 'center' }, { value: 'baseline', id: 'baseline' }] },
+              { name: 'Direction', property: 'flex-direction', type: 'radio', defaults: 'row', list: [
+                { value: 'row', name: '→', id: 'row', title: 'Row' }, 
+                { value: 'column', name: '↓', id: 'column', title: 'Column' }
+              ] },
+              { name: 'Wrap', property: 'flex-wrap', type: 'radio', defaults: 'nowrap', list: [
+                { value: 'nowrap', name: 'No Wrap', id: 'nowrap' }, 
+                { value: 'wrap', name: 'Wrap', id: 'wrap' }
+              ] },
+              { name: 'Justify', property: 'justify-content', type: 'radio', defaults: 'flex-start', list: [
+                { value: 'flex-start', name: 'Start', id: 'flex-start', title: 'Start' }, 
+                { value: 'center', name: 'Center', id: 'center', title: 'Center' }, 
+                { value: 'flex-end', name: 'End', id: 'flex-end', title: 'End' }, 
+                { value: 'space-between', name: 'Space', id: 'space-between', title: 'Space Between' }
+              ] },
+              { name: 'Align', property: 'align-items', type: 'radio', defaults: 'stretch', list: [
+                { value: 'flex-start', name: 'Start', id: 'flex-start', title: 'Start' }, 
+                { value: 'center', name: 'Center', id: 'center', title: 'Center' }, 
+                { value: 'flex-end', name: 'End', id: 'flex-end', title: 'End' }, 
+                { value: 'stretch', name: 'Stretch', id: 'stretch', title: 'Stretch' }
+              ] },
               { name: 'Gap', property: 'gap', type: 'integer', units: ['px', 'rem', '%'], defaults: '0', min: 0 },
             ]
           },
@@ -1109,6 +1078,32 @@ export default function App() {
     };
     loadAssets();
 
+    // Handle Asset Uploads directly from GrapesJS (e.g., drag and drop)
+    gjsEditor.on('asset:upload', async (files) => {
+      try {
+        const uploadedAssets = await Promise.all(
+          Array.from(files).map(async (file: any) => {
+            const response = await storage.createFile(
+              appwriteConfig.assetsBucketId,
+              ID.unique(),
+              file
+            );
+            const fileUrl = storage.getFileView(appwriteConfig.assetsBucketId, response.$id).toString();
+            return {
+              src: fileUrl,
+              name: file.name,
+              fileId: response.$id
+            };
+          })
+        );
+        gjsEditor.AssetManager.add(uploadedAssets);
+        showToast('Assets uploaded successfully', 'success');
+      } catch (err: any) {
+        console.error('Failed to upload assets:', err);
+        showToast(`Failed to upload assets: ${err.message}`, 'error');
+      }
+    });
+
     // Track selection
     gjsEditor.on('component:selected', () => {
       const selected = gjsEditor.getSelected();
@@ -1156,7 +1151,7 @@ export default function App() {
       const pm = gjsEditor.Pages;
       const allPages = pm.getAll().map((p: any) => ({ id: p.getId(), name: p.getName() || 'Page' }));
       setPages(allPages);
-      setCurrentPage(pm.getSelected()?.getId() || '');
+      setCurrentPageId(pm.getSelected()?.getId() || '');
     };
 
     gjsEditor.on('page', updatePages);
@@ -1374,7 +1369,7 @@ export default function App() {
             <div style="max-width: 600px; margin: 0 auto;">
               <h2 style="font-size: 2.5rem; margin-bottom: 15px; font-weight: bold;">Subscribe to our newsletter</h2>
               <p style="font-size: 1.1rem; margin-bottom: 30px; opacity: 0.9;">Get the latest updates, articles, and resources sent straight to your inbox every week.</p>
-              <form style="display: flex; gap: 10px; max-width: 500px; margin: 0 auto;" onsubmit="event.preventDefault(); alert('Subscribed!');">
+              <form style="display: flex; gap: 10px; max-width: 500px; margin: 0 auto;">
                 <input type="email" placeholder="Enter your email" required style="flex: 1; padding: 15px 20px; border-radius: 8px; border: none; outline: none; font-size: 1rem;" />
                 <button type="submit" style="padding: 15px 30px; background-color: #111827; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: background 0.3s;">Subscribe</button>
               </form>
@@ -1462,6 +1457,69 @@ export default function App() {
     // Initial state
     updateUndoRedo();
 
+    // Custom href trait to show pages
+    gjsEditor.TraitManager.addType('href', {
+      createInput({ trait }: any) {
+        const el = document.createElement('div');
+        el.innerHTML = `
+          <select class="gjs-tr-trait-input" style="width: 100%; margin-bottom: 5px;">
+            <option value="">Select a page...</option>
+          </select>
+          <input type="text" class="gjs-tr-trait-input" placeholder="Or enter URL (https://...)" style="width: 100%;" />
+        `;
+        
+        const select = el.querySelector('select') as HTMLSelectElement;
+        const input = el.querySelector('input') as HTMLInputElement;
+        
+        // We need to populate the select with pages
+        // Since pages is a state, we can use a custom event or just read from window if we expose it,
+        // but a better way is to update the options dynamically when the trait is selected.
+        
+        select.addEventListener('change', (e: any) => {
+          if (e.target.value) {
+            input.value = e.target.value;
+            trait.set('value', e.target.value);
+          }
+        });
+        
+        input.addEventListener('input', (e: any) => {
+          trait.set('value', e.target.value);
+        });
+        
+        return el;
+      },
+      onUpdate({ elInput, trait }: any) {
+        const select = elInput.querySelector('select') as HTMLSelectElement;
+        const input = elInput.querySelector('input') as HTMLInputElement;
+        
+        // Populate select with current pages
+        // We can get pages from the React state by firing a custom event or using a global variable
+        // For now, we'll just use the input field as fallback if pages aren't available
+        const currentPages = (window as any).__BLOCKRA_PAGES__ || [];
+        
+        select.innerHTML = '<option value="">Select a page...</option>';
+        currentPages.forEach((p: any) => {
+          let name = p.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+          if (name === 'main' || name === 'page') name = 'index';
+          const option = document.createElement('option');
+          option.value = `${name}.html`;
+          option.textContent = p.name;
+          select.appendChild(option);
+        });
+        
+        const value = trait.get('value') || '';
+        input.value = value;
+        
+        // Try to select the option if it matches
+        const option = Array.from(select.options).find(o => o.value === value);
+        if (option) {
+          select.value = value;
+        } else {
+          select.value = '';
+        }
+      }
+    });
+
     setEditor(gjsEditor);
     editorInstanceRef.current = gjsEditor;
 
@@ -1488,22 +1546,36 @@ export default function App() {
              editor.setStyle([]);
           } else {
              editor.loadProjectData(data);
-             // If this is a new project with template HTML that hasn't been saved into components yet
-             const component = data.pages?.[0]?.frames?.[0]?.component;
-             const hasNoComponents = typeof component === 'object' && (!component.components || component.components.length === 0);
-             console.log('loadCurrentProject: Checking template', { hasTemplate: !!data.metadata?.templateHtml, hasNoComponents, component });
-             if (data.metadata?.templateHtml && hasNoComponents) {
-               console.log('loadCurrentProject: Applying template HTML');
-               const injectTemplate = () => {
-                 editor.setComponents(data.metadata.templateHtml);
-                 setTimeout(() => handleSave(true), 500);
-               };
-               // Ensure editor is ready before setting components
-               if (editor.Canvas.getBody()) {
-                 injectTemplate();
-               } else {
-                 editor.on('load', injectTemplate);
+             
+             // Load custom pages state
+             if (doc.pages) {
+               try {
+                 const loadedPages = JSON.parse(doc.pages);
+                 if (Array.isArray(loadedPages) && loadedPages.length > 0) {
+                   setPages(loadedPages);
+                   setCurrentPageId(loadedPages[0].id);
+                   
+                   // Set editor content to the first page
+                   const injectTemplate = () => {
+                     editor.setComponents(loadedPages[0].html || '');
+                     editor.setStyle(loadedPages[0].css || '');
+                   };
+                   if (editor.Canvas.getBody()) {
+                     injectTemplate();
+                   } else {
+                     editor.on('load', injectTemplate);
+                   }
+                 } else {
+                   setPages([{ id: 'index', name: 'index' }]);
+                   setCurrentPageId('index');
+                 }
+               } catch(e) {
+                 setPages([{ id: 'index', name: 'index' }]);
+                 setCurrentPageId('index');
                }
+             } else {
+               setPages([{ id: 'index', name: 'index' }]);
+               setCurrentPageId('index');
              }
           }
           setTimeout(() => {
@@ -1563,9 +1635,13 @@ export default function App() {
   };
 
   async function fetchProjects() {
+    setIsLoadingProjects(true);
     try {
       const user = await account.get();
-      if (!user) return;
+      if (!user) {
+        setIsLoadingProjects(false);
+        return;
+      }
 
       const response = await databases.listDocuments(
         appwriteConfig.databaseId,
@@ -1593,6 +1669,8 @@ export default function App() {
         showToast('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.', 'error');
       }
       setProjects([]);
+    } finally {
+      setIsLoadingProjects(false);
     }
   };
 
@@ -1608,6 +1686,16 @@ export default function App() {
     else setIsSaving(true); // Always show saving state, just maybe not toast
 
     const data = editor.getProjectData();
+    
+    // Update current page content in pages array before saving
+    const currentHtml = editor.getHtml();
+    const currentCss = editor.getCss();
+    
+    const updatedPages = pages.map(p => 
+      p.id === currentPageId ? { ...p, html: currentHtml, css: currentCss } : p
+    );
+    
+    setPages(updatedPages);
     
     // Inject metadata
     const currentProjectObj = projects.find(p => p.id === currentProject || p.name === currentProject);
@@ -1627,6 +1715,7 @@ export default function App() {
         currentProject,
         {
           data: JSON.stringify(data),
+          pages: JSON.stringify(updatedPages),
           updatedAt: new Date().toISOString()
         }
       );
@@ -1639,8 +1728,8 @@ export default function App() {
           (p.id === currentProject || p.name === currentProject) ? { ...p, updatedAt: new Date().toISOString() } : p
         ));
       }
-    } catch (err) {
-      if (!silent) showToast('Failed to save project', 'error');
+    } catch (err: any) {
+      if (!silent) showToast(`Failed to save project: ${err.message || 'Unknown error'}`, 'error');
       console.error('Save error:', err);
     } finally {
       setIsSaving(false);
@@ -1657,69 +1746,93 @@ export default function App() {
 
     setIsPublishing(true);
     try {
-      // 1. Estraiamo il codice dall'editor
-      const html = editor.getHtml();
-      const css = editor.getCss();
+      // Update current page content in pages array before publishing
+      const currentHtml = editor.getHtml();
+      const currentCss = editor.getCss();
       
-      // 2. Creiamo la pagina HTML completa (con CSS e Badge)
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html lang="it">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Published with Blockra</title>
-            <style>${css}</style>
-            <script src="https://cdn.tailwindcss.com"></script>
-        </head>
-        <body>
-            ${html}
-            <div style="position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 10px 20px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: sans-serif; display: flex; align-items: center; gap: 10px; z-index: 9999;">
-               <span style="font-weight: bold; color: #3b82f6;">Built with Blockra</span>
-            </div>
-        </body>
-        </html>
-      `;
-
-      // 3. Trasformiamo in un File (Blob)
-      const blob = new Blob([fullHtml], { type: 'text/html' });
-      const file = new File([blob], "index.html", { type: 'text/html' });
-
-      // 4. Carichiamo nel Bucket
-      // Nota: Usiamo l'ID del progetto come ID file per sovrascrivere se esiste già
-      try {
-          await storage.deleteFile(appwriteConfig.publishedSitesBucketId, currentProject);
-      } catch(e) { /* Il file non esisteva ancora, ignoriamo l'errore */ }
-
-      const uploadedFile = await storage.createFile(
-        appwriteConfig.publishedSitesBucketId, 
-        currentProject, // ID fisso per questo progetto
-        file
+      const updatedPages = pages.map(p => 
+        p.id === currentPageId ? { ...p, html: currentHtml, css: currentCss } : p
       );
+      
+      setPages(updatedPages);
 
-      // 5. Otteniamo l'URL pubblico (View)
-      const publicUrl = storage.getFileView(appwriteConfig.publishedSitesBucketId, uploadedFile.$id);
+      let mainPublicUrl = '';
+      const project = projects.find(p => p.id === currentProject);
+      const projectDescription = project?.description || 'A beautiful website built with Blockra';
+      const faviconUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f680.png';
 
-      // 6. Aggiorniamo il Database (Collezione sites/projects)
+      for (const page of updatedPages) {
+        const fullHtml = `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${page.name} - ${project?.name || 'Blockra Site'}</title>
+              <meta name="description" content="${projectDescription}">
+              <link rel="icon" href="${faviconUrl}" type="image/png">
+              <style>${page.css || ''}</style>
+              <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body>
+              ${page.html || ''}
+              ${userProfile.plan === 'Starter' ? `
+              <div style="position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 10px 20px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: sans-serif; display: flex; align-items: center; gap: 10px; z-index: 9999;">
+                 <span style="font-weight: bold; color: #3b82f6;">Built with Blockra</span>
+              </div>` : ''}
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob([fullHtml], { type: 'text/html' });
+        const fileName = `${page.id}.html`;
+        const file = new File([blob], fileName, { type: 'text/html' });
+        
+        // Use currentProject as ID for index.html to keep backward compatibility,
+        // otherwise use currentProject_pageId
+        const fileId = page.id === 'index' ? currentProject : `${currentProject}_${page.id}`;
+
+        try {
+            await storage.deleteFile(appwriteConfig.publishedSitesBucketId, fileId);
+        } catch(e) { /* Ignore if it doesn't exist */ }
+
+        const uploadedFile = await storage.createFile(
+          appwriteConfig.publishedSitesBucketId, 
+          fileId,
+          file
+        );
+
+        if (page.id === 'index') {
+          mainPublicUrl = storage.getFileView(appwriteConfig.publishedSitesBucketId, uploadedFile.$id).toString();
+        }
+      }
+
+      // If no index page, use the first one
+      if (!mainPublicUrl && updatedPages.length > 0) {
+        const firstPageId = updatedPages[0].id === 'index' ? currentProject : `${currentProject}_${updatedPages[0].id}`;
+        mainPublicUrl = storage.getFileView(appwriteConfig.publishedSitesBucketId, firstPageId).toString();
+      }
+
       await databases.updateDocument(
         appwriteConfig.databaseId, 
         appwriteConfig.sitesCollectionId, 
         currentProject, 
         {
-          publishedUrl: publicUrl.href,
+          publishedUrl: mainPublicUrl,
           status: 'published'
         }
       );
 
-      // Aggiorniamo lo stato locale dei progetti
       setProjects(prev => prev.map(p => 
         (p.id || p.name) === currentProject 
-          ? { ...p, publishedUrl: publicUrl.href, status: 'published' } 
+          ? { ...p, publishedUrl: mainPublicUrl, status: 'published' } 
           : p
       ));
 
       showToast("Sito pubblicato con successo! 🎉", "success");
-      window.open(publicUrl.href, '_blank'); // Apriamo il sito appena creato
+      if (mainPublicUrl) {
+        window.open(mainPublicUrl, '_blank');
+      }
 
     } catch (error: any) {
       console.error("Publishing error:", error);
@@ -1749,18 +1862,35 @@ export default function App() {
         const data = JSON.parse(doc.data);
         editor.loadProjectData(data);
         
-        const component = data.pages?.[0]?.frames?.[0]?.component;
-        const hasNoComponents = typeof component === 'object' && (!component.components || component.components.length === 0);
-        if (data.metadata?.templateHtml && hasNoComponents) {
-          const injectTemplate = () => {
-            editor.setComponents(data.metadata.templateHtml);
-            setTimeout(() => handleSave(true), 500);
-          };
-          if (editor.Canvas.getBody()) {
-            injectTemplate();
-          } else {
-            editor.on('load', injectTemplate);
+        // Load custom pages state
+        if (doc.pages) {
+          try {
+            const loadedPages = JSON.parse(doc.pages);
+            if (Array.isArray(loadedPages) && loadedPages.length > 0) {
+              setPages(loadedPages);
+              setCurrentPageId(loadedPages[0].id);
+              
+              // Set editor content to the first page
+              const injectTemplate = () => {
+                editor.setComponents(loadedPages[0].html || '');
+                editor.setStyle(loadedPages[0].css || '');
+              };
+              if (editor.Canvas.getBody()) {
+                injectTemplate();
+              } else {
+                editor.on('load', injectTemplate);
+              }
+            } else {
+              setPages([{ id: 'index', name: 'index' }]);
+              setCurrentPageId('index');
+            }
+          } catch(e) {
+            setPages([{ id: 'index', name: 'index' }]);
+            setCurrentPageId('index');
           }
+        } else {
+          setPages([{ id: 'index', name: 'index' }]);
+          setCurrentPageId('index');
         }
         
         setTimeout(() => {
@@ -1773,8 +1903,9 @@ export default function App() {
       } else {
         console.error('Project data is empty');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load project from Appwrite', err);
+      showToast(`Failed to load project: ${err.message || 'Unknown error'}`, 'error');
     }
   };
 
@@ -1789,8 +1920,10 @@ export default function App() {
         }
       );
       fetchProjects();
-    } catch (err) {
+      showToast('Project sharing updated', 'success');
+    } catch (err: any) {
       console.error('Failed to update project sharing in Appwrite', err);
+      showToast(`Failed to update sharing: ${err.message || 'Unknown error'}`, 'error');
     }
   };
 
@@ -1807,6 +1940,30 @@ export default function App() {
       isDestructive: true,
       onConfirm: async () => {
         try {
+          // Fetch the project to get its pages
+          const projectDoc = await databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.sitesCollectionId,
+            id
+          );
+          
+          let projectPages = [];
+          try {
+            projectPages = JSON.parse(projectDoc.pages || '[]');
+          } catch (e) {
+            console.error('Failed to parse project pages', e);
+          }
+
+          // Delete published files
+          for (const page of projectPages) {
+            const fileId = page.id === 'index' ? id : `${id}_${page.id}`;
+            try {
+              await storage.deleteFile(appwriteConfig.publishedSitesBucketId, fileId);
+            } catch (e) {
+              // Ignore if file doesn't exist
+            }
+          }
+
           await databases.deleteDocument(
             appwriteConfig.databaseId,
             appwriteConfig.sitesCollectionId,
@@ -1820,15 +1977,33 @@ export default function App() {
           }
           console.log('deleteProject: Deleted successfully');
           showToast('Project deleted successfully', 'success');
-        } catch (err) {
+        } catch (err: any) {
           console.error('Failed to delete project from Appwrite', err);
-          showToast('Failed to delete project', 'error');
+          showToast(`Failed to delete project: ${err.message || 'Unknown error'}`, 'error');
         }
       },
     });
   };
 
   const handleCreateProject = async (name: string, description: string, category: string) => {
+    // Check project limits
+    const PROJECT_LIMITS: Record<string, number> = {
+      Starter: 1,
+      Basic: 5,
+      Pro: Infinity,
+      Team: Infinity,
+      Free: 1,
+      Guest: 1,
+      Agency: Infinity,
+    };
+    
+    const limit = PROJECT_LIMITS[userProfile.plan] || 1;
+    if (projects.length >= limit) {
+      showToast(`Project limit reached for ${userProfile.plan} plan. Please upgrade.`, 'warning');
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
     let templateHtml = '';
     
     if (category === 'Landing Page') {
@@ -1901,6 +2076,8 @@ export default function App() {
       styles: [],
       pages: [{ frames: [{ component: { type: 'wrapper', components: [] } }] }]
     };
+    
+    const initialCustomPages = [{ id: 'index', name: 'index', html: templateHtml, css: '' }];
 
     try {
       const user = await account.get();
@@ -1917,6 +2094,7 @@ export default function App() {
           description,
           category,
           data: JSON.stringify(initialProjectData),
+          pages: JSON.stringify(initialCustomPages),
           ownerId: user.$id,
           updatedAt: new Date().toISOString()
         },
@@ -1926,6 +2104,8 @@ export default function App() {
       const projectId = createdProject.$id;
 
       setCurrentProject(projectId);
+      setPages(initialCustomPages);
+      setCurrentPageId('index');
       setProjects(prev => [...prev, { id: projectId, name, description, category, updatedAt: new Date().toISOString() }]);
       
       if (viewMode === 'dashboard') {
@@ -1949,9 +2129,9 @@ export default function App() {
           setCanRedo(false);
         }, 150);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create project in Appwrite', err);
-      showToast('Failed to create project', 'error');
+      showToast(`Failed to create project: ${err.message || 'Unknown error'}`, 'error');
     }
   };
 
@@ -1959,6 +2139,121 @@ export default function App() {
     setDevice(newDevice);
     if (editor) {
       editor.setDevice(newDevice);
+    }
+  };
+
+  const handleAddPage = (name: string) => {
+    // Check page limits
+    const PAGE_LIMITS: Record<string, number> = {
+      Starter: 3,
+      Basic: Infinity,
+      Pro: Infinity,
+      Team: Infinity,
+      Free: 3,
+      Guest: 3,
+      Agency: Infinity,
+    };
+    
+    const limit = PAGE_LIMITS[userProfile.plan] || 3;
+    if (pages.length >= limit) {
+      showToast(`Page limit reached for ${userProfile.plan} plan. Please upgrade.`, 'warning');
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    if (pages.some(p => p.id === newId)) {
+      showToast('A page with this name already exists', 'error');
+      return;
+    }
+    
+    if (!editor) return;
+    
+    // Save current page content
+    const html = editor.getHtml();
+    const css = editor.getCss();
+    
+    const newPage = { id: newId, name, html: '', css: '' };
+    
+    const updatedPages = pages.map(p => 
+      p.id === currentPageId ? { ...p, html, css } : p
+    ).concat(newPage);
+    
+    setPages(updatedPages);
+    setCurrentPageId(newId);
+    
+    // Load new page content (empty)
+    editor.setComponents('');
+    editor.setStyle('');
+    setTimeout(() => {
+      editor.UndoManager.clear();
+    }, 100);
+  };
+
+  const handleUpdatePageName = (id: string, newName: string) => {
+    const newId = newName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    if (pages.some(p => p.id === newId && p.id !== id)) {
+      showToast('A page with this name already exists', 'error');
+      return;
+    }
+    setPages(prev => prev.map(p => 
+      p.id === id ? { ...p, id: id === 'index' ? 'index' : newId, name: newName } : p
+    ));
+    if (currentPageId === id && id !== 'index') {
+      setCurrentPageId(newId);
+    }
+  };
+
+  const handleDeletePage = (id: string) => {
+    if (id === 'index') {
+      showToast('Cannot delete the index page', 'error');
+      return;
+    }
+    
+    if (currentPageId === id) {
+      // If deleting current page, switch to index first, but without saving current page
+      setCurrentPageId('index');
+      setPages(prev => {
+        const filtered = prev.filter(p => p.id !== id);
+        const indexPage = filtered.find(p => p.id === 'index');
+        if (editor && indexPage) {
+          editor.setComponents(indexPage.html || '');
+          editor.setStyle(indexPage.css || '');
+          setTimeout(() => {
+            editor.UndoManager.clear();
+          }, 100);
+        }
+        return filtered;
+      });
+    } else {
+      setPages(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  const switchPage = (newId: string) => {
+    if (!editor) return;
+    
+    showToast('Saving page...', 'info');
+    
+    // Save current page content
+    const html = editor.getHtml();
+    const css = editor.getCss();
+    
+    const updatedPages = pages.map(p => 
+      p.id === currentPageId ? { ...p, html, css } : p
+    );
+    
+    setPages(updatedPages);
+    setCurrentPageId(newId);
+    
+    // Load new page content
+    const newPage = updatedPages.find(p => p.id === newId);
+    if (newPage) {
+      editor.setComponents(newPage.html || '');
+      editor.setStyle(newPage.css || '');
+      setTimeout(() => {
+        editor.UndoManager.clear();
+      }, 100);
     }
   };
 
@@ -2045,24 +2340,6 @@ export default function App() {
   if (!isActivated) {
     return <SetupWizard onActivated={(key) => {
       setIsActivated(true);
-      // We can also trigger a session check here if needed, but SetupWizard handles login
-      const checkSession = async () => {
-        try {
-          const user = await account.get();
-          if (user) {
-            handleLogin(true, false, {
-              name: user.name.split(' ')[0] || 'User',
-              surname: user.name.split(' ').slice(1).join(' ') || '',
-              email: user.email,
-              username: user.prefs?.username || user.name.toLowerCase().replace(/\s+/g, ''),
-              role: user.prefs?.role || 'User',
-              plan: user.prefs?.plan || 'Free'
-            });
-          }
-        } catch (e) {
-          console.log('No active session after activation');
-        }
-      };
       checkSession();
     }} isDarkMode={isDarkMode} />;
   }
@@ -2088,6 +2365,7 @@ export default function App() {
 
           <Dashboard 
             projects={projects}
+            isLoadingProjects={isLoadingProjects}
             onSelectProject={loadProject}
             onCreateProject={() => setIsModalOpen(true)}
             onDeleteProject={deleteProject}
@@ -2095,7 +2373,7 @@ export default function App() {
             onUpgrade={() => setIsUpgradeModalOpen(true)}
             isDarkMode={isDarkMode}
             isLoggedIn={isLoggedIn}
-            onLogin={handleLogin}
+            onLogin={login}
             userProfile={userProfile}
             themeColor={themeColor}
             onOpenSettings={(tab) => {
@@ -2104,6 +2382,7 @@ export default function App() {
             }}
             uiPreferences={uiPreferences}
             updateAvailable={updateAvailable}
+            showToast={showToast}
           />
           
           <ConfirmModal
@@ -2128,7 +2407,7 @@ export default function App() {
             onClose={() => setIsSettingsModalOpen(false)}
             activeTab={activeSettingsTab}
             userProfile={userProfile}
-            onUpdateProfile={setUserProfile}
+            onUpdateProfile={updateUserProfile}
             themeColor={themeColor}
             onUpdateThemeColor={setThemeColor}
             isDarkMode={isDarkMode}
@@ -2174,6 +2453,9 @@ export default function App() {
         }}
         editor={editor}
         themeColor={themeColor}
+        showToast={showToast}
+        userProfile={userProfile}
+        updateUserProfile={updateUserProfile}
       />
 
       <ProjectModal 
@@ -2284,6 +2566,20 @@ export default function App() {
               </div>
             )}
 
+            {/* Page Manager - Only show when a project is selected */}
+            {currentProject && (
+              <PageManager
+                pages={pages}
+                currentPageId={currentPageId}
+                onAddPage={handleAddPage}
+                onDeletePage={handleDeletePage}
+                onSwitchPage={switchPage}
+                onUpdatePageName={handleUpdatePageName}
+                themeColor={themeColor}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
             {/* Assets Section - Always visible */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3 px-1">
@@ -2338,36 +2634,6 @@ export default function App() {
              <span className={`text-xs sm:text-sm font-medium ${themeClasses.text} bg-white/5 px-2 sm:px-3 py-1 rounded-lg border border-white/5 truncate max-w-[80px] sm:max-w-[150px]`}>
                {currentProject || 'Untitled'}
              </span>
-             
-             {/* Page Selector */}
-             {pages.length > 0 && (
-               <div className="flex items-center ml-1 sm:ml-2 bg-black/20 rounded-lg border border-white/5 px-2 py-1">
-                 <select
-                   value={currentPage}
-                   onChange={(e) => {
-                     if (e.target.value === 'new_page') {
-                       const pageName = prompt('Enter new page name (e.g., About, Contact):');
-                       if (pageName && editor) {
-                         const newPage = editor.Pages.add({ name: pageName, component: '' });
-                         editor.Pages.select(newPage);
-                       } else {
-                         // Reset to current page if cancelled
-                         e.target.value = currentPage;
-                       }
-                     } else if (editor) {
-                       editor.Pages.select(e.target.value);
-                     }
-                   }}
-                   className={`bg-transparent text-xs sm:text-sm font-medium ${themeClasses.text} focus:outline-none appearance-none cursor-pointer pr-4`}
-                   style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center', backgroundSize: '8px auto' }}
-                 >
-                   {pages.map(p => (
-                     <option key={p.id} value={p.id} className="bg-gray-800 text-white">{p.name}</option>
-                   ))}
-                   <option value="new_page" className="bg-gray-800 text-blue-400 font-bold">+ New Page</option>
-                 </select>
-               </div>
-             )}
 
              {isSaving && (
                 <span className={`ml-1 sm:ml-2 text-[10px] sm:text-xs font-medium ${getThemeClass(themeColor, 'text')} animate-pulse hidden md:inline`}>
@@ -2562,7 +2828,9 @@ export default function App() {
             )}
             {/* Canvas Container with Device Frame Effect */}
             <div className={`h-full transition-all duration-300 ${device === 'Mobile' ? 'max-w-[375px] mx-auto my-4 rounded-[3rem] border-8 border-[#1a1a1a] shadow-2xl overflow-hidden bg-white' : device === 'Tablet' ? 'max-w-[768px] mx-auto my-4 rounded-[2rem] border-8 border-[#1a1a1a] shadow-2xl overflow-hidden bg-white' : 'w-full h-full bg-[#1e1e1e]'}`}>
-               <div ref={editorRef} className="h-full w-full bg-[#1e1e1e]"></div>
+              <ErrorBoundary>
+                <div ref={editorRef} className="h-full w-full bg-[#1e1e1e]"></div>
+              </ErrorBoundary>
             </div>
           </div>
 
@@ -2653,7 +2921,7 @@ export default function App() {
           opacity: isRightSidebarOpen ? 1 : 0,
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className={`${themeClasses.sidebarBg} rounded-3xl flex flex-col h-full overflow-hidden relative z-50 shrink-0 border-l border-white/5`}
+        className={`bg-[#161618] text-white/90 rounded-3xl flex flex-col h-full overflow-hidden relative z-50 shrink-0 border-l border-white/5`}
       >
         {/* Right Sidebar Header */}
         {isRightSidebarOpen && (
@@ -2836,6 +3104,37 @@ export default function App() {
             </div>
           )}
 
+          {/* Navbar Settings */}
+          {selectedComponent && (selectedComponent.get('type') === 'navbar' || selectedComponent.closestType('navbar')) && (activeRightTab === 'styles' || activeRightTab === 'traits') && (
+            <div className={`mb-6 p-4 rounded-xl bg-white/5 border ${themeClasses.sidebarBorder}`}>
+              <div className={`text-xs font-bold ${themeClasses.textFaint} uppercase tracking-wider mb-3 flex items-center gap-2`}>
+                <Layout className="w-3 h-3" /> Navbar Settings
+              </div>
+              
+              <button
+                onClick={() => {
+                  const navbar = selectedComponent.get('type') === 'navbar' ? selectedComponent : selectedComponent.closestType('navbar');
+                  if (navbar) {
+                    const menu = navbar.findType('navbar-menu')[0] || navbar.findType('navbar-nav')[0] || navbar.components().models.find((m: any) => m.get('tagName') === 'nav');
+                    if (menu) {
+                      menu.append({
+                        type: 'menu-link',
+                        content: 'New Link',
+                        attributes: { href: '#' }
+                      });
+                      showToast('Added new link to navbar', 'success');
+                    } else {
+                      showToast('Could not find menu container', 'error');
+                    }
+                  }
+                }}
+                className={`w-full py-2 bg-${themeColor}-500/10 hover:bg-${themeColor}-500/20 text-${themeColor}-500 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2`}
+              >
+                <Plus className="w-4 h-4" /> Add Menu Link
+              </button>
+            </div>
+          )}
+
           {/* Empty State for Styles/Traits */}
           {(!selectedComponent && (activeRightTab === 'styles' || activeRightTab === 'traits')) && (
             <div className={`flex flex-col items-center justify-center h-full text-center ${themeClasses.textMuted} py-12 absolute inset-0 pointer-events-none`}>
@@ -2901,7 +3200,7 @@ export default function App() {
         onClose={() => setIsSettingsModalOpen(false)}
         activeTab={activeSettingsTab}
         userProfile={userProfile}
-        onUpdateProfile={setUserProfile}
+        onUpdateProfile={updateUserProfile}
         themeColor={themeColor}
         onUpdateThemeColor={setThemeColor}
         isDarkMode={isDarkMode}
@@ -3193,6 +3492,42 @@ export default function App() {
           font-size: 11px !important;
           font-weight: 600 !important;
           margin-bottom: 4px !important;
+        }
+        
+        /* Radio Buttons (Speed Dials) */
+        .gjs-radio-items {
+          display: flex !important;
+          gap: 4px !important;
+          background: transparent !important;
+          border: none !important;
+        }
+        .gjs-radio-item {
+          flex: 1 !important;
+          background-color: ${isDarkMode ? '#27272a' : '#f3f4f6'} !important;
+          border: 1px solid ${themeClasses.sidebarBorder} !important;
+          border-radius: 8px !important;
+          color: ${isDarkMode ? '#a1a1aa' : '#4b5563'} !important;
+          font-size: 10px !important;
+          font-weight: 600 !important;
+          text-align: center !important;
+          padding: 6px 4px !important;
+          cursor: pointer !important;
+          transition: all 0.2s ease !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        .gjs-radio-item:hover {
+          background-color: ${isDarkMode ? '#3f3f46' : '#e5e7eb'} !important;
+          color: ${isDarkMode ? '#fff' : '#000'} !important;
+        }
+        .gjs-radio-item input:checked + .gjs-radio-item-label {
+          color: #fff !important;
+        }
+        .gjs-radio-item.gjs-radio-item-active {
+          background-color: #3b82f6 !important;
+          border-color: #3b82f6 !important;
+          color: #fff !important;
         }
         
         /* Selector Manager */

@@ -18,6 +18,7 @@ interface ShareModalProps {
   themeColor: string;
   userPlan: string;
   onUpgrade: () => void;
+  showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export function ShareModal({
@@ -29,7 +30,8 @@ export function ShareModal({
   isDarkMode,
   themeColor,
   userPlan,
-  onUpgrade
+  onUpgrade,
+  showToast
 }: ShareModalProps) {
   const [emailInput, setEmailInput] = useState('');
   const [roleInput, setRoleInput] = useState<'creator' | 'modifier' | 'contributor' | 'editor'>('editor');
@@ -58,7 +60,9 @@ export function ShareModal({
     
     // Check if user is already added
     if (currentSharedWith.some(u => u.email === emailInput)) {
-      alert('User is already added to this project.');
+      if (showToast) {
+        showToast('User is already added to this project.', 'warning');
+      }
       return;
     }
 

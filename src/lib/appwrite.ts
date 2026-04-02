@@ -11,7 +11,7 @@ export const appwriteConfig = {
   publishedSitesBucketId: import.meta.env.VITE_APPWRITE_PUBLISHED_SITES_BUCKET_ID || '69cb98690016a44f6d57',
 };
 
-const client = new Client();
+export const client = new Client();
 
 client
   .setEndpoint(appwriteConfig.endpoint)

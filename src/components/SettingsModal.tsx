@@ -4,16 +4,7 @@ import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, Ale
 import { getThemeClass } from '../theme';
 import FileUpload from './FileUpload';
 import { account } from '../lib/appwrite';
-
-interface UserProfile {
-  name: string;
-  surname: string;
-  email: string;
-  username?: string;
-  role: string;
-  avatar?: string;
-  plan?: 'Free' | 'Basic' | 'Pro' | 'Team';
-}
+import { UserProfile } from '../contexts/AuthContext';
 
 interface UIPreferences {
   sidebarLayout: string;

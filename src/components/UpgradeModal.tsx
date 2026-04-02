@@ -44,17 +44,33 @@ export function UpgradeModal({ isOpen, onClose, isDarkMode }: UpgradeModalProps)
             </button>
           </div>
           <div className="p-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Starter Plan */}
+              <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
+                <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Starter</h3>
+                <p className={`${theme.textMuted} text-sm mb-4`}>For trying out Blockra.</p>
+                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$0<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 1 Project</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 3 Pages</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 100MB Storage</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 'Built with Blockra' Badge</li>
+                </ul>
+                <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
+                  Current Plan
+                </button>
+              </div>
+
               {/* Basic Plan */}
               <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
                 <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Basic</h3>
-                <p className={`${theme.textMuted} text-sm mb-4`}>Perfect for small projects and personal sites.</p>
-                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$9<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                <p className={`${theme.textMuted} text-sm mb-4`}>Perfect for personal sites.</p>
+                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$8.99<span className="text-sm font-normal text-gray-500">/mo</span></div>
                 <ul className="space-y-3 mb-8 flex-1">
                   <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 5 Projects</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Basic Templates</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Color Customization</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.textMuted} opacity-50`}><X className="w-4 h-4" /> Premium Templates</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Unlimited Pages</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 1GB Storage</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> No Badge</li>
                 </ul>
                 <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
                   Select Basic
@@ -66,12 +82,12 @@ export function UpgradeModal({ isOpen, onClose, isDarkMode }: UpgradeModalProps)
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-amber-500 text-white text-xs font-bold uppercase tracking-wider rounded-full">Most Popular</div>
                 <h3 className={`text-xl font-bold ${theme.text} mb-2 flex items-center gap-2`}><Crown className="w-5 h-5 text-amber-500" /> Pro</h3>
                 <p className={`${theme.textMuted} text-sm mb-4`}>For professionals who need more power.</p>
-                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$29<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$18.99<span className="text-sm font-normal text-gray-500">/mo</span></div>
                 <ul className="space-y-3 mb-8 flex-1">
                   <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Unlimited Projects</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Premium Templates</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Advanced UI Customization</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 5GB Storage</li>
                   <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Custom Fonts</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Advanced SEO</li>
                 </ul>
                 <button className={`w-full py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5`}>
                   Select Pro
@@ -82,12 +98,12 @@ export function UpgradeModal({ isOpen, onClose, isDarkMode }: UpgradeModalProps)
               <div className={`p-6 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-gray-200 bg-gray-50'} flex flex-col`}>
                 <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Team</h3>
                 <p className={`${theme.textMuted} text-sm mb-4`}>White-labeling and team collaboration.</p>
-                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$15<span className="text-sm font-normal text-gray-500">/user/mo</span></div>
+                <div className={`text-3xl font-bold mb-6 ${theme.text}`}>$14.99<span className="text-sm font-normal text-gray-500">/user/mo</span></div>
                 <ul className="space-y-3 mb-8 flex-1">
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Everything in Pro</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> White-label (Custom Logo)</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Advanced Roles & Permissions</li>
-                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Dedicated Support</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> White-labeling</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Shared Workspace</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> Priority Support</li>
+                  <li className={`flex items-center gap-2 text-sm ${theme.text}`}><Check className="w-4 h-4 text-emerald-500" /> 10GB Shared Storage</li>
                 </ul>
                 <button className={`w-full py-3 rounded-xl font-bold ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} transition-colors`}>
                   Select Team

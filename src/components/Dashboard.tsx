@@ -5,6 +5,7 @@ import { getThemeClass } from '../theme';
 import { account } from '../lib/appwrite';
 import { ID } from 'appwrite';
 import { ShareModal } from './ShareModal';
+import { UserProfile } from '../contexts/AuthContext';
 
 export interface Project {
   id?: string;
@@ -18,15 +19,6 @@ export interface Project {
   status?: string;
 }
 
-interface UserProfile {
-  name: string;
-  surname: string;
-  email: string;
-  username?: string;
-  role: string;
-  plan?: 'Free' | 'Basic' | 'Pro' | 'Team';
-}
-
 interface UIPreferences {
   sidebarLayout: string;
   uiDensity: string;
@@ -37,6 +29,7 @@ interface UIPreferences {
 
 interface DashboardProps {
   projects: Project[];
+  isLoadingProjects?: boolean;
   onSelectProject: (id: string) => void;
   onCreateProject: () => void;
   onDeleteProject: (id: string, e: React.MouseEvent) => void;
@@ -48,10 +41,12 @@ interface DashboardProps {
   updateAvailable?: boolean;
   onUpdateSharing?: (projectName: string, sharedWith: any[]) => void;
   onUpgrade: () => void;
+  showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export default function Dashboard({ 
   projects, 
+  isLoadingProjects = false,
   onSelectProject, 
   onCreateProject, 
   onDeleteProject,
@@ -64,7 +59,8 @@ export default function Dashboard({
   uiPreferences,
   updateAvailable,
   onUpdateSharing,
-  onUpgrade
+  onUpgrade,
+  showToast
 }: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -437,6 +433,45 @@ export default function Dashboard({
                        {userProfile.name || userProfile.surname ? `${userProfile.name} ${userProfile.surname}`.trim() : userProfile.username || userProfile.email.split('@')[0]}
                      </p>
                      <p className={`text-xs ${theme.textFaint}`}>{userProfile.email}</p>
+                     
+                     {/* Storage Progress Bar */}
+                     {userProfile.plan && (
+                       <div className="mt-4">
+                         <div className="flex justify-between items-center mb-1">
+                           <span className={`text-[10px] uppercase tracking-wider font-bold ${theme.textMuted}`}>Storage</span>
+                           <span className={`text-[10px] font-medium ${theme.textFaint}`}>
+                             {((userProfile.usedStorage || 0) / (1024 * 1024)).toFixed(1)}MB / {
+                               userProfile.plan === 'Starter' ? '100MB' :
+                               userProfile.plan === 'Basic' ? '1GB' :
+                               userProfile.plan === 'Pro' ? '5GB' :
+                               userProfile.plan === 'Team' ? '10GB' : '100MB'
+                             }
+                           </span>
+                         </div>
+                         <div className={`w-full h-1.5 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} overflow-hidden`}>
+                           <div 
+                             className={`h-full rounded-full ${getThemeClass(themeColor, 'gradientPrimary')}`}
+                             style={{ 
+                               width: `${Math.min(100, ((userProfile.usedStorage || 0) / (
+                                 userProfile.plan === 'Starter' ? 100 * 1024 * 1024 :
+                                 userProfile.plan === 'Basic' ? 1024 * 1024 * 1024 :
+                                 userProfile.plan === 'Pro' ? 5 * 1024 * 1024 * 1024 :
+                                 userProfile.plan === 'Team' ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024
+                               )) * 100)}%` 
+                             }}
+                           />
+                         </div>
+                         <button 
+                           onClick={() => {
+                             onOpenSettings('plan');
+                             setIsSettingsOpen(false);
+                           }}
+                           className={`mt-2 text-[10px] font-bold text-${themeColor}-500 hover:text-${themeColor}-600 transition-colors w-full text-left`}
+                         >
+                           Upgrade Storage
+                         </button>
+                       </div>
+                     )}
                   </div>
                   <div className="p-2 space-y-1">
                     {updateAvailable && (
@@ -617,7 +652,24 @@ export default function Dashboard({
           </div>
         )}
 
-        {projects.length === 0 ? (
+        {isLoadingProjects ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className={`p-6 rounded-[2rem] border ${theme.border} ${isDarkMode ? 'bg-white/5' : 'bg-white'} animate-pulse`}>
+                <div className="flex items-start justify-between mb-6">
+                  <div className={`w-12 h-12 rounded-2xl ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                  <div className={`w-8 h-8 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                </div>
+                <div className={`h-6 w-3/4 rounded-lg ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} mb-3`}></div>
+                <div className={`h-4 w-1/2 rounded-lg ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} mb-8`}></div>
+                <div className="flex items-center justify-between mt-auto pt-6 border-t border-dashed border-white/10">
+                  <div className={`h-4 w-1/3 rounded-lg ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                  <div className={`h-8 w-24 rounded-xl ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'}`}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : projects.length === 0 ? (
           <div className={`text-center py-24 border border-dashed ${theme.border} rounded-[2.5rem] ${isDarkMode ? 'bg-white/5' : 'bg-gray-50'} backdrop-blur-sm`}>
             <div className={`w-24 h-24 ${isDarkMode ? 'bg-white/5' : 'bg-gray-100'} rounded-full flex items-center justify-center mx-auto mb-6 ring-1 ${isDarkMode ? 'ring-white/10' : 'ring-gray-200'}`}>
               <FolderOpen className={`w-10 h-10 opacity-30 ${theme.text}`} />
@@ -793,11 +845,12 @@ export default function Dashboard({
           onUpdateSharing={handleUpdateSharing}
           isDarkMode={isDarkMode}
           themeColor={themeColor}
-          userPlan={userProfile.plan}
+          userPlan={userProfile.plan || 'Free'}
           onUpgrade={() => {
             setShareModalProject(null);
             onUpgrade();
           }}
+          showToast={showToast}
         />
       )}
     </div>

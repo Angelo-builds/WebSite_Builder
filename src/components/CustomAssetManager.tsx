@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Upload, Search, Filter, Image as ImageIcon, Video, FileAudio, FileText, Type, Trash2, Check } from 'lucide-react';
 import { getThemeClass } from '../theme';
-import { storage, appwriteConfig, ID } from '../lib/appwrite';
+import { storage, appwriteConfig, ID, databases } from '../lib/appwrite';
+import { UserProfile } from '../contexts/AuthContext';
 
 interface CustomAssetManagerProps {
   isOpen: boolean;
@@ -10,9 +11,12 @@ interface CustomAssetManagerProps {
   onSelect: (asset: any) => void;
   editor: any;
   themeColor: string;
+  showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
+  userProfile: UserProfile;
+  updateUserProfile: (profile: UserProfile) => void;
 }
 
-export default function CustomAssetManager({ isOpen, onClose, onSelect, editor, themeColor }: CustomAssetManagerProps) {
+export default function CustomAssetManager({ isOpen, onClose, onSelect, editor, themeColor, showToast, userProfile, updateUserProfile }: CustomAssetManagerProps) {
   const [assets, setAssets] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -36,13 +40,34 @@ export default function CustomAssetManager({ isOpen, onClose, onSelect, editor, 
     return 'image';
   };
 
+  const QUOTAS: Record<string, number> = {
+    Starter: 100 * 1024 * 1024,
+    Basic: 1 * 1024 * 1024 * 1024,
+    Pro: 5 * 1024 * 1024 * 1024,
+    Team: 10 * 1024 * 1024 * 1024,
+    Free: 100 * 1024 * 1024,
+    Guest: 100 * 1024 * 1024,
+    Agency: 10 * 1024 * 1024 * 1024,
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
-    setIsUploading(true);
     const files = Array.from(e.target.files);
+    const totalSize = files.reduce((acc, file) => acc + file.size, 0);
+    const currentUsed = userProfile.usedStorage || 0;
+    const planLimit = QUOTAS[userProfile.plan] || QUOTAS.Starter;
+
+    if (currentUsed + totalSize > planLimit) {
+      if (showToast) showToast('Storage full! Upgrade to continue.', 'warning');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setIsUploading(true);
 
     try {
+      let uploadedSize = 0;
       const uploadedAssets = await Promise.all(
         files.map(async (file) => {
           const response = await storage.createFile(
@@ -51,22 +76,46 @@ export default function CustomAssetManager({ isOpen, onClose, onSelect, editor, 
             file
           );
           
+          uploadedSize += file.size;
           const fileUrl = storage.getFileView(appwriteConfig.assetsBucketId, response.$id).toString();
           
           return {
             type: getAssetType(file.name),
             src: fileUrl,
             name: file.name,
-            fileId: response.$id
+            fileId: response.$id,
+            size: file.size
           };
         })
       );
 
       editor.AssetManager.add(uploadedAssets);
       setAssets(editor.AssetManager.getAll().models);
-    } catch (err) {
+      
+      // Update user storage
+      const newUsedStorage = currentUsed + uploadedSize;
+      
+      if (userProfile.id) {
+        try {
+          await databases.updateDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.usersCollectionId,
+            userProfile.id,
+            { usedStorage: newUsedStorage }
+          );
+        } catch (updateErr) {
+          console.error('Failed to update storage quota in Appwrite:', updateErr);
+        }
+      }
+      
+      updateUserProfile({ ...userProfile, usedStorage: newUsedStorage });
+      
+      if (showToast) showToast('Assets uploaded successfully', 'success');
+    } catch (err: any) {
       console.error('Upload failed', err);
-      alert('Failed to upload assets. Please check if the assets bucket exists in Appwrite.');
+      if (showToast) {
+        showToast(`Failed to upload assets: ${err.message || 'Unknown error'}`, 'error');
+      }
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -77,11 +126,34 @@ export default function CustomAssetManager({ isOpen, onClose, onSelect, editor, 
     e.stopPropagation();
     
     const fileId = asset.get('fileId');
+    const fileSize = asset.get('size') || 0;
+    
     if (fileId) {
       try {
         await storage.deleteFile(appwriteConfig.assetsBucketId, fileId);
-      } catch (err) {
+        
+        // Update user storage
+        const currentUsed = userProfile.usedStorage || 0;
+        const newUsedStorage = Math.max(0, currentUsed - fileSize);
+        
+        if (userProfile.id && fileSize > 0) {
+          try {
+            await databases.updateDocument(
+              appwriteConfig.databaseId,
+              appwriteConfig.usersCollectionId,
+              userProfile.id,
+              { usedStorage: newUsedStorage }
+            );
+          } catch (updateErr) {
+            console.error('Failed to update storage quota in Appwrite:', updateErr);
+          }
+        }
+        
+        updateUserProfile({ ...userProfile, usedStorage: newUsedStorage });
+        if (showToast) showToast('Asset deleted successfully', 'success');
+      } catch (err: any) {
         console.error('Failed to delete from Appwrite storage', err);
+        if (showToast) showToast(`Failed to delete asset: ${err.message || 'Unknown error'}`, 'error');
       }
     }
     
