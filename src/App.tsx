@@ -255,7 +255,6 @@ export default function App() {
     // 1. Handle Dashboard Mode: Cleanup if needed
     if (viewMode === 'dashboard') {
       if (editorInstanceRef.current) {
-        console.log('Switching to dashboard, destroying editor');
         editorInstanceRef.current.destroy();
         editorInstanceRef.current = null;
         setEditor(null);
@@ -271,18 +270,14 @@ export default function App() {
     // 3. Handle Editor Mode: Initialize if missing
     // If editor instance already exists, just refresh and return
     if (editorInstanceRef.current) {
-      console.log('Editor already initialized, refreshing');
       editorInstanceRef.current.refresh();
       return;
     }
     
     // If ref is not ready, skip (should not happen in editor mode)
     if (!editorRef.current) {
-      console.log('Editor ref not ready');
       return;
     }
-
-    console.log('Initializing GrapesJS...');
 
     // Clear any existing blocks/panels to prevent duplicates
     const blocksContainer = document.getElementById('blocks');
@@ -1930,7 +1925,6 @@ export default function App() {
   const deleteProject = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('deleteProject: Attempting to delete', id);
     
     setConfirmModal({
       isOpen: true,
@@ -1975,7 +1969,6 @@ export default function App() {
             setCurrentProject(null);
             setViewMode('dashboard');
           }
-          console.log('deleteProject: Deleted successfully');
           showToast('Project deleted successfully', 'success');
         } catch (err: any) {
           console.error('Failed to delete project from Appwrite', err);
@@ -2278,8 +2271,6 @@ export default function App() {
         } catch (e) {
           console.error('Prettier formatting failed:', e);
         }
-        
-        console.log('toggleViewMode: Capturing code data:', { htmlLength: html.length, cssLength: css.length });
         
         setCodeData({ html, css, js });
         setViewMode('code');

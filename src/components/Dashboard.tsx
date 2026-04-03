@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2, FlaskConical } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2, FlaskConical, Database } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import { account } from '../lib/appwrite';
 import { ID } from 'appwrite';
@@ -98,6 +98,15 @@ export default function Dashboard({
       return;
     }
 
+    if (!isRegistering && !email.includes('@')) {
+      if (showToast) {
+        showToast('Currently, only Email is supported for login. Please use your email address.', 'warning');
+      } else {
+        setError('Currently, only Email is supported for login. Please use your email address.');
+      }
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -143,24 +152,35 @@ export default function Dashboard({
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      if (err.type === 'user_invalid_credentials') {
-        setError('Invalid email or password. Please try again.');
+      let errorMessage = 'An error occurred during authentication';
+      
+      if (err.type === 'user_invalid_credentials' || err.code === 401) {
+        errorMessage = 'Invalid credentials. Please check your email and password.';
       } else if (err.type === 'user_already_exists') {
-        setError('An account with this email already exists. Redirecting to login...');
+        errorMessage = 'An account with this email already exists. Redirecting to login...';
         setTimeout(() => {
           setIsRegistering(false);
           setError('');
           setIsLoading(false);
         }, 2500);
-        return; // Prevent setting isLoading to false immediately
       } else if (err.type === 'password_recently_used' || err.type === 'password_personal_data') {
-        setError('Please choose a stronger password.');
+        errorMessage = 'Please choose a stronger password.';
       } else if (err.type === 'user_blocked') {
-        setError('This account has been blocked. Please contact support.');
-      } else if (err.message === 'Failed to fetch') {
-        setError('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.');
+        errorMessage = 'This account has been blocked. Please contact support.';
+      } else if (err.message === 'Failed to fetch' || err.code === 503 || err.code === 500) {
+        errorMessage = 'Cannot connect to the server. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      if (showToast && err.type !== 'user_already_exists') {
+        showToast(errorMessage, 'error');
       } else {
-        setError(err.message || 'An error occurred during authentication');
+        setError(errorMessage);
+      }
+      
+      if (err.type === 'user_already_exists') {
+        return; // Prevent setting isLoading to false immediately
       }
     } finally {
       setIsLoading(false);
@@ -179,7 +199,6 @@ export default function Dashboard({
         await account.deleteSession('current');
     } catch (error) {
         // Se fallisce (es. sessione già scaduta), non mostrare errori brutti
-        console.log("Sessione già chiusa o inesistente.");
     } finally {
         // In ogni caso, puliamo lo stato del frontend
         onLogin(false);
@@ -276,14 +295,14 @@ export default function Dashboard({
                   </div>
                 )}
                 <div className="space-y-2 text-left">
-                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">{isRegistering ? 'Email Address' : 'Email or Username'}</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-white/40 ml-1">Email Address</label>
                   <input
-                    type={isRegistering ? "email" : "text"}
+                    type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className={`w-full px-4 py-3 rounded-xl ${theme.inputBg} text-white placeholder-white/30 outline-none transition-all`}
-                    placeholder={isRegistering ? "name@example.com" : "name@example.com or username"}
+                    placeholder="name@example.com"
                   />
                 </div>
                 <div className="space-y-2 text-left">
@@ -433,47 +452,8 @@ export default function Dashboard({
                        {userProfile.name || userProfile.surname ? `${userProfile.name} ${userProfile.surname}`.trim() : userProfile.username || userProfile.email.split('@')[0]}
                      </p>
                      <p className={`text-xs ${theme.textFaint}`}>{userProfile.email}</p>
-                     
-                     {/* Storage Progress Bar */}
-                     {userProfile.plan && (
-                       <div className="mt-4">
-                         <div className="flex justify-between items-center mb-1">
-                           <span className={`text-[10px] uppercase tracking-wider font-bold ${theme.textMuted}`}>Storage</span>
-                           <span className={`text-[10px] font-medium ${theme.textFaint}`}>
-                             {((userProfile.usedStorage || 0) / (1024 * 1024)).toFixed(1)}MB / {
-                               userProfile.plan === 'Starter' ? '100MB' :
-                               userProfile.plan === 'Basic' ? '1GB' :
-                               userProfile.plan === 'Pro' ? '5GB' :
-                               userProfile.plan === 'Team' ? '10GB' : '100MB'
-                             }
-                           </span>
-                         </div>
-                         <div className={`w-full h-1.5 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} overflow-hidden`}>
-                           <div 
-                             className={`h-full rounded-full ${getThemeClass(themeColor, 'gradientPrimary')}`}
-                             style={{ 
-                               width: `${Math.min(100, ((userProfile.usedStorage || 0) / (
-                                 userProfile.plan === 'Starter' ? 100 * 1024 * 1024 :
-                                 userProfile.plan === 'Basic' ? 1024 * 1024 * 1024 :
-                                 userProfile.plan === 'Pro' ? 5 * 1024 * 1024 * 1024 :
-                                 userProfile.plan === 'Team' ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024
-                               )) * 100)}%` 
-                             }}
-                           />
-                         </div>
-                         <button 
-                           onClick={() => {
-                             onOpenSettings('plan');
-                             setIsSettingsOpen(false);
-                           }}
-                           className={`mt-2 text-[10px] font-bold text-${themeColor}-500 hover:text-${themeColor}-600 transition-colors w-full text-left`}
-                         >
-                           Upgrade Storage
-                         </button>
-                       </div>
-                     )}
-                  </div>
-                  <div className="p-2 space-y-1">
+                   </div>
+                   <div className="p-2 space-y-1">
                     {updateAvailable && (
                       <button 
                         onClick={() => {
@@ -601,6 +581,55 @@ export default function Dashboard({
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {isLoggedIn && userProfile.plan && (
+          <div className={`mb-8 p-6 rounded-3xl border ${theme.border} ${theme.cardBg} backdrop-blur-md shadow-xl flex flex-col md:flex-row items-center justify-between gap-6`}>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className={`w-12 h-12 rounded-2xl ${getThemeClass(themeColor, 'bg')} bg-opacity-10 flex items-center justify-center text-${themeColor}-500`}>
+                <Database className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className={`text-lg font-bold ${theme.text}`}>Storage Usage</h3>
+                <p className={`text-sm ${theme.textMuted}`}>Your current plan: <span className={`text-${themeColor}-500 font-bold`}>{userProfile.plan}</span></p>
+              </div>
+            </div>
+            
+            <div className="flex-1 w-full max-w-md">
+              <div className="flex justify-between items-center mb-2">
+                <span className={`text-sm font-medium ${theme.text}`}>
+                  {((userProfile.usedStorage || 0) / (1024 * 1024)).toFixed(1)} MB used
+                </span>
+                <span className={`text-sm font-medium ${theme.textFaint}`}>
+                  of {
+                    userProfile.plan === 'Starter' ? '100 MB' :
+                    userProfile.plan === 'Basic' ? '1 GB' :
+                    userProfile.plan === 'Pro' ? '5 GB' :
+                    userProfile.plan === 'Team' ? '10 GB' : '100 MB'
+                  }
+                </span>
+              </div>
+              <div className={`w-full h-3 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} overflow-hidden shadow-inner`}>
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, ((userProfile.usedStorage || 0) / (
+                    userProfile.plan === 'Starter' ? 100 * 1024 * 1024 :
+                    userProfile.plan === 'Basic' ? 1024 * 1024 * 1024 :
+                    userProfile.plan === 'Pro' ? 5 * 1024 * 1024 * 1024 :
+                    userProfile.plan === 'Team' ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024
+                  )) * 100)}%` }}
+                  className={`h-full rounded-full ${getThemeClass(themeColor, 'gradientPrimary')} shadow-lg`}
+                />
+              </div>
+            </div>
+            
+            <button 
+              onClick={onUpgrade}
+              className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white shadow-lg transition-all hover:scale-105 active:scale-95`}
+            >
+              Upgrade Storage
+            </button>
           </div>
         )}
 

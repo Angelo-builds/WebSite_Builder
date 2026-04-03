@@ -1,87 +1,80 @@
-# Blockra
+<div align="center">
+  <h1><strong>Blockra — The Ultimate Cloud-Native Website Builder</strong></h1>
+  <p><em>No-code, Appwrite-powered, Proxmox-ready.</em></p>
 
-A powerful, self-hosted website builder designed to run on Proxmox LXC containers or any Node.js environment. Built with React, GrapesJS, and Appwrite.
+  <p>
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Appwrite-F02E65?style=for-the-badge&logo=Appwrite&logoColor=white" alt="Appwrite" />
+    <img src="https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  </p>
+</div>
 
-![SiteBuilder Preview](https://via.placeholder.com/800x400?text=Blockra+SiteBuilder)
+---
 
-## ✨ Features
+**Blockra** is a high-end, self-hosted website builder designed to bring professional web design to any infrastructure. Whether you are a solo creator, an agency, or an enterprise, Blockra provides a seamless, drag-and-drop experience backed by a robust cloud architecture.
 
-*   **Drag & Drop Builder**: Powered by GrapesJS, allowing you to build responsive websites visually.
-*   **Project Management**: Create, manage, and publish multiple websites.
-*   **Appwrite Backend**: Secure authentication, database, and storage powered by Appwrite.
-*   **Real-time Publishing**: Publish your websites directly to an Appwrite Storage Bucket with a single click.
-*   **Responsive Design**: Mobile-first editing experience with desktop, tablet, and mobile views.
-*   **Role-Based Access**: Support for Admin, Pro, Basic, Free, and Guest users.
-*   **Customization**: Dark/Light mode, custom theme colors, and UI density settings.
-*   **Non-Intrusive Updates**: The system checks for updates automatically but leaves you in full control. A simple notification dot lets you know an update is available, and you can choose to "Update Now" or "Update Later" from the settings.
+![Blockra Dashboard Preview](https://via.placeholder.com/1200x600?text=Blockra+Dashboard+Preview)
+
+## ✨ Key Features
+
+*   🌍 **Multi-page Support**: Build complex websites with unlimited pages, seamless navigation, and shared assets.
+*   ⚡ **Real-time Dashboard**: Manage your projects, monitor storage usage, and configure your workspace instantly.
+*   🔍 **Smart SEO**: Built-in metadata management, automatic favicon injection, and optimized HTML output.
+*   ☁️ **Asset Cloud Storage**: Integrated media manager with quota enforcement, powered by Appwrite Storage.
+*   🎨 **Premium Templates**: Start from scratch or use one of our high-converting, responsive templates.
+*   🐳 **Proxmox & Docker Ready**: Deploy in seconds on your own infrastructure with zero configuration overhead.
 
 ## 📦 Tech Stack
 
-*   **Frontend**: React, Vite, Tailwind CSS, GrapesJS, Framer Motion, Lucide React
-*   **Backend**: Appwrite (Authentication, Databases, Storage)
-*   **Deployment**: Node.js, Express (for serving the built app and handling updates)
+Blockra is built on a modern, scalable stack:
 
-## 🚀 Quick Installation (Proxmox VE)
+*   **Frontend**: React, Vite, Tailwind CSS, Framer Motion
+*   **Editor Engine**: GrapesJS
+*   **Backend & Auth**: Appwrite (Authentication, Databases, Storage)
+*   **Deployment**: Docker, Proxmox LXC
 
-To install Blockra on your Proxmox VE node, simply run the following command in your Proxmox shell:
+## 💎 Pricing Tiers
+
+Blockra offers flexible plans designed to scale with your business.
+
+| Plan | Price | Projects | Pages | Storage | Features |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Starter** | **$0** | 1 | 3 | 100MB | Basic Templates, 'Built with Blockra' Badge |
+| **Basic** | **$8.99/mo** | 5 | Unlimited | 1GB | Premium Templates, No Badge |
+| **Pro** | **$18.99/mo** | Unlimited | Unlimited | 5GB | Custom Fonts, Advanced SEO |
+| **Team** | **$9.99/user/mo** | Unlimited | Unlimited | 10GB Shared | White-labeling, Shared Workspace, Priority Support |
+
+## 🚀 Quick Start
+
+### Proxmox VE Installation
+
+To install Blockra on your Proxmox VE node, run the following command in your Proxmox shell:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
 ```
 
-This script will:
-1.  Ask for basic configuration (Container ID, Password, Resources).
-2.  Download the Debian 12 LXC template.
-3.  Create a new LXC container.
-4.  Install all dependencies (Node.js).
-5.  Build and start the application.
+### Docker Installation
 
-Once installed, access the builder at: `http://<YOUR-CONTAINER-IP>:3000`
+Deploy Blockra using Docker Compose:
 
-## 🛠 Manual Installation
+```bash
+git clone https://github.com/Angelo-builds/WebSite_Builder.git
+cd WebSite_Builder
+docker-compose up -d
+```
 
-If you prefer to install manually:
+Once installed, access the builder at: `http://<YOUR-IP>:3000`
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Angelo-builds/WebSite_Builder.git
-    cd WebSite_Builder
-    ```
+## ⚖️ License
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+**PROPRIETARY SOFTWARE LICENSE**
 
-3.  **Configure Environment Variables:**
-    Create a `.env` file based on `.env.example` and add your Appwrite credentials:
-    ```env
-    VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
-    VITE_APPWRITE_PROJECT_ID=your_project_id
-    VITE_APPWRITE_DATABASE_ID=your_database_id
-    VITE_APPWRITE_SITES_COLLECTION_ID=your_collection_id
-    VITE_APPWRITE_PUBLISHED_SITES_BUCKET_ID=your_bucket_id
-    ```
+This software is **NOT Open Source**. 
 
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
+Redistribution, forking for commercial use, reselling the code, or using it to build competing products is strictly prohibited. The code is made public solely for portfolio and educational review purposes. 
 
-## 💎 Subscription Plans
+All rights are reserved by the author (Angelo). The software is provided "as is", without warranty of any kind. 
 
-Blockra offers different tiers to suit your needs, from personal projects to full agency white-labeling.
-
-| Feature | Guest | Free | Basic | Pro |
-| :--- | :---: | :---: | :---: | :---: |
-| **Projects** | 0 | 1 | 5 | Unlimited |
-| **Basic Templates** | ✅ | ✅ | ✅ | ✅ |
-| **Premium Templates** | ❌ | ❌ | ❌ | ✅ |
-| **Color Customization** | ❌ | ✅ | ✅ | ✅ |
-| **Advanced UI Customization** | ❌ | ❌ | ❌ | ✅ |
-| **Publishing** | ❌ | ✅ | ✅ | ✅ |
-| **Support** | None | Community | Standard | Priority |
-
-## 📝 License
-
-MIT License.
+For full details, please read the [LICENSE](./LICENSE) file included in this repository.
