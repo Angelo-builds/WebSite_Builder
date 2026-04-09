@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage, ID, Query, Permission, Role } from 'appwrite';
+import { Client, Account, Databases, Storage, Teams, ID, Query, Permission, Role } from 'appwrite';
 
 export const appwriteConfig = {
   endpoint: import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://api.angihomelab.com/v1',
@@ -7,6 +7,7 @@ export const appwriteConfig = {
   usersCollectionId: import.meta.env.VITE_APPWRITE_USERS_COLLECTION_ID || '69b40b450023d774f727',
   licensesCollectionId: import.meta.env.VITE_APPWRITE_LICENSES_COLLECTION_ID || '69b40b5d000ce0bf77eb',
   sitesCollectionId: import.meta.env.VITE_APPWRITE_SITES_COLLECTION_ID || '69b7b49e002e8aebabf6',
+  snapshotsCollectionId: import.meta.env.VITE_APPWRITE_SNAPSHOTS_COLLECTION_ID || '69cba000000000000000', // Placeholder
   assetsBucketId: import.meta.env.VITE_APPWRITE_ASSETS_BUCKET_ID || '69b9088300022cef1a0d',
   publishedSitesBucketId: import.meta.env.VITE_APPWRITE_PUBLISHED_SITES_BUCKET_ID || '69cb98690016a44f6d57',
 };
@@ -20,6 +21,7 @@ client
 export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
+export const teams = new Teams(client);
 
 export { ID, Query, Permission, Role };
 

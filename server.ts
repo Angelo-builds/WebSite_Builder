@@ -35,9 +35,14 @@ app.post('/api/projects/:id/publish', async (req, res) => {
     const pagesToPublish = pages || [{ name: 'index', html, css }];
 
     const blockraBadge = `
-      <a href="https://github.com/Angelo-builds/WebSite_Builder" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#111;color:#fff;padding:8px 12px;border-radius:8px;font-family:sans-serif;font-size:12px;font-weight:bold;text-decoration:none;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:6px;transition:transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-        Built with Blockra
+      <a href="https://github.com/Angelo-builds/WebSite_Builder" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#121212;color:#fff;padding:8px 14px;border-radius:10px;font-family:'Montserrat', sans-serif;font-size:11px;font-weight:700;text-decoration:none;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;align-items:center;gap:8px;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);border:1px solid rgba(255,255,255,0.1);text-transform:uppercase;letter-spacing:1px;" onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='rgba(0,128,128,0.5)'" onmouseout="this.style.transform='translateY(0)';this.style.borderColor='rgba(255,255,255,0.1)'">
+        <svg width="16" height="16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 20L80 35L50 50L20 35L50 20Z" fill="#008080" fill-opacity="0.2" stroke="#008080" stroke-width="4"/>
+          <path d="M20 35V65L50 80V50L20 35Z" fill="#008080" fill-opacity="0.3" stroke="#008080" stroke-width="4"/>
+          <path d="M50 50V80L80 65V35" stroke="#008080" stroke-width="4"/>
+          <path d="M65 57.5H95" stroke="#008080" stroke-width="6"/>
+        </svg>
+        Built with Blokra
       </a>
     `;
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle, Shield, FlaskConical } from 'lucide-react';
+import { X, User, Palette, Settings as SettingsIcon, Check, Save, RefreshCw, AlertCircle, Shield, FlaskConical, Users, Mail, Plus, Trash2 } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import FileUpload from './FileUpload';
-import { account } from '../lib/appwrite';
-import { UserProfile } from '../contexts/AuthContext';
+import { account, teams, ID, Role } from '../lib/appwrite';
+import { UserProfile, Workspace } from '../contexts/AuthContext';
 
 interface UIPreferences {
   sidebarLayout: string;
@@ -17,7 +17,7 @@ interface UIPreferences {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeTab: 'profile' | 'appearance' | 'settings' | 'security' | 'plan';
+  activeTab: 'profile' | 'appearance' | 'settings' | 'security' | 'plan' | 'workspace';
   userProfile: UserProfile;
   onUpdateProfile: (profile: UserProfile) => void;
   themeColor: string;
@@ -29,6 +29,9 @@ interface SettingsModalProps {
   onUpdateUiPreferences?: (prefs: UIPreferences) => void;
   updateAvailable?: boolean;
   onDismissUpdate?: () => void;
+  workspaces?: Workspace[];
+  currentWorkspaceId?: string;
+  onRefreshWorkspaces?: () => Promise<void>;
 }
 
 const COLORS = [
@@ -54,10 +57,17 @@ export default function SettingsModal({
   uiPreferences,
   onUpdateUiPreferences,
   updateAvailable = false,
-  onDismissUpdate
+  onDismissUpdate,
+  workspaces = [],
+  currentWorkspaceId = '',
+  onRefreshWorkspaces
 }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [formData, setFormData] = useState(userProfile);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+  const [members, setMembers] = useState<any[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [uiPrefs, setUiPrefs] = useState(uiPreferences || {
     sidebarLayout: 'left',
     uiDensity: 'normal',
@@ -99,8 +109,67 @@ export default function SettingsModal({
   }, [updateAvailable]);
 
   useEffect(() => {
-    setFormData(userProfile);
-  }, [userProfile]);
+    if (activeTab === 'workspace' && currentWorkspaceId && currentWorkspaceId !== userProfile.id) {
+      fetchMembers();
+    }
+  }, [activeTab, currentWorkspaceId]);
+
+  const fetchMembers = async () => {
+    if (!currentWorkspaceId || currentWorkspaceId === userProfile.id) return;
+    setIsLoadingMembers(true);
+    try {
+      const response = await teams.listMemberships(currentWorkspaceId);
+      setMembers(response.memberships);
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail || !currentWorkspaceId) return;
+    setIsInviting(true);
+    try {
+      await teams.createMembership(
+        currentWorkspaceId,
+        ['Editor'], // Default role
+        inviteEmail,
+        undefined,
+        undefined,
+        `${window.location.origin}/accept-invite`
+      );
+      setInviteEmail('');
+      fetchMembers();
+      alert('Invitation sent successfully!');
+    } catch (err: any) {
+      console.error('Failed to invite member:', err);
+      alert(`Failed to invite: ${err.message}`);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRemoveMember = async (membershipId: string) => {
+    if (!currentWorkspaceId) return;
+    try {
+      await teams.deleteMembership(currentWorkspaceId, membershipId);
+      fetchMembers();
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+    }
+  };
+
+  const handleCreateTeam = async (name: string) => {
+    try {
+      await teams.create(ID.unique(), name);
+      if (onRefreshWorkspaces) await onRefreshWorkspaces();
+      setActiveTab('workspace');
+    } catch (err) {
+      console.error('Failed to create team:', err);
+    }
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,6 +311,15 @@ export default function SettingsModal({
                 <Shield className="w-4 h-4" />
                 Security
               </button>
+              {!isGuest && (
+                <button
+                  onClick={() => setActiveTab('workspace')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'workspace' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
+                >
+                  <Users className="w-4 h-4" />
+                  Workspace
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab('appearance')}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'appearance' ? theme.activeTabBg : `${theme.textMuted} ${theme.hoverBg} hover:${theme.text}`}`}
@@ -269,6 +347,7 @@ export default function SettingsModal({
                 {activeTab === 'appearance' && 'Customization'}
                 {activeTab === 'settings' && 'Settings'}
                 {activeTab === 'security' && 'Security'}
+                {activeTab === 'workspace' && 'Workspace & Team'}
                 {activeTab === 'plan' && 'Beta Testing Features'}
               </h3>
               <button onClick={onClose} className={`p-2 rounded-full ${theme.hoverBg} ${theme.textMuted} hover:${theme.text} transition-colors`}>
@@ -511,6 +590,96 @@ export default function SettingsModal({
               )
             )}
 
+            {activeTab === 'workspace' && (
+              <div className="space-y-8">
+                {currentWorkspaceId === userProfile.id ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className={`w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center ${theme.textMuted} mb-6`}>
+                      <Users className="w-8 h-8" />
+                    </div>
+                    <h3 className={`text-xl font-bold ${theme.text} mb-2`}>Personal Workspace</h3>
+                    <p className={`${theme.textMuted} mb-8 max-w-sm`}>
+                      You are currently in your private workspace. Create a team to collaborate with others.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        const name = prompt('Enter team name:');
+                        if (name) handleCreateTeam(name);
+                      }}
+                      className={`px-8 py-3 rounded-2xl text-white font-bold shadow-lg transition-all active:scale-95 ${getButtonColor(themeColor)} flex items-center gap-2`}
+                    >
+                      <Plus className="w-5 h-5" /> Create a Team
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    <div className={`p-6 rounded-2xl border ${theme.border} ${theme.cardBg}`}>
+                      <h4 className={`text-sm font-bold uppercase tracking-widest ${theme.textMuted} mb-4`}>Invite Members</h4>
+                      <form onSubmit={handleInvite} className="flex gap-3">
+                        <div className="relative flex-1">
+                          <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${theme.textMuted}`} />
+                          <input
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="colleague@example.com"
+                            className={`w-full pl-11 pr-4 py-3 rounded-xl border ${theme.border} ${theme.inputBg} focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-blue-500 transition-all`}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={isInviting}
+                          className={`px-6 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-95 ${getButtonColor(themeColor)} disabled:opacity-50`}
+                        >
+                          {isInviting ? 'Sending...' : 'Invite'}
+                        </button>
+                      </form>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className={`text-sm font-bold uppercase tracking-widest ${theme.textMuted}`}>Team Members</h4>
+                      {isLoadingMembers ? (
+                        <div className="flex justify-center py-8">
+                          <RefreshCw className={`w-8 h-8 animate-spin text-${themeColor}-500 opacity-50`} />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3">
+                          {members.map((member) => (
+                            <div 
+                              key={member.$id}
+                              className={`flex items-center justify-between p-4 rounded-2xl border ${theme.border} ${theme.cardBg}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl ${getThemeClass(themeColor, 'gradientAvatar')} flex items-center justify-center text-white font-bold`}>
+                                  {member.userName.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className={`text-sm font-bold ${theme.text}`}>{member.userName}</p>
+                                  <p className={`text-xs ${theme.textMuted}`}>{member.userEmail}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className={`px-2 py-1 rounded-lg bg-white/5 text-[10px] font-bold uppercase tracking-widest ${theme.textMuted}`}>
+                                  {member.roles[0]}
+                                </span>
+                                {member.userId !== userProfile.id && (
+                                  <button 
+                                    onClick={() => handleRemoveMember(member.$id)}
+                                    className="p-2 rounded-lg hover:bg-red-500/10 text-white/20 hover:text-red-500 transition-all"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             {activeTab === 'appearance' && (
               <div className="space-y-8">
                 <div className="space-y-4">
@@ -731,8 +900,8 @@ export default function SettingsModal({
                   
                   <div className="space-y-4">
                     <label className={`text-sm font-medium ${theme.text}`}>Simulate Plan</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {['Free', 'Basic', 'Pro'].map((planOption) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      {['Free', 'Basic', 'Pro', 'Team'].map((planOption) => (
                         <button
                           key={planOption}
                           onClick={() => {

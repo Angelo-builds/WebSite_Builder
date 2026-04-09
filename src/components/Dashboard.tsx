@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2, FlaskConical, Database } from 'lucide-react';
+import { FolderOpen, Plus, Globe, Trash2, LogOut, Layout, ExternalLink, User, Settings, ChevronDown, ArrowRight, Sparkles, Search, Filter, Crown, X, Check, AlertCircle, Share2, FlaskConical, Database, Users, Mail, Lock } from 'lucide-react';
 import { getThemeClass } from '../theme';
 import { account } from '../lib/appwrite';
 import { ID } from 'appwrite';
 import { ShareModal } from './ShareModal';
-import { UserProfile } from '../contexts/AuthContext';
+import ProjectSettingsModal from './ProjectSettingsModal';
+import { UserProfile, Workspace } from '../contexts/AuthContext';
+import Logo from './Logo';
 
 export interface Project {
   id?: string;
@@ -36,12 +38,16 @@ interface DashboardProps {
   isDarkMode: boolean;
   userProfile: UserProfile;
   themeColor: string;
-  onOpenSettings: (tab: 'profile' | 'appearance' | 'settings' | 'plan') => void;
+  onOpenSettings: (tab: 'profile' | 'appearance' | 'settings' | 'plan' | 'workspace') => void;
   uiPreferences: UIPreferences;
   updateAvailable?: boolean;
   onUpdateSharing?: (projectName: string, sharedWith: any[]) => void;
   onUpgrade: () => void;
   showToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
+  workspaces: Workspace[];
+  currentWorkspaceId: string;
+  switchWorkspace: (id: string) => void;
+  refreshWorkspaces: () => Promise<void>;
 }
 
 export default function Dashboard({ 
@@ -60,9 +66,15 @@ export default function Dashboard({
   updateAvailable,
   onUpdateSharing,
   onUpgrade,
-  showToast
-}: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void }) {
+  showToast,
+  workspaces,
+  currentWorkspaceId,
+  switchWorkspace,
+  refreshWorkspaces,
+  onUpdateProject
+}: DashboardProps & { isLoggedIn: boolean; onLogin: (status: boolean, isGuest?: boolean, user?: any) => void; onUpdateProject: (id: string, data: any) => Promise<void> }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
@@ -77,6 +89,7 @@ export default function Dashboard({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [isBannerVisible, setIsBannerVisible] = useState(true);
   const [shareModalProject, setShareModalProject] = useState<string | null>(null);
+  const [projectSettingsModalProject, setProjectSettingsModalProject] = useState<any | null>(null);
 
   const categories = ['All', 'Blank Project', 'Landing Page', 'Portfolio', 'Corporate'];
 
@@ -206,9 +219,9 @@ export default function Dashboard({
   };
 
   // Theme classes - Enhanced for Liquid Glass
-  const theme = {
+  const theme = React.useMemo(() => ({
     bg: isDarkMode ? 'bg-black/90' : 'bg-gray-50',
-    headerBg: isDarkMode ? 'bg-[#161618]/80' : 'bg-white/80',
+    headerBg: isDarkMode ? 'bg-[#161618]/60' : 'bg-white/60',
     cardBg: isDarkMode ? 'bg-[#1c1c1e]/60' : 'bg-white/60',
     text: isDarkMode ? 'text-white' : 'text-gray-900',
     textMuted: isDarkMode ? 'text-white/60' : 'text-gray-500',
@@ -217,7 +230,8 @@ export default function Dashboard({
     hoverBg: isDarkMode ? 'hover:bg-white/10' : 'hover:bg-gray-100',
     inputBg: isDarkMode ? 'bg-black/20 focus:bg-black/40 border-white/10 focus:border-white/20' : 'bg-gray-100 focus:bg-white border-gray-200 focus:border-gray-300',
     dropdownBg: isDarkMode ? 'bg-[#1c1c1e]' : 'bg-white',
-  };
+    activeTabBg: isDarkMode ? 'bg-white/10 text-white' : 'bg-blue-50 text-blue-600',
+  }), [isDarkMode]);
 
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -255,9 +269,13 @@ export default function Dashboard({
           <div className="flex flex-col items-center text-center mb-10">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 ring-1 ring-white/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-white/20 skew-x-12 -translate-x-full group-hover:animate-shimmer"></div>
-              <Layout className="w-12 h-12 text-white" />
+              <div className="relative">
+                <div className="w-10 h-10 border-4 border-white rounded-lg rotate-45 flex items-center justify-center">
+                  <div className="w-4 h-4 bg-white rounded-sm"></div>
+                </div>
+              </div>
             </div>
-            <h1 className="text-4xl font-bold mb-3 tracking-tight text-white drop-shadow-sm">Blockra</h1>
+            <h1 className="text-4xl font-bold mb-3 tracking-tight text-white drop-shadow-sm">Blokra</h1>
             <p className="text-white/60 text-lg font-medium leading-relaxed max-w-[280px]">The next generation of web design. Fluid, fast, and intuitive.</p>
           </div>
           
@@ -267,7 +285,7 @@ export default function Dashboard({
                 onClick={() => setShowEmailForm(true)}
                 className="w-full py-4 px-6 bg-white text-black hover:bg-gray-100 rounded-2xl font-bold text-base transition-all shadow-xl shadow-white/5 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
               >
-                Sign In to Blockra <ArrowRight className="w-4 h-4" />
+                Sign In to Blokra <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <motion.form 
@@ -380,7 +398,7 @@ export default function Dashboard({
           </div>
           
           <p className="mt-10 text-[10px] text-white/20 font-medium tracking-widest uppercase">
-            Blockra
+            Blokra
           </p>
         </motion.div>
       </div>
@@ -394,20 +412,73 @@ export default function Dashboard({
   return (
     <div className={`min-h-screen ${fontFamilyClass} ${theme.bg} transition-colors duration-300`}>
       {/* Header */}
-      <header className={`h-20 border-b ${theme.border} ${theme.headerBg} backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-50 transition-colors duration-300`}>
-        <div className="flex items-center gap-4">
+      <header className={`h-28 border-b ${theme.border} ${theme.headerBg} backdrop-blur-2xl flex items-center justify-between px-8 sticky top-0 z-50 transition-colors duration-300 shadow-lg shadow-black/5`}>
+        <div className="flex items-center gap-6">
           {uiPreferences?.customLogo ? (
-            <img src={uiPreferences.customLogo} alt="Logo" className="h-8 object-contain" />
+            <img src={uiPreferences.customLogo} alt="Logo" className="h-12 object-contain" />
           ) : (
-            <>
-              <div className={`w-10 h-10 ${getThemeClass(themeColor, 'gradientIcon')} rounded-xl flex items-center justify-center ${getThemeClass(themeColor, 'shadowLg')} ring-1 ring-white/10`}>
-                <Layout className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <span className={`font-bold text-lg tracking-tight ${theme.text} block leading-none`}>Blockra</span>
-              </div>
-            </>
+            <Logo iconSize={64} textSize={24} />
           )}
+          
+          {/* Workspace Switcher */}
+          {isLoggedIn && !isGuest && (
+            <div className="ml-4 flex items-center gap-2">
+              <div className={`h-8 w-px ${theme.border} mx-2`}></div>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${theme.border} ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200'} transition-all`}
+                >
+                  <div className={`w-5 h-5 rounded-md ${getThemeClass(themeColor, 'bg')} bg-opacity-20 flex items-center justify-center text-${themeColor}-500`}>
+                    <Users className="w-3 h-3" />
+                  </div>
+                  <span className={`text-xs font-bold ${theme.text}`}>
+                    {workspaces.find(w => w.id === currentWorkspaceId)?.name || 'Personal'}
+                  </span>
+                  <ChevronDown className={`w-3 h-3 ${theme.textFaint} transition-transform ${isWorkspaceMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {isWorkspaceMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className={`absolute top-full left-0 mt-2 w-56 rounded-xl border ${theme.border} ${theme.dropdownBg} shadow-2xl overflow-hidden z-50`}
+                    >
+                      <div className="p-2 space-y-1">
+                        <div className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${theme.textFaint}`}>Workspaces</div>
+                        {workspaces.map(workspace => (
+                          <button
+                            key={workspace.id}
+                            onClick={() => {
+                              switchWorkspace(workspace.id);
+                              setIsWorkspaceMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${currentWorkspaceId === workspace.id ? `${getThemeClass(themeColor, 'bg')} bg-opacity-10 text-${themeColor}-500` : `${theme.text} ${theme.hoverBg}`}`}
+                          >
+                            <span className="truncate">{workspace.name}</span>
+                            {currentWorkspaceId === workspace.id && <Check className="w-3 h-3" />}
+                          </button>
+                        ))}
+                        <div className={`h-px ${theme.border} my-1`}></div>
+                        <button 
+                          onClick={() => {
+                            setIsWorkspaceMenuOpen(false);
+                            onOpenSettings('plan'); // Or a new workspace settings tab
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${theme.text} ${theme.hoverBg} transition-colors`}
+                        >
+                          <Plus className="w-3 h-3" /> Create Team
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
           {isLoggedIn && userProfile.plan && (
             <div className="flex items-center gap-2 ml-2">
               <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${userProfile.plan === 'Pro' || userProfile.plan === 'Team' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
@@ -421,6 +492,46 @@ export default function Dashboard({
             </div>
           )}
         </div>
+
+        {/* Center: Storage Bar */}
+        {isLoggedIn && userProfile.plan && (
+          <div className="hidden lg:flex items-center gap-4 flex-1 max-w-md mx-12">
+            <div className="flex-1">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex items-center gap-1.5">
+                  <Database className={`w-3 h-3 ${getThemeClass(themeColor, 'iconColor')}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${theme.textMuted}`}>Storage</span>
+                </div>
+                <span className={`text-[10px] font-medium ${theme.textFaint}`}>
+                  {((userProfile.usedStorage || 0) / (1024 * 1024)).toFixed(1)}MB / {
+                    userProfile.plan === 'Starter' || userProfile.plan === 'Free' ? '100MB' :
+                    userProfile.plan === 'Basic' ? '1GB' :
+                    userProfile.plan === 'Pro' ? '5GB' :
+                    userProfile.plan === 'Team' ? '10GB' : '100MB'
+                  }
+                </span>
+              </div>
+              <div className={`w-full h-1.5 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} overflow-hidden`}>
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, ((userProfile.usedStorage || 0) / (
+                    userProfile.plan === 'Starter' || userProfile.plan === 'Free' ? 100 * 1024 * 1024 :
+                    userProfile.plan === 'Basic' ? 1024 * 1024 * 1024 :
+                    userProfile.plan === 'Pro' ? 5 * 1024 * 1024 * 1024 :
+                    userProfile.plan === 'Team' ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024
+                  )) * 100)}%` }}
+                  className={`h-full rounded-full ${getThemeClass(themeColor, 'gradientPrimary')}`}
+                />
+              </div>
+            </div>
+            <button 
+              onClick={onUpgrade}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold ${getThemeClass(themeColor, 'bg')} bg-opacity-10 text-${themeColor}-500 hover:bg-opacity-20 transition-all border border-${themeColor}-500/20`}
+            >
+              Upgrade
+            </button>
+          </div>
+        )}
         
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -527,7 +638,7 @@ export default function Dashboard({
             </button>
             <div className="pr-6 flex-1">
               <h3 className={`text-lg font-bold ${theme.text} flex items-center gap-2`}>
-                Current Plan: <span className="text-blue-500">{userProfile.plan}</span>
+                {userProfile.plan === 'Pro' ? 'Pro Plan Active' : 'Upgrade Your Experience'}
                 {userProfile.plan === 'Pro' && <Crown className="w-4 h-4 text-amber-500" />}
               </h3>
               <p className={`text-sm ${theme.textMuted} mt-1`}>
@@ -537,9 +648,9 @@ export default function Dashboard({
                   "You are a Beta Tester! You can switch between different plans in your Account Settings to test features."
                 ) : (
                   <>
-                    {userProfile.plan === 'Free' && "You are on the Free plan. Upgrade to unlock advanced customization and unlimited projects."}
-                    {userProfile.plan === 'Basic' && "You are on the Basic plan. Upgrade to Pro for premium templates and advanced UI settings."}
-                    {userProfile.plan === 'Pro' && "You are on the Pro plan. Enjoy all premium features! Upgrade to Team for collaboration."}
+                    {userProfile.plan === 'Free' && "Unlock advanced customization, premium templates, and unlimited projects today."}
+                    {userProfile.plan === 'Basic' && "Upgrade to Pro for premium templates, custom fonts, and advanced UI settings."}
+                    {userProfile.plan === 'Pro' && "Enjoy all premium features! Upgrade to Team for collaboration and white-labeling."}
                   </>
                 )}
               </p>
@@ -568,7 +679,7 @@ export default function Dashboard({
                     onClick={onUpgrade}
                     className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 mt-4 sm:mt-0 mr-8`}
                   >
-                    Upgrade to {userProfile.plan === 'Free' ? 'Basic' : 'Pro'}
+                    Upgrade Now
                   </button>
                 )}
                 {userProfile.plan === 'Pro' && (
@@ -584,59 +695,79 @@ export default function Dashboard({
           </div>
         )}
 
-        {isLoggedIn && userProfile.plan && (
-          <div className={`mb-8 p-6 rounded-3xl border ${theme.border} ${theme.cardBg} backdrop-blur-md shadow-xl flex flex-col md:flex-row items-center justify-between gap-6`}>
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className={`w-12 h-12 rounded-2xl ${getThemeClass(themeColor, 'bg')} bg-opacity-10 flex items-center justify-center text-${themeColor}-500`}>
-                <Database className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className={`text-lg font-bold ${theme.text}`}>Storage Usage</h3>
-                <p className={`text-sm ${theme.textMuted}`}>Your current plan: <span className={`text-${themeColor}-500 font-bold`}>{userProfile.plan}</span></p>
-              </div>
-            </div>
-            
-            <div className="flex-1 w-full max-w-md">
-              <div className="flex justify-between items-center mb-2">
-                <span className={`text-sm font-medium ${theme.text}`}>
-                  {((userProfile.usedStorage || 0) / (1024 * 1024)).toFixed(1)} MB used
-                </span>
-                <span className={`text-sm font-medium ${theme.textFaint}`}>
-                  of {
-                    userProfile.plan === 'Starter' ? '100 MB' :
-                    userProfile.plan === 'Basic' ? '1 GB' :
-                    userProfile.plan === 'Pro' ? '5 GB' :
-                    userProfile.plan === 'Team' ? '10 GB' : '100 MB'
-                  }
-                </span>
-              </div>
-              <div className={`w-full h-3 rounded-full ${isDarkMode ? 'bg-white/10' : 'bg-gray-200'} overflow-hidden shadow-inner`}>
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, ((userProfile.usedStorage || 0) / (
-                    userProfile.plan === 'Starter' ? 100 * 1024 * 1024 :
-                    userProfile.plan === 'Basic' ? 1024 * 1024 * 1024 :
-                    userProfile.plan === 'Pro' ? 5 * 1024 * 1024 * 1024 :
-                    userProfile.plan === 'Team' ? 10 * 1024 * 1024 * 1024 : 100 * 1024 * 1024
-                  )) * 100)}%` }}
-                  className={`h-full rounded-full ${getThemeClass(themeColor, 'gradientPrimary')} shadow-lg`}
-                />
-              </div>
-            </div>
-            
-            <button 
-              onClick={onUpgrade}
-              className={`shrink-0 px-6 py-2.5 rounded-xl text-sm font-bold ${getThemeClass(themeColor, 'gradientPrimary')} ${getThemeClass(themeColor, 'gradientHover')} text-white shadow-lg transition-all hover:scale-105 active:scale-95`}
-            >
-              Upgrade Storage
-            </button>
-          </div>
-        )}
-
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 gap-6">
-          <div>
-            <h2 className={`text-3xl sm:text-4xl font-bold mb-3 ${theme.text} tracking-tight`}>Your Projects</h2>
-            <p className={theme.textMuted}>Manage and publish your websites with ease.</p>
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <button 
+                onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${theme.border} ${theme.cardBg} hover:${theme.hoverBg} transition-all group-hover:shadow-lg`}
+              >
+                <div className={`w-10 h-10 rounded-xl ${getThemeClass(themeColor, 'gradientAvatar')} flex items-center justify-center text-white font-bold shadow-inner`}>
+                  {workspaces.find(w => w.id === currentWorkspaceId)?.name.charAt(0).toUpperCase() || 'P'}
+                </div>
+                <div className="text-left pr-2">
+                  <p className={`text-[10px] font-bold uppercase tracking-widest ${theme.textMuted}`}>Workspace</p>
+                  <p className={`text-sm font-bold ${theme.text} truncate max-w-[120px]`}>
+                    {workspaces.find(w => w.id === currentWorkspaceId)?.name || 'Personal'}
+                  </p>
+                </div>
+                <ChevronDown className={`w-4 h-4 ${theme.textMuted} transition-transform ${isWorkspaceMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isWorkspaceMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsWorkspaceMenuOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className={`absolute left-0 top-full mt-2 w-64 rounded-2xl border ${theme.border} ${theme.dropdownBg} shadow-2xl z-50 overflow-hidden backdrop-blur-xl`}
+                    >
+                      <div className="p-3 border-b border-white/5">
+                        <p className={`text-[10px] font-bold uppercase tracking-widest ${theme.textMuted} px-3 py-2`}>Your Workspaces</p>
+                        <div className="space-y-1">
+                          {workspaces.map((ws) => (
+                            <button
+                              key={ws.id}
+                              onClick={() => {
+                                switchWorkspace(ws.id);
+                                setIsWorkspaceMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${currentWorkspaceId === ws.id ? theme.activeTabBg : `hover:${theme.hoverBg} ${theme.text}`}`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg ${ws.id === userProfile.id ? 'bg-blue-500/20 text-blue-500' : 'bg-purple-500/20 text-purple-500'} flex items-center justify-center text-xs font-bold`}>
+                                  {ws.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="truncate max-w-[120px]">{ws.name}</span>
+                              </div>
+                              {currentWorkspaceId === ws.id && <Check className="w-4 h-4 text-blue-500" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="p-2">
+                        <button 
+                          onClick={() => {
+                            onOpenSettings('workspace');
+                            setIsWorkspaceMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium ${theme.textMuted} hover:${theme.hoverBg} hover:${theme.text} transition-all`}
+                        >
+                          <Plus className="w-4 h-4" /> Create or Manage Team
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="h-12 w-px bg-white/10 mx-2 hidden sm:block" />
+            <div>
+              <h2 className={`text-3xl sm:text-4xl font-bold mb-1 ${theme.text} tracking-tight`}>Your Projects</h2>
+              <p className={theme.textMuted}>Manage and publish your websites with ease.</p>
+            </div>
           </div>
           <button 
             onClick={() => {
@@ -799,6 +930,16 @@ export default function Dashboard({
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
+                            setProjectSettingsModalProject(project);
+                          }}
+                          className={`p-3 ${isDarkMode ? 'bg-black/40 text-white/60 hover:text-white border-white/10' : 'bg-white/80 text-gray-500 hover:text-blue-500 border-gray-200'} hover:bg-blue-500 rounded-xl backdrop-blur-md transition-colors border`}
+                          title="Project Settings"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setShareModalProject(project.name);
                           }}
                           className={`p-3 ${isDarkMode ? 'bg-black/40 text-white/60 hover:text-white border-white/10' : 'bg-white/80 text-gray-500 hover:text-blue-500 border-gray-200'} hover:bg-blue-500 rounded-xl backdrop-blur-md transition-colors border`}
@@ -863,6 +1004,23 @@ export default function Dashboard({
           </div>
         )}
       </main>
+
+      {/* Project Settings Modal */}
+      {projectSettingsModalProject && (
+        <ProjectSettingsModal
+          isOpen={true}
+          onClose={() => setProjectSettingsModalProject(null)}
+          project={projectSettingsModalProject}
+          onUpdateProject={onUpdateProject}
+          isDarkMode={isDarkMode}
+          themeColor={themeColor}
+          userPlan={userProfile.plan || 'Free'}
+          onUpgrade={() => {
+            setProjectSettingsModalProject(null);
+            onUpgrade();
+          }}
+        />
+      )}
 
       {/* Share Modal */}
       {shareModalProject && (

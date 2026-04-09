@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { account, databases, appwriteConfig } from '../lib/appwrite';
+import { account, databases, appwriteConfig, teams } from '../lib/appwrite';
+
+export interface Workspace {
+  id: string;
+  name: string;
+  role: 'Owner' | 'Editor' | 'Viewer';
+}
 
 export interface UserProfile {
   id?: string;
@@ -18,10 +24,14 @@ interface AuthContextType {
   isGuest: boolean;
   userProfile: UserProfile;
   isLoading: boolean;
+  workspaces: Workspace[];
+  currentWorkspaceId: string;
   login: (status: boolean, guest?: boolean, user?: any) => void;
   logout: () => Promise<void>;
   updateUserProfile: (profile: UserProfile) => void;
   checkSession: () => Promise<void>;
+  switchWorkspace: (id: string) => void;
+  refreshWorkspaces: () => Promise<void>;
 }
 
 const defaultProfile: UserProfile = {
@@ -40,6 +50,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isGuest, setIsGuest] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile>(defaultProfile);
   const [isLoading, setIsLoading] = useState(true);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string>('');
+
+  const refreshWorkspaces = async () => {
+    if (!isLoggedIn || isGuest) return;
+    try {
+      const teamsList = await teams.list();
+      const fetchedWorkspaces: Workspace[] = teamsList.teams.map(t => ({
+        id: t.$id,
+        name: t.name,
+        role: (t.prefs?.role as any) || 'Owner' // Default to Owner for now, Appwrite doesn't return membership role in teams.list() easily without checking memberships
+      }));
+
+      // Add personal workspace
+      const personalWorkspace: Workspace = {
+        id: userProfile.id || 'personal',
+        name: 'My Private Projects',
+        role: 'Owner'
+      };
+
+      const allWorkspaces = [personalWorkspace, ...fetchedWorkspaces];
+      setWorkspaces(allWorkspaces);
+      
+      if (!currentWorkspaceId || !allWorkspaces.find(w => w.id === currentWorkspaceId)) {
+        setCurrentWorkspaceId(personalWorkspace.id);
+      }
+    } catch (error) {
+      console.error('Failed to fetch workspaces:', error);
+    }
+  };
 
   const login = (status: boolean, guest: boolean = false, user?: any) => {
     setIsLoggedIn(status);
@@ -47,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     if (!status) {
       setUserProfile(defaultProfile);
+      setWorkspaces([]);
+      setCurrentWorkspaceId('');
       return;
     }
 
@@ -59,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: 'Guest User',
         plan: 'Guest'
       });
+      setCurrentWorkspaceId('guest');
     } else if (user) {
       setUserProfile({
         name: user.name || 'Admin',
@@ -66,17 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: user.email || 'admin@example.com',
         username: user.username || 'admin',
         role: user.role || 'Administrator',
-        plan: user.plan || 'Pro'
+        plan: user.plan || 'Pro',
+        id: user.id
       });
-    } else {
-      setUserProfile({
-        name: 'Admin',
-        surname: 'User',
-        email: 'admin@example.com',
-        username: 'admin',
-        role: 'Administrator',
-        plan: 'Pro'
-      });
+      setCurrentWorkspaceId(user.id || 'personal');
     }
   };
 
@@ -132,8 +168,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkSession();
   }, []);
 
+  useEffect(() => {
+    if (isLoggedIn && !isGuest) {
+      refreshWorkspaces();
+    }
+  }, [isLoggedIn, isGuest, userProfile.id]);
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, isGuest, userProfile, isLoading, login, logout, updateUserProfile: setUserProfile, checkSession }}>
+    <AuthContext.Provider value={{ 
+      isLoggedIn, 
+      isGuest, 
+      userProfile, 
+      isLoading, 
+      workspaces,
+      currentWorkspaceId,
+      login, 
+      logout, 
+      updateUserProfile: setUserProfile, 
+      checkSession,
+      switchWorkspace: setCurrentWorkspaceId,
+      refreshWorkspaces
+    }}>
       {children}
     </AuthContext.Provider>
   );

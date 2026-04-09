@@ -8,7 +8,7 @@ import gjsForms from 'grapesjs-plugin-forms';
 import gjsCountdown from 'grapesjs-component-countdown';
 import gjsStyleBg from 'grapesjs-style-bg';
 import addSmartComponents from './grapesjs-smart-components';
-import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown } from 'lucide-react';
+import { FileCode, Save, Globe, FolderOpen, Plus, Layout, Settings, Code, ChevronLeft, ChevronRight, Trash2, Monitor, Smartphone, Tablet, Sun, Moon, Layers, Paintbrush, MousePointerClick, FileText, Upload, Image as ImageIcon, Palette, Sliders, Eye, Copy, Check, ArrowLeft, Undo2, Redo2, RefreshCw, X, Link as LinkIcon, MoreVertical, Crown, Clock, History as HistoryIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getThemeClass } from './theme';
 import { account, databases, storage, appwriteConfig, Query, ID, getOwnerPermissions, client } from './lib/appwrite';
@@ -18,6 +18,7 @@ import * as prettier from 'prettier/standalone';
 import prettierPluginHtml from 'prettier/plugins/html';
 import prettierPluginCss from 'prettier/plugins/postcss';
 import prettierPluginBabel from 'prettier/plugins/babel';
+import Logo from './components/Logo';
 import prettierPluginEstree from 'prettier/plugins/estree';
 import ProjectModal from './components/ProjectModal';
 import CustomAssetManager from './components/CustomAssetManager';
@@ -93,7 +94,7 @@ export default function App() {
   const [device, setDevice] = useState('Desktop');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
-  const [activeRightTab, setActiveRightTab] = useState<'styles' | 'traits' | 'layers' | 'templates'>('templates');
+  const [activeRightTab, setActiveRightTab] = useState<'styles' | 'traits' | 'layers' | 'templates' | 'history'>('templates');
   const [isAssetManagerOpen, setIsAssetManagerOpen] = useState(false);
   const [assetManagerProps, setAssetManagerProps] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -102,10 +103,13 @@ export default function App() {
   const [activeCodeTab, setActiveCodeTab] = useState<'html' | 'css' | 'js'>('html');
   const [copied, setCopied] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const { isLoggedIn, isGuest, userProfile, login, updateUserProfile, checkSession } = useAuth();
+  const { isLoggedIn, isGuest, userProfile, login, updateUserProfile, checkSession, workspaces, currentWorkspaceId, switchWorkspace, refreshWorkspaces } = useAuth();
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [pages, setPages] = useState<{ id: string, name: string, html?: string, css?: string }[]>([{ id: 'index', name: 'index' }]);
   const [currentPageId, setCurrentPageId] = useState<string>('index');
+  const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     (window as any).__BLOCKRA_PAGES__ = pages;
@@ -123,7 +127,7 @@ export default function App() {
   
   // Settings State
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security' | 'plan'>('profile');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'profile' | 'appearance' | 'settings' | 'security' | 'plan' | 'workspace'>('profile');
   const [themeColor, setThemeColor] = useState('blue');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
@@ -161,13 +165,49 @@ export default function App() {
     type: 'info',
   });
 
-  const showToast = (message: string, type: ToastType = 'info') => {
+  const showToast = React.useCallback((message: string, type: ToastType = 'info') => {
     setToast({ isVisible: true, message, type });
     setTimeout(() => setToast(prev => ({ ...prev, isVisible: false })), 3000);
-  };
+  }, []);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const editorInstanceRef = useRef<Editor | null>(null);
+
+  const fetchProjects = React.useCallback(async () => {
+    if (!isLoggedIn || isGuest) return;
+    setIsLoadingProjects(true);
+    try {
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        [
+          Query.equal('workspaceId', currentWorkspaceId),
+          Query.orderDesc('$updatedAt'),
+          Query.limit(100)
+        ]
+      );
+      
+      const mappedProjects = response.documents.map(doc => ({
+        id: doc.$id,
+        name: doc.name,
+        description: doc.description || '',
+        category: doc.category || 'Other',
+        updatedAt: doc.$updatedAt,
+        sharedWith: doc.sharedWith || [],
+        publishedUrl: doc.publishedUrl || '',
+        status: doc.status || 'draft',
+        workspaceId: doc.workspaceId,
+        customDomain: doc.customDomain || ''
+      }));
+      
+      setProjects(mappedProjects);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      showToast('Failed to load projects', 'error');
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  }, [isLoggedIn, isGuest, showToast, currentWorkspaceId]);
 
   useEffect(() => {
     if (isLoggedIn && !isGuest) {
@@ -1384,7 +1424,7 @@ export default function App() {
             <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; border-bottom: 1px solid #374151; padding-bottom: 40px; margin-bottom: 40px;">
               
               <div>
-                <h3 style="color: white; font-size: 1.5rem; font-weight: bold; margin-bottom: 20px;">Blockra</h3>
+                <h3 style="color: white; font-size: 1.5rem; font-weight: bold; margin-bottom: 20px;">Blokra</h3>
                 <p style="line-height: 1.6; margin-bottom: 20px;">Making web development accessible to everyone, everywhere.</p>
                 <div style="display: flex; gap: 15px;">
                   <a href="#" style="color: #9ca3af; text-decoration: none;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg></a>
@@ -1424,7 +1464,7 @@ export default function App() {
 
             </div>
             <div style="max-width: 1200px; margin: 0 auto; text-align: center; font-size: 0.9rem;">
-              &copy; 2026 Blockra, Inc. All rights reserved.
+              &copy; 2026 Blokra, Inc. All rights reserved.
             </div>
           </footer>
         `,
@@ -1629,44 +1669,79 @@ export default function App() {
     }
   };
 
-  async function fetchProjects() {
-    setIsLoadingProjects(true);
+  const fetchSnapshots = async (projectId: string) => {
+    setIsLoadingSnapshots(true);
     try {
-      const user = await account.get();
-      if (!user) {
-        setIsLoadingProjects(false);
-        return;
-      }
-
       const response = await databases.listDocuments(
         appwriteConfig.databaseId,
-        appwriteConfig.sitesCollectionId,
+        appwriteConfig.snapshotsCollectionId,
         [
-          Query.equal('ownerId', user.$id)
+          Query.equal('projectId', projectId),
+          Query.orderDesc('createdAt'),
+          Query.limit(20)
         ]
       );
-      
-      const formattedProjects = response.documents.map(doc => ({
-        id: doc.$id,
-        name: doc.name,
-        description: doc.description || '',
-        category: doc.category || 'Other',
-        updatedAt: doc.$updatedAt,
-        sharedWith: doc.sharedWith || [],
-        publishedUrl: doc.publishedUrl || '',
-        status: doc.status || 'draft'
-      }));
-      
-      setProjects(formattedProjects);
-    } catch (err: any) {
-      console.error('Failed to fetch projects from Appwrite', err);
-      if (err.message === 'Failed to fetch') {
-        showToast('Cannot connect to Appwrite server. Please check your endpoint and CORS settings.', 'error');
-      }
-      setProjects([]);
+      setSnapshots(response.documents);
+    } catch (err) {
+      console.error('Failed to fetch snapshots:', err);
     } finally {
-      setIsLoadingProjects(false);
+      setIsLoadingSnapshots(false);
     }
+  };
+
+  const handleSaveVersion = async (name: string) => {
+    if (!editor || !currentProject) return;
+    
+    try {
+      const snapshotData = {
+        projectId: currentProject,
+        name: name || `Version ${new Date().toLocaleString()}`,
+        pages: JSON.stringify(pages),
+        createdAt: new Date().toISOString(),
+        createdBy: userProfile.id
+      };
+
+      await databases.createDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.snapshotsCollectionId,
+        ID.unique(),
+        snapshotData,
+        getOwnerPermissions(userProfile.id!)
+      );
+
+      showToast('Version saved successfully!', 'success');
+      fetchSnapshots(currentProject);
+    } catch (err) {
+      console.error('Failed to save version:', err);
+      showToast('Failed to save version.', 'error');
+    }
+  };
+
+  const handleRestoreVersion = async (snapshot: any) => {
+    try {
+      const restoredPages = JSON.parse(snapshot.pages);
+      setPages(restoredPages);
+      
+      // Update editor with restored pages
+      const indexPage = restoredPages.find((p: any) => p.id === 'index');
+      if (indexPage && editor) {
+        editor.setComponents(indexPage.html || '');
+        editor.setStyle(indexPage.css || '');
+        setCurrentPageId('index');
+      }
+      
+      showToast(`Restored to version: ${snapshot.name}`, 'success');
+      setIsHistoryOpen(false);
+    } catch (err) {
+      console.error('Failed to restore version:', err);
+      showToast('Failed to restore version.', 'error');
+    }
+  };
+
+  const canEdit = () => {
+    if (isGuest) return false;
+    const currentWorkspace = workspaces.find(w => w.id === currentWorkspaceId);
+    return currentWorkspace?.role === 'Owner' || currentWorkspace?.role === 'Editor';
   };
 
   const handleSave = async (silent = false) => {
@@ -1739,6 +1814,11 @@ export default function App() {
 
     if (!editor || !currentProject) return;
 
+    if (!canEdit()) {
+      showToast('You do not have permission to publish projects in this workspace.', 'error');
+      return;
+    }
+
     setIsPublishing(true);
     try {
       // Update current page content in pages array before publishing
@@ -1753,7 +1833,7 @@ export default function App() {
 
       let mainPublicUrl = '';
       const project = projects.find(p => p.id === currentProject);
-      const projectDescription = project?.description || 'A beautiful website built with Blockra';
+      const projectDescription = project?.description || 'A beautiful website built with Blokra';
       const faviconUrl = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f680.png';
 
       for (const page of updatedPages) {
@@ -1763,7 +1843,7 @@ export default function App() {
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>${page.name} - ${project?.name || 'Blockra Site'}</title>
+              <title>${page.name} - ${project?.name || 'Blokra Site'}</title>
               <meta name="description" content="${projectDescription}">
               <link rel="icon" href="${faviconUrl}" type="image/png">
               <style>${page.css || ''}</style>
@@ -1773,7 +1853,7 @@ export default function App() {
               ${page.html || ''}
               ${userProfile.plan === 'Starter' ? `
               <div style="position: fixed; bottom: 20px; right: 20px; background: #fff; padding: 10px 20px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: sans-serif; display: flex; align-items: center; gap: 10px; z-index: 9999;">
-                 <span style="font-weight: bold; color: #3b82f6;">Built with Blockra</span>
+                 <span style="font-weight: bold; color: #3b82f6;">Built with Blokra</span>
               </div>` : ''}
           </body>
           </html>
@@ -1926,6 +2006,11 @@ export default function App() {
     e.stopPropagation();
     e.preventDefault();
     
+    if (!canEdit()) {
+      showToast('You do not have permission to delete projects in this workspace.', 'error');
+      return;
+    }
+
     setConfirmModal({
       isOpen: true,
       title: 'Delete Project',
@@ -1979,6 +2064,11 @@ export default function App() {
   };
 
   const handleCreateProject = async (name: string, description: string, category: string) => {
+    if (!canEdit()) {
+      showToast('You do not have permission to create projects in this workspace.', 'error');
+      return;
+    }
+
     // Check project limits
     const PROJECT_LIMITS: Record<string, number> = {
       Starter: 1,
@@ -2089,6 +2179,8 @@ export default function App() {
           data: JSON.stringify(initialProjectData),
           pages: JSON.stringify(initialCustomPages),
           ownerId: user.$id,
+          workspaceId: currentWorkspaceId,
+          customDomain: '',
           updatedAt: new Date().toISOString()
         },
         permissions
@@ -2125,6 +2217,30 @@ export default function App() {
     } catch (err: any) {
       console.error('Failed to create project in Appwrite', err);
       showToast(`Failed to create project: ${err.message || 'Unknown error'}`, 'error');
+    }
+  };
+
+  const handleUpdateProject = async (projectId: string, data: any) => {
+    if (!canEdit()) {
+      showToast('You do not have permission to update projects in this workspace.', 'error');
+      return;
+    }
+
+    try {
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.sitesCollectionId,
+        projectId,
+        {
+          ...data,
+          updatedAt: new Date().toISOString()
+        }
+      );
+      showToast('Project settings updated successfully!', 'success');
+      fetchProjects();
+    } catch (err: any) {
+      console.error('Failed to update project:', err);
+      showToast(`Failed to update project: ${err.message}`, 'error');
     }
   };
 
@@ -2306,10 +2422,11 @@ export default function App() {
   };
 
   // Theme-based classes
-  const themeClasses = {
+  const themeClasses = React.useMemo(() => ({
     bg: isDarkMode ? 'bg-transparent' : 'bg-gray-50', // Handled by body background in dark mode
     sidebarBg: isDarkMode ? 'glass-panel' : 'bg-white shadow-lg',
     sidebarBorder: isDarkMode ? 'border-white/10' : 'border-gray-200',
+    border: isDarkMode ? 'border-white/10' : 'border-gray-200',
     text: isDarkMode ? 'text-white' : 'text-gray-900',
     textMuted: isDarkMode ? 'text-white/60' : 'text-gray-500',
     textFaint: isDarkMode ? 'text-white/40' : 'text-gray-400',
@@ -2324,7 +2441,7 @@ export default function App() {
     codeText: isDarkMode ? 'text-gray-300' : 'text-gray-800',
     button: isDarkMode ? 'glass-button text-white' : 'bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 shadow-sm',
     primaryButton: getThemeClass(themeColor, 'primaryButton'),
-  };
+  }), [isDarkMode, themeColor]);
 
   const fontFamilyClass = uiPreferences?.fontFamily === 'Roboto' ? 'font-roboto' : uiPreferences?.fontFamily === 'Montserrat' ? 'font-montserrat' : 'font-sans';
 
@@ -2374,6 +2491,11 @@ export default function App() {
             uiPreferences={uiPreferences}
             updateAvailable={updateAvailable}
             showToast={showToast}
+            workspaces={workspaces}
+            currentWorkspaceId={currentWorkspaceId}
+            switchWorkspace={switchWorkspace}
+            refreshWorkspaces={refreshWorkspaces}
+            onUpdateProject={handleUpdateProject}
           />
           
           <ConfirmModal
@@ -2605,17 +2727,15 @@ export default function App() {
       <motion.header 
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className={`h-16 mx-2 sm:mx-4 mt-2 sm:mt-4 rounded-2xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} flex items-center justify-between px-3 sm:px-6 shadow-lg z-50 relative`}
+        className={`h-24 mx-2 sm:mx-4 mt-2 sm:mt-4 rounded-2xl border ${themeClasses.sidebarBorder} ${themeClasses.sidebarBg} flex items-center justify-between px-3 sm:px-6 shadow-lg z-50 relative backdrop-blur-2xl shadow-black/10`}
       >
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2">
-             <div className={`w-8 h-8 ${getThemeClass(themeColor, 'gradientIcon')} rounded-lg flex items-center justify-center shadow-lg ${getThemeClass(themeColor, 'shadow')} shrink-0`}>
-               <Layout className="w-5 h-5 text-white" />
-             </div>
-             {/* Title and version hidden on smaller screens to save space */}
-             <div className="hidden 2xl:flex flex-col">
-               <h1 className={`text-sm font-bold tracking-tight ${themeClasses.text}`}>Blockra</h1>
-             </div>
+             {uiPreferences?.customLogo ? (
+               <img src={uiPreferences.customLogo} alt="Logo" className="h-10 object-contain" />
+             ) : (
+               <Logo iconSize={48} textSize={16} />
+             )}
           </div>
 
           <div className={`h-8 w-px ${themeClasses.sidebarBorder} hidden sm:block`}></div>
@@ -2803,9 +2923,7 @@ export default function App() {
             {!currentProject && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-10">
                 <div className="text-center p-10 max-w-md border border-white/10 rounded-3xl glass-panel shadow-2xl">
-                  <div className={`w-20 h-20 ${getThemeClass(themeColor, 'gradientIcon')} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg ${getThemeClass(themeColor, 'shadow')}`}>
-                    <Layout className="w-10 h-10 text-white" />
-                  </div>
+                  <Logo iconSize={80} showText={false} className="mx-auto mb-6" />
                   <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">No Project Selected</h2>
                   <p className="text-white/60 mb-8 leading-relaxed">Select a project from the sidebar or create a new one to start building your next big idea.</p>
                   <button 
@@ -2945,6 +3063,16 @@ export default function App() {
             >
               <Palette className="w-4 h-4 mx-auto mb-1" />
             </button>
+            <button 
+              onClick={() => {
+                setActiveRightTab('history');
+                if (currentProject) fetchSnapshots(currentProject);
+              }}
+              className={`flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-center transition-all ${activeRightTab === 'history' ? `text-${themeColor}-500 bg-${themeColor}-500/5 border-b-2 border-${themeColor}-500` : `${themeClasses.textMuted} hover:${themeClasses.text} hover:bg-white/5`}`}
+              title="History"
+            >
+              <HistoryIcon className="w-4 h-4 mx-auto mb-1" />
+            </button>
           </div>
         )}
         
@@ -2960,7 +3088,76 @@ export default function App() {
           </div>
         )}
 
+        {activeRightTab === 'history' && (
+          <div className={`p-4 border-b ${themeClasses.sidebarBorder} font-bold text-sm uppercase tracking-wider ${themeClasses.text} shrink-0 flex items-center justify-between`}>
+            History
+            <button 
+              onClick={() => {
+                const name = prompt('Enter version name:');
+                if (name) handleSaveVersion(name);
+              }}
+              className={`p-1.5 rounded-lg ${getThemeClass(themeColor, 'bg')} bg-opacity-10 text-${themeColor}-500 hover:bg-opacity-20 transition-all`}
+              title="Save Version"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto custom-scrollbar p-5 relative">
+          {/* History Content */}
+          {activeRightTab === 'history' && (
+            <div className="space-y-4">
+              {isLoadingSnapshots ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                  <RefreshCw className={`w-8 h-8 animate-spin text-${themeColor}-500 opacity-50`} />
+                  <p className={`text-xs font-medium ${themeClasses.textFaint}`}>Loading snapshots...</p>
+                </div>
+              ) : snapshots.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
+                  <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center ${themeClasses.textFaint}`}>
+                    <HistoryIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className={`text-sm font-bold ${themeClasses.text}`}>No snapshots yet</p>
+                    <p className={`text-xs ${themeClasses.textFaint} mt-1`}>Save a version to see it here.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {snapshots.map((snapshot) => (
+                    <div 
+                      key={snapshot.$id}
+                      className={`p-4 rounded-2xl border ${themeClasses.border} bg-white/5 hover:bg-white/10 transition-all group relative overflow-hidden`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`text-sm font-bold ${themeClasses.text} truncate pr-2`}>{snapshot.name}</h4>
+                          <p className={`text-[10px] ${themeClasses.textFaint} mt-0.5 flex items-center gap-1`}>
+                            <Clock className="w-3 h-3" /> {new Date(snapshot.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button 
+                          onClick={() => handleRestoreVersion(snapshot)}
+                          className={`flex-1 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] font-bold ${themeClasses.text} transition-all`}
+                        >
+                          Restore
+                        </button>
+                        <button 
+                          className={`p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-500 transition-all`}
+                          title="Delete Snapshot"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {/* Image Settings (if image selected) */}
           {selectedComponent && selectedComponent.get('type') === 'image' && (activeRightTab === 'styles' || activeRightTab === 'traits') && (
             <div className={`mb-6 p-4 rounded-xl bg-white/5 border ${themeClasses.sidebarBorder}`}>
@@ -3200,6 +3397,9 @@ export default function App() {
         onUpdateUiPreferences={setUiPreferences}
         updateAvailable={updateAvailable}
         onDismissUpdate={() => setUpdateAvailable(false)}
+        workspaces={workspaces}
+        currentWorkspaceId={currentWorkspaceId}
+        onRefreshWorkspaces={refreshWorkspaces}
       />
       
       <UpgradeModal

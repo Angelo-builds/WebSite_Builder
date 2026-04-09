@@ -1,0 +1,19 @@
+services:
+  blockra:
+    build: .
+    container_name: blockra
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - VITE_APPWRITE_ENDPOINT=${VITE_APPWRITE_ENDPOINT}
+      - VITE_APPWRITE_PROJECT_ID=${VITE_APPWRITE_PROJECT_ID}
+      - VITE_DATABASE_ID=${VITE_DATABASE_ID}
+      - VITE_SITES_COLLECTION_ID=${VITE_SITES_COLLECTION_ID}
+      - VITE_ASSETS_BUCKET_ID=${VITE_ASSETS_BUCKET_ID}
+      - VITE_USERS_COLLECTION_ID=${VITE_USERS_COLLECTION_ID}
+    volumes:
+      - .env:/app/.env
+      - ./dist/sites:/app/dist/sites

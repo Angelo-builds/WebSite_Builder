@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Layout, Check, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import Logo from './Logo';
 import { account, databases, appwriteConfig, ID } from '../lib/appwrite';
 
 interface SetupWizardProps {
@@ -162,12 +163,9 @@ export default function SetupWizard({ onActivated, isDarkMode }: SetupWizardProp
         className="relative z-10 w-full max-w-md p-10 rounded-[2.5rem] bg-[#161618]/60 backdrop-blur-3xl border border-white/10 shadow-2xl ring-1 ring-white/5"
       >
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 ring-1 ring-white/20 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-white/20 skew-x-12 -translate-x-full group-hover:animate-shimmer transition-all duration-1000"></div>
-            <Layout className="w-10 h-10 text-white" />
-          </div>
+          <Logo iconSize={80} showText={false} className="mb-6" />
           <h1 className="text-3xl font-bold mb-2 tracking-tight text-white drop-shadow-sm">
-            {mode === 'welcome' ? 'Blockra' : mode === 'login' ? 'Welcome Back' : 'Create Account'}
+            {mode === 'welcome' ? 'Blokra' : mode === 'login' ? 'Welcome Back' : 'Create Account'}
           </h1>
           <p className="text-white/60 text-base font-medium leading-relaxed max-w-[280px]">
             {mode === 'welcome' ? 'Sign in to access your workspace.' : mode === 'login' ? 'Enter your details to continue.' : 'Join us to start building.'}

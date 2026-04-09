@@ -12,6 +12,23 @@
 
 ---
 
+## 🚀 One-Click Installation
+
+For a professional, automated setup on any clean Ubuntu/Debian node (including Proxmox LXC), run the following command:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/install.sh | sudo bash
+```
+
+This script will:
+1.  Verify root permissions.
+2.  Install Docker and Docker Compose if missing.
+3.  Clone the Blockra repository.
+4.  Guide you through an **interactive setup** for your Appwrite credentials.
+5.  Build and launch the application via Docker.
+
+---
+
 **Blockra** is a high-end, self-hosted website builder designed to bring professional web design to any infrastructure. Whether you are a solo creator, an agency, or an enterprise, Blockra provides a seamless, drag-and-drop experience backed by a robust cloud architecture.
 
 ![Blockra Dashboard Preview](https://via.placeholder.com/1200x600?text=Blockra+Dashboard+Preview)
@@ -45,24 +62,25 @@ Blockra offers flexible plans designed to scale with your business.
 | **Pro** | **$18.99/mo** | Unlimited | Unlimited | 5GB | Custom Fonts, Advanced SEO |
 | **Team** | **$9.99/user/mo** | Unlimited | Unlimited | 10GB Shared | White-labeling, Shared Workspace, Priority Support |
 
-## 🚀 Quick Start
-
-### Proxmox VE Installation
-
-To install Blockra on your Proxmox VE node, run the following command in your Proxmox shell:
-
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
-```
+## 🛠 Manual Installation
 
 ### Docker Installation
 
-Deploy Blockra using Docker Compose:
+If you prefer to set up manually using Docker:
 
 ```bash
 git clone https://github.com/Angelo-builds/WebSite_Builder.git
 cd WebSite_Builder
-docker-compose up -d
+# Create your .env file based on .env.example
+docker-compose up -d --build
+```
+
+### Proxmox VE Installation (LXC Script)
+
+To install Blockra on your Proxmox VE node using a dedicated LXC script:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Angelo-builds/WebSite_Builder/main/proxmox_install.sh)"
 ```
 
 Once installed, access the builder at: `http://<YOUR-IP>:3000`
